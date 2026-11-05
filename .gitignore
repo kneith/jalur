@@ -1,6 +1,18 @@
-﻿.env
+.env
 .env.*
 !.env.example
-*.dump
-*.sql.gz
 node_modules/
+
+# Database backups
+*.sql
+*.sql.gz
+*.dump
+
+# Temporary verification scripts
+server/cek-tabel.mjs
+server/check-directory.mjs
+server/test-supabase.mjs
+server/validate-directory.mjs
+
+# Supabase certificates
+server/supabase-ca.crt
