@@ -3,7 +3,7 @@
   const $ = (s, r=document) => r.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let user = null, csrfToken = '', busy = false;
-  const apiBase = (window.JALUR_API_BASE || 'http://localhost:8080/api').replace(/\/$/, '');
+  const apiBase = (window.JALUR_API_BASE || 'https://jalur-api.vercel.app/api').replace(/\/$/, '');
   const roleNames = {student:'Siswa',school_admin:'Pengelola Sekolah',teacher:'Guru Mata Pelajaran',counselor:'Guru BK',wellbeing_moderator:'Moderator Curhat',platform_admin:'Admin Platform'};
   function cookie(name){ const part=document.cookie.split('; ').find(x=>x.startsWith(name+'=')); return part ? decodeURIComponent(part.slice(name.length+1)) : ''; }
   async function api(path, opts={}) {
