@@ -1,6 +1,8 @@
+
 .env
 .env.*
 !.env.example
+
 node_modules/
 
 # Database backups
@@ -13,6 +15,3 @@ server/cek-tabel.mjs
 server/check-directory.mjs
 server/test-supabase.mjs
 server/validate-directory.mjs
-
-# Supabase certificates
-server/supabase-ca.crt
