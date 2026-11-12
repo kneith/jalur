@@ -47,5 +47,6 @@
   window.addEventListener('DOMContentLoaded',async()=>{try{const d=await api('/auth/me');user=d.user;csrfToken=cookie('jalur_csrf');}catch{}});
   // Role-aware navigation shortcut is deliberately server-rendered for protected modules.
   const oldNav=window.navigate;
-  window.navigate=function(page){if(user){const map={'School Portal':'server-school','BK Portal':'server-bk','BK Consultation':'appointment','Anonymous Venting':'vent','Study Program Explorer':'directory'};if(map[page])return serverPage(map[page]);if(page==='Dashboard')return serverPage(user.role==='student'?'server-home':user.role==='school_admin'?'server-school':user.role==='counselor'?'server-bk':'server-grades');}return oldNav?.(page);};
+  window.JALUR_API = { request: api, getUser: () => user };
+  window.navigate=function(page){if(user){if(page==='Decision Journal'){api('/journal').then(d=>window.JALUR_SET_JOURNAL?.(d.items||[])).catch(err=>notice(err.message));return oldNav?.(page);}const map={'School Portal':'server-school','BK Portal':'server-bk','BK Consultation':'appointment','Anonymous Venting':'vent','Study Program Explorer':'directory'};if(map[page])return serverPage(map[page]);if(page==='Dashboard')return serverPage(user.role==='student'?'server-home':user.role==='school_admin'?'server-school':user.role==='counselor'?'server-bk':'server-grades');}return oldNav?.(page);};
 })();
