@@ -536,6 +536,13 @@ class SchoolClassInput(BaseModel):
     academic_year: str = Field(min_length=4, max_length=20)
 
 
+class TeacherAssignmentInput(BaseModel):
+    teacher_id: uuid.UUID
+    class_id: uuid.UUID
+    subject_name: str = Field(min_length=1, max_length=120)
+    academic_year: str = Field(min_length=4, max_length=20)
+
+
 class SchoolAlumniInput(BaseModel):
     full_name: str = Field(min_length=1, max_length=120)
     graduation_year: int = Field(ge=1950, le=2100)
@@ -609,6 +616,77 @@ def _decrypt_venting(row) -> str:
     except Exception:
         # Do not expose ciphertext, plaintext or key details in an error response.
         raise HTTPException(500, "Data curhat tidak dapat dibuka dengan kunci enkripsi saat ini.")
+
+
+@app.get("/api/school/teachers")
+def get_school_teachers(request: Request):
+    actor = _require_roles(request, "school_admin")
+    if not actor["school_id"]:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    with connection() as conn:
+        rows = conn.execute(
+            """SELECT id, full_name, email FROM users
+               WHERE school_id=%s AND role='teacher' AND status='active'
+               ORDER BY full_name LIMIT 500""",
+            (actor["school_id"],),
+        ).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.get("/api/school/teacher-assignments")
+def get_school_teacher_assignments(request: Request):
+    actor = _require_roles(request, "school_admin")
+    if not actor["school_id"]:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    with connection() as conn:
+        rows = conn.execute(
+            """SELECT ta.id, ta.teacher_id, ta.class_id, ta.subject_name, ta.academic_year,
+                      u.full_name AS teacher_name, c.name AS class_name
+               FROM teacher_assignments ta
+               JOIN users u ON u.id=ta.teacher_id
+               JOIN school_classes c ON c.id=ta.class_id
+               WHERE ta.school_id=%s
+               ORDER BY c.name, u.full_name, ta.subject_name LIMIT 1000""",
+            (actor["school_id"],),
+        ).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.post("/api/school/teacher-assignments", status_code=201)
+def create_school_teacher_assignment(payload: TeacherAssignmentInput, request: Request):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    subject = payload.subject_name.strip()
+    year = payload.academic_year.strip()
+    if not subject or len(year) < 4:
+        raise HTTPException(422, "Mata pelajaran dan tahun ajaran wajib diisi.")
+    with connection() as conn:
+        teacher = conn.execute(
+            """SELECT id FROM users
+               WHERE id=%s AND school_id=%s AND role='teacher' AND status='active'""",
+            (payload.teacher_id, school_id),
+        ).fetchone()
+        if not teacher:
+            raise HTTPException(404, "Guru tidak ditemukan di sekolah ini.")
+        class_row = conn.execute(
+            "SELECT id FROM school_classes WHERE id=%s AND school_id=%s",
+            (payload.class_id, school_id),
+        ).fetchone()
+        if not class_row:
+            raise HTTPException(404, "Kelas tidak ditemukan di sekolah ini.")
+        item = conn.execute(
+            """INSERT INTO teacher_assignments(school_id, teacher_id, class_id, subject_name, academic_year)
+               VALUES (%s, %s, %s, %s, %s)
+               ON CONFLICT (teacher_id, class_id, subject_name, academic_year) DO NOTHING
+               RETURNING id, teacher_id, class_id, subject_name, academic_year""",
+            (school_id, payload.teacher_id, payload.class_id, subject, year),
+        ).fetchone()
+        if not item:
+            raise HTTPException(409, "Penugasan guru untuk kelas dan mata pelajaran tersebut sudah ada.")
+        _audit_event(conn, actor, "teacher_assignment.create", "teacher_assignment", item["id"])
+    return {"item": dict(item), "message": "Penugasan guru berhasil disimpan."}
 
 
 @app.get("/api/school/students")
@@ -736,6 +814,8 @@ def create_school_user(payload: SchoolUserInput, request: Request):
         raise HTTPException(422, "Nama lengkap wajib diisi.")
     if payload.role == "student" and not student_number:
         raise HTTPException(400, "Nomor induk siswa wajib diisi untuk akun siswa.")
+    if payload.role == "student" and not payload.class_id:
+        raise HTTPException(400, "Kelas wajib dipilih untuk akun siswa agar rapor dapat dikelola.")
 
     try:
         with connection() as conn:
