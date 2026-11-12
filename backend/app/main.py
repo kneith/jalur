@@ -152,10 +152,17 @@ def login(payload: LoginInput, response: Response, request: Request):
                 or user["status"] != "active"
                 or (user["school_id"] and user["school_status"] != "active")):
                 raise HTTPException(401, "Email atau kata sandi tidak sesuai.")
-            session_token, csrf = new_token(32), new_token(24)
-            conn.execute("""INSERT INTO sessions(user_id,token_hash,csrf_hash,expires_at)
-                            VALUES(%s,%s,%s,now()+(%s * interval '1 hour'))""",
-                         (user["id"], digest(session_token), digest(csrf), settings.session_ttl_hours))
+            session_token = new_token(32)
+            session = conn.execute(
+                """INSERT INTO sessions(user_id,token_hash,csrf_hash,expires_at)
+                   VALUES(%s,%s,%s,now()+(%s * interval '1 hour'))
+                   RETURNING id""",
+                (user["id"], digest(session_token), "pending", settings.session_ttl_hours),
+            ).fetchone()
+            # Stable, session-bound CSRF token: all tabs for this session share
+            # the same value without exposing a parent-domain cookie.
+            csrf = digest(f"csrf:{session['id']}:{user['id']}")
+            conn.execute("UPDATE sessions SET csrf_hash=%s WHERE id=%s", (digest(csrf), session["id"]))
             _login_attempts.pop(ip, None)
     except RuntimeError:
         raise HTTPException(503, "Database belum dikonfigurasi.")
@@ -168,15 +175,8 @@ def login(payload: LoginInput, response: Response, request: Request):
 @app.get("/api/auth/me")
 def me(request: Request):
     user = current_user(request)
-    # The frontend and API live on different Vercel subdomains, so the API's
-    # host-only CSRF cookie is not readable by frontend JavaScript. Issue a
-    # fresh token in the JSON response on session restore instead.
-    csrf = new_token(24)
-    with connection() as conn:
-        conn.execute(
-            "UPDATE sessions SET csrf_hash=%s WHERE id=%s AND user_id=%s",
-            (digest(csrf), user["session_id"], user["id"]),
-        )
+    # Deterministic per-session token avoids invalidating another open tab.
+    csrf = digest(f"csrf:{user['session_id']}:{user['id']}")
     return {
         "user": {k:user[k] for k in ("id","school_id","full_name","email","role")},
         "csrfToken": csrf,
