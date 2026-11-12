@@ -28,3 +28,13 @@ Tes unit repository memverifikasi jumlah record, pencarian, filter, dan paginasi
 
 ## Risiko penting
 Source asli secara eksplisit menyatakan portal lokal awal bukan autentikasi aman dan data lokal tidak tersinkronisasi. Jangan mengoperasikan fitur siswa/konseling dengan data riil sampai endpoint yang belum dimigrasikan selesai, seluruh kontrol akses diverifikasi, dan uji keamanan dilakukan.
+
+## Integrasi nilai dan ruang siswa (2026-11-12)
+- Menambahkan endpoint `/api/grades`, `/api/grades/roster`, POST/PATCH/DELETE grade dengan pembatasan sekolah dan penugasan guru.
+- Nilai siswa hanya dapat dibaca oleh akun siswa pemiliknya; guru dibatasi ke penugasan kelas/mata pelajaran; pengelola sekolah dibatasi ke sekolahnya.
+- Menambahkan tabel `student_workspaces` untuk sinkronisasi profil akademik dan catatan eksplorasi siswa yang login.
+- Menambahkan indikator navigasi aktif untuk halaman server-rendered, termasuk Jurnal Keputusan dan Konsultasi BK.
+- Grafik nilai di portal server menggunakan nilai tersimpan; ringkasan dan rapor dapat dicetak atau disimpan sebagai PDF melalui dialog cetak browser.
+- Status verifikasi informasi sumber ditampilkan sebagai hal yang harus diperiksa pengguna; sistem tidak mengklaim kurikulum/biaya sudah diverifikasi otomatis.
+- Migration Supabase diterapkan pada project Production; RLS aktif dan akses langsung ke tabel ruang siswa dicabut dari role API publik. API hanya mengakses lewat backend.
+- Belum dapat dinyatakan lulus production sebelum deployment runtime Python, browser E2E, dan uji akses lintas peran selesai.
