@@ -64,3 +64,72 @@
 .auth-notice{border:1px solid var(--border-soft);background:rgba(255,255,255,.035);border-radius:14px;padding:14px;margin-bottom:15px}
 .auth-notice p{margin:7px 0 0;font-size:12px;color:var(--muted)}
 @media(max-width:700px){.role-entry-grid{grid-template-columns:1fr;max-width:none}.portal-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.portal-tabs .btn{font-size:11px;padding:10px 8px}.program-card select{max-width:100%;width:100%}}
+
+/* Decision Journal: consistent, responsive writing surface */
+#journalForm { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 16px; }
+#journalForm .field.full { grid-column: 1 / -1; }
+#journalForm .journal-editor {
+  display: block; width: 100%; min-height: 168px; box-sizing: border-box;
+  padding: 16px 18px; border-radius: 16px; line-height: 1.7;
+  resize: vertical; overflow-wrap: anywhere; white-space: pre-wrap;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+#journalForm .journal-editor:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(232,102,58,.16);
+}
+#journalForm .field label { line-height: 1.45; }
+@media (max-width: 680px) {
+  #journalForm { grid-template-columns: minmax(0, 1fr); }
+  #journalForm .field.full { grid-column: auto; }
+  #journalForm .journal-editor { min-height: 148px; padding: 14px; }
+}
+
+/* Academic grade trend */
+.grade-trend{margin:4px 0 20px;min-width:0}
+.grade-trend-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px}
+.grade-trend-meta span,.grade-trend-caption{color:var(--muted);font-size:11px}
+.grade-trend-svg{display:block;width:100%;height:auto;max-height:260px;margin:8px 0 0;overflow:visible}
+.grade-chart-grid{stroke:rgba(255,255,255,.11);stroke-width:1;stroke-dasharray:4 5}
+.grade-chart-axis,.grade-chart-label{fill:var(--dim);font:10px system-ui,sans-serif}
+.grade-chart-line{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.grade-chart-point{fill:var(--accent);stroke:#211714;stroke-width:2}
+.grade-trend-caption{margin:2px 0 4px;line-height:1.55}
+@media(max-width:560px){.grade-chart-label{font-size:8px}.grade-trend-svg{max-height:220px}}
+
+/* Exploration notes: consistent writing surface */
+.reality-note-field{margin-top:2px;gap:8px}
+.reality-note-field label{line-height:1.5}
+.reality-note-field .reality-editor{display:block;width:100%;max-width:100%;min-width:0;min-height:170px;box-sizing:border-box;padding:16px 18px;border-radius:16px;line-height:1.7;resize:vertical;overflow-wrap:anywhere;white-space:pre-wrap;background:rgba(10,10,12,.48);border:1px solid var(--border);color:var(--text);transition:border-color .18s ease,box-shadow .18s ease}
+.reality-note-field .reality-editor:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,102,58,.16)}
+.reality-note-field .help{font-size:11px;color:var(--dim);line-height:1.5}
+@media(max-width:680px){.reality-note-field .reality-editor{min-height:145px;padding:14px}}
+
+
+/* Print-ready decision and grade reports */
+@media print {
+  body { background:#fff !important; color:#111 !important; font-size:11pt; }
+  .ambient,.sidebar,.topbar,.bottom-nav,.page-actions,.form-actions,.btn,.text-btn,#toastRegion,#modalRoot { display:none !important; }
+  .app-shell,.app-main,.page-content,#pageRoot { display:block !important; width:100% !important; max-width:none !important; padding:0 !important; margin:0 !important; }
+  .glass,.panel,.summary-block { background:#fff !important; color:#111 !important; border:1px solid #ddd !important; box-shadow:none !important; backdrop-filter:none !important; break-inside:avoid; }
+  .page-head h1,.panel h2,.summary-block h2,.summary-block h3 { color:#111 !important; }
+  .page-head p,.source-line,.panel-sub,.summary-block p,.summary-block li { color:#333 !important; }
+  .grade-chart-grid { stroke:#ddd !important; }
+  .grade-chart-axis,.grade-chart-label { fill:#333 !important; }
+  .grade-chart-line { stroke:#333 !important; }
+  .grade-chart-point { fill:#111 !important; stroke:#fff !important; }
+  a { color:#111 !important; text-decoration:underline; }
+  @page { size:A4; margin:16mm; }
+}
+
+.mobile-drawer [data-drawer-page].active{color:#ff9a75;background:#e8663a1d;border-color:rgba(232,102,58,.4)}
+
+/* Structured choice controls replace free-form multi-line text fields */
+.choice-check-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin:10px 0 16px}
+.choice-check{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.025);cursor:pointer;line-height:1.5;min-width:0}
+.choice-check:has(input:checked){border-color:var(--accent);background:rgba(232,102,58,.10)}
+.choice-check input{margin:3px 0 0;accent-color:var(--accent);flex:0 0 auto}
+.choice-check span{font-size:13px;color:var(--text)}
+.field-label{display:block;font-size:13px;font-weight:650;margin-bottom:8px;color:var(--text)}
+.question-preview{white-space:pre-wrap;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.035);line-height:1.65}
+@media(max-width:560px){.choice-check-grid{grid-template-columns:1fr}.choice-check{padding:11px 12px}}

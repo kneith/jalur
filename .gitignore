@@ -1,17 +1,17 @@
-
 .env
 .env.*
 !.env.example
-
+backend/.env
+backend/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
 node_modules/
 
-# Database backups
-*.sql
+# Database backups (keep versioned migration SQL)
 *.sql.gz
 *.dump
+*.backup
 
-# Temporary verification scripts
-server/cek-tabel.mjs
-server/check-directory.mjs
-server/test-supabase.mjs
-server/validate-directory.mjs
+.vercel
+.env*

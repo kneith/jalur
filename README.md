@@ -1,48 +1,53 @@
 # JALUR — Pendamping Eksplorasi Pendidikan Tinggi
 
-## Menjalankan aplikasi
-1. Ekstrak ZIP ke folder lokal.
-2. Buka `JALUR/index.html` pada browser modern.
-3. Direktori program studi/perguruan tinggi dimuat dari `data/database.js`.
+Aplikasi frontend asli JALUR dipertahankan (HTML/CSS/JavaScript) dan backend terpusat dimigrasikan ke Python + FastAPI. Dataset workbook asli tidak diganti dengan data dummy.
 
-## Jalur masuk yang tersedia
-- **Siswa/Pengunjung**: fitur eksplorasi, pencarian, perbandingan, perencana biaya, jurnal, pengajuan konsultasi BK, dan catatan curhat pribadi.
-- **Portal Pengelola Sekolah**: antarmuka uji untuk memasukkan/mengelola data siswa, guru, kelas, mata pelajaran, nilai rapor, dan alumni. Mendukung ekspor JSON.
-- **Portal Guru BK**: antarmuka uji untuk melihat permintaan konsultasi dan mengubah status, serta melihat catatan curhat yang dibuat pada browser yang sama.
+## Fitur frontend yang dipertahankan
+Dashboard, profil akademik, pencarian program studi, pencarian institusi, detail program, perbandingan, Plan B, blind-spot detector, ringkasan keputusan, sumber resmi, pemeriksaan realitas program, similarity explorer, perencana jalur alternatif, preview kehidupan kampus, perencana biaya, Decision Journal, konsultasi BK, curhat, portal sekolah, dan portal BK.
 
-## Batas keamanan yang wajib diketahui
-Versi ini adalah aplikasi statis sisi-klien. Data fitur sekolah, konsultasi, dan curhat disimpan pada `localStorage` browser. Kode akses portal pada versi ini hanyalah gerbang uji lokal, **bukan autentikasi yang aman**. Data tidak tersinkronisasi antarpengguna/perangkat dan tidak dikirim ke guru/sekolah. Jangan gunakan data pribadi siswa, nilai rapor asli, atau isi konseling yang sensitif pada versi ini.
+Sebagian fitur eksplorasi dan alat keputusan tetap berjalan secara lokal di browser sebagaimana pada source asli. Modul sekolah/BK terpusat memerlukan database dan endpoint yang telah dimigrasikan; lihat status migrasi di `docs/MIGRATION_STATUS.md`.
 
-Sebelum peluncuran resmi, implementasikan backend dan database terpusat, autentikasi server, verifikasi email/identitas sekolah, role-based access control di sisi server, kebijakan akses per siswa/guru, audit log, enkripsi saat transit dan saat tersimpan, pengelolaan sesi, perlindungan CSRF/XSS, cadangan, retensi/penghapusan data, serta prosedur penanganan insiden. Curhat anonim harus dirancang agar tidak menyimpan identitas atau metadata yang bisa mengidentifikasi pengirim; sediakan moderasi, batasan penyalahgunaan, dan protokol eskalasi keselamatan yang jelas.
+## Data sumber
+- `data/database.js`: snapshot operasional asli dari workbook, 4.303 institusi dan 34.709 program studi.
+- `data/JALUR_Database_Enriched_2026-11-01.xlsx`: workbook lengkap sumber asli.
 
-## Fitur baru dalam versi ini
-- Pilihan peran terpisah pada halaman pembuka.
-- Formulir permintaan konsultasi BK dengan tanggal, waktu, metode, topik, catatan opsional, dan status lokal.
-- Ruang curhat tanpa kolom nama, dengan pilihan suasana hati/topik, penghapusan catatan, dan peringatan privasi.
-- Portal uji pengelola sekolah untuk data siswa, guru, kelas, mata pelajaran, nilai rapor, dan alumni.
-- Portal uji guru BK untuk melihat permintaan konsultasi dan memperbarui status.
-- Ekspor JSON data portal sekolah.
+Data tidak diperbarui otomatis. Skor kosong bukan nol dan estimasi skor tidak boleh dianggap sebagai skor penerimaan resmi.
 
-## Database direktori
-Workbook sumber berada di `data/JALUR_Database_Enriched_2026-11-01.xlsx`; direktori yang digunakan aplikasi berada di `data/database.js`. Periksa tanggal dan sumber data resmi sebelum mengambil keputusan penting.
+## Menjalankan frontend dan API lokal
+Persyaratan: Python 3.11+, PostgreSQL 14+ (untuk autentikasi dan Journal tersimpan di server).
 
+1. Buat database PostgreSQL dan jalankan SQL migration berurutan:
+   `backend/migrations/001_initial.sql`, lalu `backend/migrations/002_decision_journal.sql`.
+2. Salin `backend/.env.example` menjadi `backend/.env`, lalu isi `DATABASE_URL` dan `SESSION_PEPPER` (minimal 32 karakter acak). Untuk lokal, `COOKIE_SECURE=false`.
+3. Instal dependency:
+   `cd backend`
+   `python -m venv .venv`
+   Windows: `.venv\\Scripts\\activate`
+   macOS/Linux: `source .venv/bin/activate`
+   `pip install -r requirements.txt`
+4. (Opsional, untuk pencarian direktori via PostgreSQL) Setelah menjalankan migration, dari root jalankan `python backend/scripts/import_directory.py`, lalu atur `DIRECTORY_BACKEND=postgres` di `backend/.env`. Default `json` membaca snapshot asli langsung tanpa impor.
+5. Buat administrator pertama dengan `python backend/scripts/bootstrap_admin.py` setelah database dan `.env` siap.
+6. Jalankan API dari folder proyek:
+   `uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 8000`
+   Jika terminal berada di folder `backend`, gunakan `uvicorn app.main:app --reload --host 127.0.0.1 --port 8000`.
+7. Pada `index.html`, atur `window.JALUR_API_BASE` sebelum `central.js` ke `http://127.0.0.1:8000/api` (nilai awal di `index.html` sudah diarahkan ke localhost). Contoh tag script konfigurasi dapat dilihat di `docs/INSTALLATION.md`.
+8. Sajikan frontend dari root proyek: `python -m http.server 5500 --bind 127.0.0.1`, lalu buka `http://127.0.0.1:5500`.
 
-## Backend terpusat (fondasi API)
-Folder `server/` berisi layanan API Node.js dan skema PostgreSQL untuk autentikasi berbasis sesi, pembatasan hak akses siswa/guru/admin sekolah/guru BK, rapor, konsultasi, alumni, serta pengiriman curhat anonim terenkripsi. Lihat `server/README.md` untuk instalasi, konfigurasi rahasia, API, dan batasan keamanan.
+API health: `http://127.0.0.1:8000/api/health`; dokumentasi OpenAPI: `http://127.0.0.1:8000/docs`.
 
-**Penting:** antarmuka HTML/JavaScript lama belum sepenuhnya diintegrasikan dengan API server. Sampai integrasi frontend dan pengujian produksi selesai, fitur lokal yang ada masih dapat menggunakan `localStorage`; jangan masukkan data nyata siswa/rapor/konseling. Untuk memindahkan direktori nasional ke PostgreSQL, jalankan importer yang dijelaskan di dokumentasi backend.
+## Tes
+Dari root proyek:
+`python -m pytest backend/tests -q`
 
-## Integrasi frontend + backend (mode lokal)
+Tes membutuhkan dependency pada `backend/requirements.txt`. Database tidak diperlukan untuk tes repository direktori.
 
-Frontend JALUR kini memuat `central.js` setelah `app.js`. Modul ini menghubungkan jalur masuk sekolah/BK/siswa, pencarian direktori, rapor, konsultasi BK, curhat anonim, akun sekolah, kelas, dan alumni ke API pusat. `central.js` memakai `http://localhost:8080/api` sebagai alamat API default; ubah `window.JALUR_API_BASE` sebelum `central.js` jika alamat API berbeda.
+## Deployment
+Frontend statis dapat dipasang di Vercel. Backend FastAPI dan PostgreSQL perlu layanan runtime/database yang mendukung Python dan koneksi persisten; jangan menaruh API FastAPI sebagai static frontend deployment. Lihat `docs/DEPLOYMENT.md`.
 
-Urutan menjalankan lokal di Windows:
-
-1. Dari `JALUR/server`, salin `.env.example` menjadi `.env`, lalu isi rahasia sesuai dokumentasi server.
-2. Jalankan `docker compose up --build -d`.
-3. Jalankan bootstrap administrator dan importer sesuai petunjuk di `server/README.md`.
-4. Dari folder `JALUR` (folder yang berisi `index.html`), buka PowerShell dan jalankan `python -m http.server 5500 --bind 127.0.0.1`.
-5. Buka `http://localhost:5500` di browser. Jangan buka `index.html` langsung dengan `file://` karena cookie/CORS tidak akan berfungsi benar.
-6. Masuk melalui portal pengelola sekolah memakai akun bootstrap. Pengelola sekolah dapat membuat akun siswa/guru/BK; guru dan BK kemudian masuk melalui jalur masing-masing. Akun siswa mandiri tidak dibuat di halaman publik.
-
-Mode lokal ini ditujukan untuk pengujian di komputer sendiri. Jangan membuka port API ke internet atau memasukkan data pendidikan nyata sebelum HTTPS, verifikasi email, pemulihan akun, backup, uji akses lintas sekolah, dan tinjauan keamanan selesai.
+## Keamanan dan batasan
+- Gunakan HTTPS dan `COOKIE_SECURE=true` di production.
+- Ganti semua secret contoh dengan secret kuat dan unik.
+- Batasi CORS ke origin frontend yang benar.
+- Buat backup dan kebijakan retensi data.
+- Fitur curhat anonim harus melalui tinjauan privasi, keamanan, moderasi, dan prosedur eskalasi sebelum dipakai publik.
+- Jangan masukkan data siswa, nilai, atau catatan konseling nyata sebelum pengujian keamanan dan kebijakan sekolah selesai.

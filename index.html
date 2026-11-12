@@ -45,6 +45,7 @@
           </button>
           <button class="btn secondary large" id="enterSchool">Portal Pengelola Sekolah</button>
           <button class="btn secondary large" id="enterBK">Portal Guru BK</button>
+          <button class="btn secondary large" id="enterTeacher">Portal Guru Mata Pelajaran</button>
           <button class="text-btn learn-link" id="createAccount">Buat akun siswa</button>
           <button class="text-btn learn-link" id="signIn">Masuk ke akun siswa</button>
           <button class="text-btn learn-link" id="howItWorks">Pelajari cara kerja JALUR</button>
@@ -191,12 +192,19 @@
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
 
   <!-- Memuat direktori lokal dan aplikasi utama -->
-  <script src="data/database.js"></script>
+  <script src="backend/data/database.js"></script>
   <script src="app.js"></script>
 
-  <!-- Alamat backend produksi JALUR -->
+  <!-- Keep preview frontend traffic on the matching preview API; production uses production API. -->
   <script>
-    window.JALUR_API_BASE = "https://jalur-api.vercel.app/api";
+    (() => {
+      const host = window.location.hostname;
+      const productionHosts = new Set(["jalur-frontend.vercel.app", "jalur-frontend-kneith.vercel.app"]);
+      const apiHost = productionHosts.has(host)
+        ? "https://jalur-api.vercel.app"
+        : "https://jalur-api-git-migration-python-fastapi-kneith.vercel.app";
+      window.JALUR_API_BASE = apiHost + "/api";
+    })();
   </script>
 
   <!-- Integrasi backend harus dimuat setelah konfigurasi API -->
