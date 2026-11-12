@@ -123,3 +123,13 @@
 }
 
 .mobile-drawer [data-drawer-page].active{color:#ff9a75;background:#e8663a1d;border-color:rgba(232,102,58,.4)}
+
+/* Structured choice controls replace free-form multi-line text fields */
+.choice-check-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin:10px 0 16px}
+.choice-check{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.025);cursor:pointer;line-height:1.5;min-width:0}
+.choice-check:has(input:checked){border-color:var(--accent);background:rgba(232,102,58,.10)}
+.choice-check input{margin:3px 0 0;accent-color:var(--accent);flex:0 0 auto}
+.choice-check span{font-size:13px;color:var(--text)}
+.field-label{display:block;font-size:13px;font-weight:650;margin-bottom:8px;color:var(--text)}
+.question-preview{white-space:pre-wrap;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.035);line-height:1.65}
+@media(max-width:560px){.choice-check-grid{grid-template-columns:1fr}.choice-check{padding:11px 12px}}
