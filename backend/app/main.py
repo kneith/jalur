@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     yield
     close_pool()
 
-app = FastAPI(title="JALUR API", version="2.0.0", lifespan=lifespan)
+app = FastAPI(title="JALUR API", version="2.0.0", lifespan=lifespan, docs_url="/api/docs", openapi_url="/api/openapi.json", redoc_url=None)
 app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins),
                    allow_credentials=True, allow_methods=["GET","POST","PATCH","DELETE","OPTIONS"],
                    allow_headers=["Content-Type","X-CSRF-Token"])
