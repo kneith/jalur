@@ -194,9 +194,16 @@
   <script src="backend/data/database.js"></script>
   <script src="app.js"></script>
 
-  <!-- Alamat backend lokal; ganti ke URL HTTPS backend saat deployment -->
+  <!-- Keep preview frontend traffic on the matching preview API; production uses production API. -->
   <script>
-    window.JALUR_API_BASE = "https://jalur-api.vercel.app/api";
+    (() => {
+      const host = window.location.hostname;
+      const productionHosts = new Set(["jalur-frontend.vercel.app", "jalur-frontend-kneith.vercel.app"]);
+      const apiHost = productionHosts.has(host)
+        ? "https://jalur-api.vercel.app"
+        : "https://jalur-api-git-migration-python-fastapi-kneith.vercel.app";
+      window.JALUR_API_BASE = apiHost + "/api";
+    })();
   </script>
 
   <!-- Integrasi backend harus dimuat setelah konfigurasi API -->
