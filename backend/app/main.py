@@ -5,7 +5,8 @@ from time import monotonic
 import secrets, uuid
 import base64
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Any
+import json
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -192,6 +193,302 @@ def delete_journal(entry_id: uuid.UUID, request: Request):
         if result.rowcount == 0: raise HTTPException(404, "Catatan tidak ditemukan.")
 
 # ---------------------------------------------------------------------------
+# Student-owned workspace and role-scoped grade records.
+# These endpoints use the server's private PostgreSQL connection; no client
+# receives database credentials or direct access to these tables.
+# ---------------------------------------------------------------------------
+
+WORKSPACE_KEYS = {
+    "profile", "notes", "compared", "mainChoice", "alternatives",
+    "checked", "costPlans", "pathwayGroups", "settings",
+}
+
+
+@app.get("/api/workspace")
+def get_student_workspace(request: Request):
+    actor = _require_roles(request, "student")
+    if not actor["school_id"]:
+        raise HTTPException(403, "Akun siswa belum terhubung ke sekolah.")
+    with connection() as conn:
+        row = conn.execute(
+            """SELECT workspace_data, updated_at
+               FROM student_workspaces WHERE user_id=%s AND school_id=%s""",
+            (actor["id"], actor["school_id"]),
+        ).fetchone()
+    return {"workspace": dict(row["workspace_data"]) if row else None,
+            "updated_at": row["updated_at"] if row else None}
+
+
+@app.post("/api/workspace")
+def save_student_workspace(payload: StudentWorkspaceInput, request: Request):
+    actor = _require_roles(request, "student")
+    if not actor["school_id"]:
+        raise HTTPException(403, "Akun siswa belum terhubung ke sekolah.")
+    workspace = {key: value for key, value in payload.workspace.items() if key in WORKSPACE_KEYS}
+    try:
+        encoded = json.dumps(workspace, ensure_ascii=False, separators=(",", ":"))
+    except (TypeError, ValueError):
+        raise HTTPException(422, "Format data profil tidak valid.")
+    if len(encoded.encode("utf-8")) > 250_000:
+        raise HTTPException(413, "Data ruang siswa terlalu besar untuk disimpan.")
+    with connection() as conn:
+        row = conn.execute(
+            """INSERT INTO student_workspaces(user_id, school_id, workspace_data, updated_at)
+               VALUES (%s, %s, %s::jsonb, now())
+               ON CONFLICT (user_id) DO UPDATE
+                 SET school_id=EXCLUDED.school_id,
+                     workspace_data=EXCLUDED.workspace_data,
+                     updated_at=now()
+               WHERE student_workspaces.school_id=EXCLUDED.school_id
+               RETURNING updated_at""",
+            (actor["id"], actor["school_id"], encoded),
+        ).fetchone()
+    if not row:
+        raise HTTPException(409, "Sekolah akun berubah. Muat ulang sesi sebelum menyimpan.")
+    return {"saved": True, "updated_at": row["updated_at"]}
+
+
+def _grade_teacher_id(conn, actor, payload: GradeInput):
+    school_id = actor["school_id"]
+    student = conn.execute(
+        """SELECT u.id, sp.class_id
+           FROM users u JOIN student_profiles sp ON sp.user_id=u.id
+           WHERE u.id=%s AND u.school_id=%s AND u.role='student' AND u.status='active'""",
+        (payload.student_id, school_id),
+    ).fetchone()
+    if not student:
+        raise HTTPException(404, "Siswa tidak ditemukan di sekolah ini.")
+    class_row = conn.execute(
+        "SELECT id FROM school_classes WHERE id=%s AND school_id=%s",
+        (payload.class_id, school_id),
+    ).fetchone()
+    if not class_row:
+        raise HTTPException(404, "Kelas tidak ditemukan di sekolah ini.")
+    if student["class_id"] and student["class_id"] != payload.class_id:
+        raise HTTPException(400, "Kelas yang dipilih tidak sesuai dengan data siswa.")
+    subject = payload.subject_name.strip()
+    year = payload.academic_year.strip()
+    if not subject or not year:
+        raise HTTPException(422, "Mata pelajaran dan tahun ajaran wajib diisi.")
+    if actor["role"] == "teacher":
+        assignment = conn.execute(
+            """SELECT 1 FROM teacher_assignments
+               WHERE school_id=%s AND teacher_id=%s AND class_id=%s
+                 AND lower(subject_name)=lower(%s) AND academic_year=%s""",
+            (school_id, actor["id"], payload.class_id, subject, year),
+        ).fetchone()
+        if not assignment:
+            raise HTTPException(403, "Guru tidak memiliki penugasan untuk kelas, mata pelajaran, dan tahun ajaran ini.")
+        return actor["id"]
+    return None
+
+
+@app.get("/api/grades/roster")
+def get_grade_roster(request: Request):
+    actor = _require_roles(request, "teacher", "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun belum terhubung ke sekolah.")
+    with connection() as conn:
+        if actor["role"] == "teacher":
+            classes = conn.execute(
+                """SELECT DISTINCT c.id, c.name, c.academic_year
+                   FROM teacher_assignments ta
+                   JOIN school_classes c ON c.id=ta.class_id AND c.school_id=ta.school_id
+                   WHERE ta.school_id=%s AND ta.teacher_id=%s
+                   ORDER BY c.academic_year DESC, c.name""",
+                (school_id, actor["id"]),
+            ).fetchall()
+            class_ids = [row["id"] for row in classes]
+            students = conn.execute(
+                """SELECT u.id, u.full_name, sp.student_number, sp.class_id,
+                          c.name AS class_name
+                   FROM users u
+                   JOIN student_profiles sp ON sp.user_id=u.id
+                   LEFT JOIN school_classes c ON c.id=sp.class_id
+                   WHERE u.school_id=%s AND u.role='student' AND u.status='active'
+                     AND sp.class_id = ANY(%s)
+                   ORDER BY c.name, u.full_name LIMIT 1000""",
+                (school_id, class_ids),
+            ).fetchall() if class_ids else []
+        else:
+            classes = conn.execute(
+                """SELECT id, name, academic_year FROM school_classes
+                   WHERE school_id=%s ORDER BY academic_year DESC, name""",
+                (school_id,),
+            ).fetchall()
+            students = conn.execute(
+                """SELECT u.id, u.full_name, sp.student_number, sp.class_id,
+                          c.name AS class_name
+                   FROM users u
+                   JOIN student_profiles sp ON sp.user_id=u.id
+                   LEFT JOIN school_classes c ON c.id=sp.class_id
+                   WHERE u.school_id=%s AND u.role='student' AND u.status='active'
+                   ORDER BY c.name, u.full_name LIMIT 1000""",
+                (school_id,),
+            ).fetchall()
+    return {"classes": [dict(row) for row in classes],
+            "students": [dict(row) for row in students]}
+
+
+@app.get("/api/grades")
+def get_grades(request: Request):
+    actor = _require_roles(request, "student", "teacher", "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun belum terhubung ke sekolah.")
+    with connection() as conn:
+        if actor["role"] == "student":
+            rows = conn.execute(
+                """SELECT g.id, g.student_id, g.class_id, g.subject_name, g.semester,
+                          g.academic_year, g.score, g.notes, g.version, g.updated_at,
+                          c.name AS class_name
+                   FROM grades g LEFT JOIN school_classes c ON c.id=g.class_id
+                   WHERE g.school_id=%s AND g.student_id=%s
+                   ORDER BY g.academic_year, g.semester, g.subject_name""",
+                (school_id, actor["id"]),
+            ).fetchall()
+        elif actor["role"] == "teacher":
+            rows = conn.execute(
+                """SELECT g.id, g.student_id, g.class_id, g.subject_name, g.semester,
+                          g.academic_year, g.score, g.notes, g.version, g.updated_at,
+                          u.full_name AS student_name, sp.student_number, c.name AS class_name
+                   FROM grades g
+                   JOIN users u ON u.id=g.student_id
+                   LEFT JOIN student_profiles sp ON sp.user_id=u.id
+                   LEFT JOIN school_classes c ON c.id=g.class_id
+                   WHERE g.school_id=%s AND EXISTS (
+                     SELECT 1 FROM teacher_assignments ta
+                     WHERE ta.school_id=g.school_id AND ta.teacher_id=%s
+                       AND ta.class_id=g.class_id
+                       AND lower(ta.subject_name)=lower(g.subject_name)
+                       AND ta.academic_year=g.academic_year
+                   )
+                   ORDER BY g.academic_year DESC, g.semester, c.name, u.full_name
+                   LIMIT 1000""",
+                (school_id, actor["id"]),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """SELECT g.id, g.student_id, g.class_id, g.subject_name, g.semester,
+                          g.academic_year, g.score, g.notes, g.version, g.updated_at,
+                          u.full_name AS student_name, sp.student_number, c.name AS class_name
+                   FROM grades g
+                   JOIN users u ON u.id=g.student_id
+                   LEFT JOIN student_profiles sp ON sp.user_id=u.id
+                   LEFT JOIN school_classes c ON c.id=g.class_id
+                   WHERE g.school_id=%s
+                   ORDER BY g.academic_year DESC, g.semester, c.name, u.full_name
+                   LIMIT 2000""",
+                (school_id,),
+            ).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.post("/api/grades", status_code=201)
+def upsert_grade(payload: GradeInput, request: Request):
+    actor = _require_roles(request, "teacher", "school_admin")
+    if not actor["school_id"]:
+        raise HTTPException(403, "Akun belum terhubung ke sekolah.")
+    with connection() as conn:
+        teacher_id = _grade_teacher_id(conn, actor, payload)
+        item = conn.execute(
+            """INSERT INTO grades(school_id, student_id, teacher_id, class_id,
+                                  subject_name, semester, academic_year, score, notes)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+               ON CONFLICT (student_id, subject_name, semester, academic_year)
+               DO UPDATE SET school_id=EXCLUDED.school_id,
+                             teacher_id=EXCLUDED.teacher_id,
+                             class_id=EXCLUDED.class_id,
+                             score=EXCLUDED.score, notes=EXCLUDED.notes,
+                             version=grades.version+1, updated_at=now()
+               RETURNING id, student_id, class_id, subject_name, semester,
+                         academic_year, score, notes, version, updated_at""",
+            (actor["school_id"], payload.student_id, teacher_id, payload.class_id,
+             payload.subject_name.strip(), payload.semester.strip(),
+             payload.academic_year.strip(), payload.score,
+             (payload.notes or "").strip() or None),
+        ).fetchone()
+        _audit_event(conn, actor, "grade.upsert", "grade", item["id"])
+    return {"item": dict(item)}
+
+
+@app.patch("/api/grades/{grade_id}")
+def update_grade(grade_id: uuid.UUID, payload: GradeInput, request: Request):
+    actor = _require_roles(request, "teacher", "school_admin")
+    if not actor["school_id"]:
+        raise HTTPException(403, "Akun belum terhubung ke sekolah.")
+    with connection() as conn:
+        teacher_id = _grade_teacher_id(conn, actor, payload)
+        if actor["role"] == "teacher":
+            item = conn.execute(
+                """UPDATE grades g SET student_id=%s, teacher_id=%s, class_id=%s,
+                          subject_name=%s, semester=%s, academic_year=%s, score=%s,
+                          notes=%s, version=g.version+1, updated_at=now()
+                   WHERE g.id=%s AND g.school_id=%s AND EXISTS (
+                     SELECT 1 FROM teacher_assignments ta
+                     WHERE ta.school_id=g.school_id AND ta.teacher_id=%s
+                       AND ta.class_id=g.class_id
+                       AND lower(ta.subject_name)=lower(g.subject_name)
+                       AND ta.academic_year=g.academic_year
+                   )
+                   RETURNING g.id, g.student_id, g.class_id, g.subject_name,
+                             g.semester, g.academic_year, g.score, g.notes,
+                             g.version, g.updated_at""",
+                (payload.student_id, teacher_id, payload.class_id,
+                 payload.subject_name.strip(), payload.semester.strip(),
+                 payload.academic_year.strip(), payload.score,
+                 (payload.notes or "").strip() or None,
+                 grade_id, actor["school_id"], actor["id"]),
+            ).fetchone()
+        else:
+            item = conn.execute(
+                """UPDATE grades SET student_id=%s, teacher_id=NULL, class_id=%s,
+                          subject_name=%s, semester=%s, academic_year=%s, score=%s,
+                          notes=%s, version=version+1, updated_at=now()
+                   WHERE id=%s AND school_id=%s
+                   RETURNING id, student_id, class_id, subject_name, semester,
+                             academic_year, score, notes, version, updated_at""",
+                (payload.student_id, payload.class_id, payload.subject_name.strip(),
+                 payload.semester.strip(), payload.academic_year.strip(), payload.score,
+                 (payload.notes or "").strip() or None, grade_id, actor["school_id"]),
+            ).fetchone()
+        if not item:
+            raise HTTPException(404, "Nilai tidak ditemukan atau akses tidak diizinkan.")
+        _audit_event(conn, actor, "grade.update", "grade", grade_id)
+    return {"item": dict(item)}
+
+
+@app.delete("/api/grades/{grade_id}", status_code=204)
+def delete_grade(grade_id: uuid.UUID, request: Request):
+    actor = _require_roles(request, "teacher", "school_admin")
+    if not actor["school_id"]:
+        raise HTTPException(403, "Akun belum terhubung ke sekolah.")
+    with connection() as conn:
+        if actor["role"] == "teacher":
+            item = conn.execute(
+                """DELETE FROM grades g
+                   WHERE g.id=%s AND g.school_id=%s AND EXISTS (
+                     SELECT 1 FROM teacher_assignments ta
+                     WHERE ta.school_id=g.school_id AND ta.teacher_id=%s
+                       AND ta.class_id=g.class_id
+                       AND lower(ta.subject_name)=lower(g.subject_name)
+                       AND ta.academic_year=g.academic_year
+                   )
+                   RETURNING g.id""",
+                (grade_id, actor["school_id"], actor["id"]),
+            ).fetchone()
+        else:
+            item = conn.execute(
+                "DELETE FROM grades WHERE id=%s AND school_id=%s RETURNING id",
+                (grade_id, actor["school_id"]),
+            ).fetchone()
+        if not item:
+            raise HTTPException(404, "Nilai tidak ditemukan atau akses tidak diizinkan.")
+        _audit_event(conn, actor, "grade.delete", "grade", grade_id)
+
+
+# ---------------------------------------------------------------------------
 # Migrated school, BK, platform moderator and anonymous-venting endpoints.
 # All write endpoints use current_user(), which enforces session + CSRF.
 # ---------------------------------------------------------------------------
@@ -230,6 +527,20 @@ class AnonymousVentingInput(BaseModel):
 
 class AnonymousVentingStatusInput(BaseModel):
     status: Literal["unreviewed", "reviewed", "resource_shared", "closed"]
+
+
+class GradeInput(BaseModel):
+    student_id: uuid.UUID
+    class_id: uuid.UUID
+    subject_name: str = Field(min_length=1, max_length=120)
+    semester: str = Field(min_length=1, max_length=30)
+    academic_year: str = Field(min_length=4, max_length=20)
+    score: float = Field(ge=0, le=100)
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class StudentWorkspaceInput(BaseModel):
+    workspace: dict[str, Any]
 
 
 def _require_roles(request: Request, *roles: str):
@@ -463,7 +774,7 @@ def update_anonymous_venting_status(venting_id: uuid.UUID, payload: AnonymousVen
 # Legacy API paths that are intentionally explicit rather than silently pretending to work.
 @app.get("/api/{path:path}")
 def unimplemented_get(path: str):
-    if path.startswith(("grades","bk/","school/","anonymous-ventings")):
+    if path.startswith(("bk/","school/","anonymous-ventings")):
         raise HTTPException(501, "Endpoint ini belum dimigrasikan ke Python. Lihat docs/MIGRATION_STATUS.md.")
     raise HTTPException(404, "Endpoint tidak ditemukan.")
 
