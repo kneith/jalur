@@ -8,3 +8,6 @@ CREATE TABLE IF NOT EXISTS decision_journal (
 );
 CREATE INDEX IF NOT EXISTS decision_journal_user_created_idx
   ON decision_journal(user_id, created_at DESC);
+
+ALTER TABLE decision_journal ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE decision_journal FROM PUBLIC, anon, authenticated;
