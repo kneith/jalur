@@ -58,6 +58,20 @@ class JournalInput(BaseModel):
     program: str | None = Field(default=None, max_length=240)
     text: str = Field(min_length=3, max_length=12000)
 
+
+class GradeInput(BaseModel):
+    student_id: uuid.UUID
+    class_id: uuid.UUID
+    subject_name: str = Field(min_length=1, max_length=120)
+    semester: str = Field(min_length=1, max_length=30)
+    academic_year: str = Field(min_length=4, max_length=20)
+    score: float = Field(ge=0, le=100)
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class StudentWorkspaceInput(BaseModel):
+    workspace: dict[str, Any]
+
 def current_user(request: Request, required: bool = True):
     token = request.cookies.get("jalur_session")
     if not token:
@@ -529,20 +543,6 @@ class AnonymousVentingInput(BaseModel):
 
 class AnonymousVentingStatusInput(BaseModel):
     status: Literal["unreviewed", "reviewed", "resource_shared", "closed"]
-
-
-class GradeInput(BaseModel):
-    student_id: uuid.UUID
-    class_id: uuid.UUID
-    subject_name: str = Field(min_length=1, max_length=120)
-    semester: str = Field(min_length=1, max_length=30)
-    academic_year: str = Field(min_length=4, max_length=20)
-    score: float = Field(ge=0, le=100)
-    notes: str | None = Field(default=None, max_length=1000)
-
-
-class StudentWorkspaceInput(BaseModel):
-    workspace: dict[str, Any]
 
 
 def _require_roles(request: Request, *roles: str):
