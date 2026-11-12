@@ -3,12 +3,16 @@ from contextlib import asynccontextmanager
 from collections import defaultdict, deque
 from time import monotonic
 import secrets, uuid
+import base64
+from datetime import datetime
+from typing import Literal
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 from app.core.config import settings
 from app.core.database import connection, close_pool
-from app.core.security import digest, new_token, verify_password
+from app.core.security import digest, new_token, verify_password, hash_password
 from app.repositories.directory import JSONDirectoryRepository
 from app.repositories.postgres_directory import PostgresDirectoryRepository
 from app.services import DirectoryService
@@ -186,6 +190,275 @@ def delete_journal(entry_id: uuid.UUID, request: Request):
         result = conn.execute("DELETE FROM decision_journal WHERE id=%s AND user_id=%s",
                               (entry_id,user["id"]))
         if result.rowcount == 0: raise HTTPException(404, "Catatan tidak ditemukan.")
+
+# ---------------------------------------------------------------------------
+# Migrated school, BK, platform moderator and anonymous-venting endpoints.
+# All write endpoints use current_user(), which enforces session + CSRF.
+# ---------------------------------------------------------------------------
+
+class SchoolUserInput(BaseModel):
+    email: EmailStr
+    full_name: str = Field(min_length=1, max_length=120)
+    role: Literal["student", "teacher", "counselor"]
+    temporary_password: str = Field(min_length=14, max_length=200)
+    student_number: str | None = Field(default=None, max_length=40)
+    class_id: uuid.UUID | None = None
+    graduation_year: int | None = Field(default=None, ge=1950, le=2100)
+
+
+class PlatformModeratorInput(BaseModel):
+    email: EmailStr
+    full_name: str = Field(min_length=1, max_length=120)
+    temporary_password: str = Field(min_length=14, max_length=200)
+
+
+class BKAppointmentInput(BaseModel):
+    requested_at: datetime
+    mode: Literal["in_person", "online"]
+    topic: str = Field(min_length=1, max_length=120)
+    student_note: str | None = Field(default=None, max_length=1000)
+
+
+class BKAppointmentStatusInput(BaseModel):
+    status: Literal["pending", "confirmed", "reschedule_requested", "completed", "cancelled"]
+
+
+class AnonymousVentingInput(BaseModel):
+    text: str = Field(min_length=3, max_length=3000)
+    category: Literal["academic", "family", "friends", "future", "wellbeing", "other"]
+
+
+class AnonymousVentingStatusInput(BaseModel):
+    status: Literal["unreviewed", "reviewed", "resource_shared", "closed"]
+
+
+def _require_roles(request: Request, *roles: str):
+    user = current_user(request)
+    if user["role"] not in roles:
+        raise HTTPException(403, "Akses tidak diizinkan untuk peran ini.")
+    return user
+
+
+def _audit_event(conn, actor, action: str, entity_type: str, entity_id):
+    # Audit metadata only; never write journal, counseling or venting text here.
+    conn.execute(
+        """INSERT INTO audit_events(school_id, actor_id, action, entity_type, entity_id)
+           VALUES (%s, %s, %s, %s, %s)""",
+        (actor.get("school_id"), actor["id"], action, entity_type, str(entity_id)),
+    )
+
+
+def _venting_cipher() -> AESGCM:
+    raw_key = settings.venting_encryption_key.strip()
+    try:
+        key = base64.b64decode(raw_key, validate=True)
+    except Exception:
+        raise HTTPException(503, "VENTING_ENCRYPTION_KEY belum dikonfigurasi dengan benar.")
+    if len(key) != 32:
+        raise HTTPException(503, "VENTING_ENCRYPTION_KEY harus berupa base64 dari tepat 32 byte.")
+    return AESGCM(key)
+
+
+def _decrypt_venting(row) -> str:
+    try:
+        nonce = base64.b64decode(row["nonce"], validate=True)
+        ciphertext = base64.b64decode(row["encrypted_payload"], validate=True)
+        tag = base64.b64decode(row["auth_tag"], validate=True)
+        return _venting_cipher().decrypt(nonce, ciphertext + tag, None).decode("utf-8")
+    except HTTPException:
+        raise
+    except Exception:
+        # Do not expose ciphertext, plaintext or key details in an error response.
+        raise HTTPException(500, "Data curhat tidak dapat dibuka dengan kunci enkripsi saat ini.")
+
+
+@app.post("/api/school/users", status_code=201)
+def create_school_user(payload: SchoolUserInput, request: Request):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+
+    full_name = payload.full_name.strip()
+    student_number = (payload.student_number or "").strip() or None
+    if not full_name:
+        raise HTTPException(422, "Nama lengkap wajib diisi.")
+    if payload.role == "student" and not student_number:
+        raise HTTPException(400, "Nomor induk siswa wajib diisi untuk akun siswa.")
+
+    try:
+        with connection() as conn:
+            if payload.class_id:
+                class_row = conn.execute(
+                    "SELECT 1 FROM school_classes WHERE id=%s AND school_id=%s",
+                    (payload.class_id, school_id),
+                ).fetchone()
+                if not class_row:
+                    raise HTTPException(400, "Kelas tidak valid untuk sekolah ini.")
+
+            user = conn.execute(
+                """INSERT INTO users(school_id, email, full_name, password_hash, role, status)
+                   VALUES (%s, %s, %s, %s, %s, 'active')
+                   RETURNING id, email, full_name, role, status""",
+                (school_id, str(payload.email).strip().lower(), full_name,
+                 hash_password(payload.temporary_password), payload.role),
+            ).fetchone()
+
+            if payload.role == "student":
+                conn.execute(
+                    """INSERT INTO student_profiles(user_id, school_id, student_number, class_id, graduation_year)
+                       VALUES (%s, %s, %s, %s, %s)""",
+                    (user["id"], school_id, student_number, payload.class_id, payload.graduation_year),
+                )
+            _audit_event(conn, actor, "school_user.create", "user", user["id"])
+    except Exception as exc:
+        if getattr(exc, "sqlstate", None) == "23505":
+            raise HTTPException(409, "Email atau nomor induk siswa sudah digunakan di sekolah ini.") from exc
+        raise
+
+    return {"item": dict(user), "message": "Akun berhasil dibuat."}
+
+
+@app.post("/api/platform/users", status_code=201)
+def create_platform_moderator(payload: PlatformModeratorInput, request: Request):
+    actor = _require_roles(request, "platform_admin")
+    full_name = payload.full_name.strip()
+    if not full_name:
+        raise HTTPException(422, "Nama lengkap wajib diisi.")
+    try:
+        with connection() as conn:
+            user = conn.execute(
+                """INSERT INTO users(school_id, email, full_name, password_hash, role, status)
+                   VALUES (NULL, %s, %s, %s, 'wellbeing_moderator', 'active')
+                   RETURNING id, email, full_name, role, status""",
+                (str(payload.email).strip().lower(), full_name, hash_password(payload.temporary_password)),
+            ).fetchone()
+            _audit_event(conn, actor, "platform_moderator.create", "user", user["id"])
+    except Exception as exc:
+        if getattr(exc, "sqlstate", None) == "23505":
+            raise HTTPException(409, "Email akun platform tersebut sudah digunakan.") from exc
+        raise
+    return {"item": dict(user), "message": "Akun Moderator Curhat berhasil dibuat."}
+
+
+@app.post("/api/bk/appointments", status_code=201)
+def create_bk_appointment(payload: BKAppointmentInput, request: Request):
+    actor = _require_roles(request, "student")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun siswa belum terhubung ke sekolah.")
+    if payload.requested_at.tzinfo is None or payload.requested_at.utcoffset() is None:
+        raise HTTPException(422, "Tanggal konsultasi harus menyertakan zona waktu.")
+    topic = payload.topic.strip()
+    if not topic:
+        raise HTTPException(422, "Topik konsultasi wajib diisi.")
+
+    with connection() as conn:
+        item = conn.execute(
+            """INSERT INTO bk_appointments(school_id, student_id, requested_at, mode, topic, student_note)
+               VALUES (%s, %s, %s, %s, %s, %s)
+               RETURNING id, requested_at, mode, topic, status, created_at""",
+            (school_id, actor["id"], payload.requested_at, payload.mode, topic,
+             (payload.student_note or "").strip() or None),
+        ).fetchone()
+        _audit_event(conn, actor, "bk_appointment.create", "bk_appointment", item["id"])
+    return {"item": dict(item)}
+
+
+@app.get("/api/bk/appointments")
+def get_bk_appointments(request: Request):
+    actor = _require_roles(request, "counselor", "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun Guru BK/pengelola belum terhubung ke sekolah.")
+    with connection() as conn:
+        rows = conn.execute(
+            """SELECT a.id, a.requested_at, a.mode, a.topic, a.student_note, a.status, a.created_at,
+                      u.full_name AS student_name, sp.student_number, sc.name AS class_name
+               FROM bk_appointments a
+               JOIN users u ON u.id=a.student_id
+               LEFT JOIN student_profiles sp ON sp.user_id=u.id
+               LEFT JOIN school_classes sc ON sc.id=sp.class_id
+               WHERE a.school_id=%s
+               ORDER BY a.requested_at ASC LIMIT 500""",
+            (school_id,),
+        ).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.patch("/api/bk/appointments/{appointment_id}/status")
+def update_bk_appointment_status(appointment_id: uuid.UUID, payload: BKAppointmentStatusInput, request: Request):
+    actor = _require_roles(request, "counselor", "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun Guru BK/pengelola belum terhubung ke sekolah.")
+    with connection() as conn:
+        item = conn.execute(
+            """UPDATE bk_appointments SET status=%s, counselor_id=%s, updated_at=now()
+               WHERE id=%s AND school_id=%s
+               RETURNING id, status, requested_at""",
+            (payload.status, actor["id"], appointment_id, school_id),
+        ).fetchone()
+        if not item:
+            raise HTTPException(404, "Permintaan konsultasi tidak ditemukan.")
+        _audit_event(conn, actor, "bk_appointment.status", "bk_appointment", appointment_id)
+    return {"item": dict(item)}
+
+
+@app.post("/api/anonymous-ventings", status_code=201)
+def create_anonymous_venting(payload: AnonymousVentingInput):
+    # Intentionally public and unlinked: no user/session/IP identifier is stored.
+    text_value = payload.text.strip()
+    if len(text_value) < 3:
+        raise HTTPException(422, "Isi curhat minimal 3 karakter.")
+    cipher = _venting_cipher()
+    nonce = secrets.token_bytes(12)
+    encrypted_and_tag = cipher.encrypt(nonce, text_value.encode("utf-8"), None)
+    ciphertext, tag = encrypted_and_tag[:-16], encrypted_and_tag[-16:]
+    with connection() as conn:
+        row = conn.execute(
+            """INSERT INTO anonymous_ventings(encrypted_payload, nonce, auth_tag, broad_category)
+               VALUES (%s, %s, %s, %s)
+               RETURNING id, received_day, status""",
+            (base64.b64encode(ciphertext).decode("ascii"),
+             base64.b64encode(nonce).decode("ascii"),
+             base64.b64encode(tag).decode("ascii"), payload.category),
+        ).fetchone()
+    return {"item": {
+        "id": str(row["id"]), "received_day": row["received_day"], "status": "received",
+        "message": "Curhat diterima tanpa mengaitkannya dengan akun."
+    }}
+
+
+@app.get("/api/anonymous-ventings")
+def get_anonymous_ventings(request: Request):
+    _require_roles(request, "wellbeing_moderator")
+    with connection() as conn:
+        rows = conn.execute(
+            """SELECT id, encrypted_payload, nonce, auth_tag, broad_category, received_day, status
+               FROM anonymous_ventings WHERE status <> 'closed'
+               ORDER BY received_day DESC LIMIT 200"""
+        ).fetchall()
+    return {"items": [{
+        "id": str(row["id"]), "text": _decrypt_venting(row),
+        "category": row["broad_category"], "received_day": row["received_day"], "status": row["status"]
+    } for row in rows]}
+
+
+@app.patch("/api/anonymous-ventings/{venting_id}/status")
+def update_anonymous_venting_status(venting_id: uuid.UUID, payload: AnonymousVentingStatusInput, request: Request):
+    actor = _require_roles(request, "wellbeing_moderator")
+    with connection() as conn:
+        row = conn.execute(
+            """UPDATE anonymous_ventings SET status=%s WHERE id=%s
+               RETURNING id, status, received_day""",
+            (payload.status, venting_id),
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, "Curhat tidak ditemukan.")
+        _audit_event(conn, actor, "anonymous_venting.status", "anonymous_venting", venting_id)
+    return {"item": dict(row)}
+
 
 # Legacy API paths that are intentionally explicit rather than silently pretending to work.
 @app.get("/api/{path:path}")

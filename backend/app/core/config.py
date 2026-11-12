@@ -17,6 +17,7 @@ class Settings:
     frontend_origin: str = os.getenv("FRONTEND_ORIGIN", "http://localhost:5500")
     session_ttl_hours: int = int(os.getenv("SESSION_TTL_HOURS", "12"))
     cookie_secure: bool = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+    venting_encryption_key: str = os.getenv("VENTING_ENCRYPTION_KEY", "")
 
     directory_data_path: str = str(
         (
