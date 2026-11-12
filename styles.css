@@ -104,3 +104,20 @@
 .reality-note-field .reality-editor:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,102,58,.16)}
 .reality-note-field .help{font-size:11px;color:var(--dim);line-height:1.5}
 @media(max-width:680px){.reality-note-field .reality-editor{min-height:145px;padding:14px}}
+
+
+/* Print-ready decision and grade reports */
+@media print {
+  body { background:#fff !important; color:#111 !important; font-size:11pt; }
+  .ambient,.sidebar,.topbar,.bottom-nav,.page-actions,.form-actions,.btn,.text-btn,#toastRegion,#modalRoot { display:none !important; }
+  .app-shell,.app-main,.page-content,#pageRoot { display:block !important; width:100% !important; max-width:none !important; padding:0 !important; margin:0 !important; }
+  .glass,.panel,.summary-block { background:#fff !important; color:#111 !important; border:1px solid #ddd !important; box-shadow:none !important; backdrop-filter:none !important; break-inside:avoid; }
+  .page-head h1,.panel h2,.summary-block h2,.summary-block h3 { color:#111 !important; }
+  .page-head p,.source-line,.panel-sub,.summary-block p,.summary-block li { color:#333 !important; }
+  .grade-chart-grid { stroke:#ddd !important; }
+  .grade-chart-axis,.grade-chart-label { fill:#333 !important; }
+  .grade-chart-line { stroke:#333 !important; }
+  .grade-chart-point { fill:#111 !important; stroke:#fff !important; }
+  a { color:#111 !important; text-decoration:underline; }
+  @page { size:A4; margin:16mm; }
+}
