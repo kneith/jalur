@@ -168,7 +168,19 @@ def login(payload: LoginInput, response: Response, request: Request):
 @app.get("/api/auth/me")
 def me(request: Request):
     user = current_user(request)
-    return {"user": {k:user[k] for k in ("id","school_id","full_name","email","role")}}
+    # The frontend and API live on different Vercel subdomains, so the API's
+    # host-only CSRF cookie is not readable by frontend JavaScript. Issue a
+    # fresh token in the JSON response on session restore instead.
+    csrf = new_token(24)
+    with connection() as conn:
+        conn.execute(
+            "UPDATE sessions SET csrf_hash=%s WHERE id=%s AND user_id=%s",
+            (digest(csrf), user["session_id"], user["id"]),
+        )
+    return {
+        "user": {k:user[k] for k in ("id","school_id","full_name","email","role")},
+        "csrfToken": csrf,
+    }
 
 @app.post("/api/auth/logout", status_code=204)
 def logout(request: Request, response: Response):
