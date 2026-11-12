@@ -53,7 +53,7 @@ function wireDirectory(){let timer,offset=0,lastQ='',lastType='all';const query=
   // Existing student local account controls are intentionally not used for server authentication.
   $('#createAccount')?.addEventListener('click',e=>{e.stopImmediatePropagation();modal('Akun siswa','<p>Akun siswa terhubung dengan sekolah dan dibuat oleh pengelola sekolah. Hubungi sekolah untuk memperoleh akun. Pendaftaran mandiri belum diaktifkan.</p>')},true);
   $('#signIn')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('student')},true);
-  window.addEventListener('DOMContentLoaded',async()=>{try{const d=await api('/auth/me');user=d.user;csrfToken=cookie('jalur_csrf');if(user.role==='student'){try{const remote=await api('/workspace');if(remote.workspace)window.JALUR_SET_WORKSPACE?.(remote.workspace);else{const local=window.JALUR_GET_WORKSPACE?.();if(local)await api('/workspace',{method:'POST',body:{workspace:local}});}}catch(err){notice('Sinkronisasi profil belum berhasil: '+err.message);}}}catch{}});
+  window.addEventListener('DOMContentLoaded',async()=>{try{const d=await api('/auth/me');user=d.user;csrfToken=d.csrfToken||cookie('jalur_csrf');if(user.role==='student'){try{const remote=await api('/workspace');if(remote.workspace)window.JALUR_SET_WORKSPACE?.(remote.workspace);else{const local=window.JALUR_GET_WORKSPACE?.();if(local)await api('/workspace',{method:'POST',body:{workspace:local}});}}catch(err){notice('Sinkronisasi profil belum berhasil: '+err.message);}}}catch{}});
   // Role-aware navigation shortcut is deliberately server-rendered for protected modules.
   const oldNav=window.navigate;
   window.JALUR_API = { request: api, getUser: () => user };
