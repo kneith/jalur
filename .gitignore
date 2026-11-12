@@ -12,3 +12,6 @@ node_modules/
 *.sql.gz
 *.dump
 *.backup
+
+.vercel
+.env*
