@@ -6,7 +6,7 @@ Tanggal pembaruan: 2026-11-12. Status ini membedakan endpoint yang tersedia di s
 - Frontend asli, aset, `backend/data/database.js`, dan dataset direktori dipertahankan.
 - Backend FastAPI menyediakan health check, pencarian direktori, login/logout/session, jurnal keputusan per pengguna, dan sinkronisasi ruang kerja siswa.
 - Endpoint nilai mendukung roster, baca, buat/perbarui, dan hapus nilai dengan pembatasan peran, sekolah, serta penugasan guru.
-- Endpoint sekolah menyediakan pembuatan akun siswa/guru/BK, daftar siswa, daftar dan pembuatan kelas, serta daftar dan pembuatan alumni.
+- Endpoint sekolah menyediakan pembuatan akun siswa/guru/BK, daftar siswa, daftar dan pembuatan kelas, daftar guru, penugasan guru ke kelas/mata pelajaran, serta daftar dan pembuatan alumni. Pembuatan akun siswa mewajibkan NIS dan kelas yang valid.
 - Endpoint BK menyediakan permintaan konsultasi, daftar konsultasi untuk peran berwenang, dan pembaruan status.
 - Curhat anonim disimpan terenkripsi; akses moderasi dibatasi ke peran moderator.
 - Tabel sensitif menggunakan RLS dan akses langsung API publik dicabut; backend memakai koneksi database server-side.
@@ -23,11 +23,12 @@ Tanggal pembaruan: 2026-11-12. Status ini membedakan endpoint yang tersedia di s
 ## Database dan keamanan
 - Migrasi Production yang tercatat mencakup ruang kerja siswa, indeks nilai, dan penyimpanan jurnal keputusan.
 - RLS aktif pada tabel aplikasi; akses publik langsung ke tabel ruang kerja/jurnal dibatasi.
-- API menggunakan session cookie dan token CSRF untuk operasi yang mengubah data; endpoint terikat peran memeriksa otorisasi di server.
+- API menggunakan session cookie dan token CSRF yang stabil per sesi untuk operasi yang mengubah data; token dipulihkan melalui `/api/auth/me` agar frontend/API beda subdomain tetap dapat melakukan request terautentikasi. Endpoint terikat peran memeriksa otorisasi di server.
+- Konfigurasi CORS membatasi origin frontend production dan alias preview branch; cookie secure diaktifkan untuk HTTPS.
 - Jangan mengoperasikan fitur siswa/konseling dengan data riil sebelum uji autentikasi, pembatasan lintas-sekolah, konfigurasi secret, dan pemantauan Production diverifikasi.
 
 ## Status pengujian
 - Pemeriksaan sintaks JavaScript dan kompilasi Python lokal pada sandbox telah berjalan.
 - Health API Production sebelumnya merespons HTTP 200 dengan database connected dan direktori 4.303 institusi / 34.709 program studi.
-- Perubahan branch harus melewati build Vercel dan pengujian endpoint setelah deployment terbaru sebelum dirilis.
+- Source terbaru belum seluruhnya terpasang pada preview Vercel. Deployment otomatis terakhir yang terlihat masih pada commit sebelum perubahan CSRF stabil, penugasan guru, dan CI; kuota Vercel API deployment untuk hari ini telah tercapai. Jangan promosikan production sampai preview baru dibangun dan endpoint diuji.
 - Akses otomatis ke preview yang dilindungi SSO tidak tersedia pada sesi debug ini; proteksi deployment tidak dinonaktifkan.
