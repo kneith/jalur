@@ -264,7 +264,9 @@ def _grade_teacher_id(conn, actor, payload: GradeInput):
     ).fetchone()
     if not class_row:
         raise HTTPException(404, "Kelas tidak ditemukan di sekolah ini.")
-    if student["class_id"] and student["class_id"] != payload.class_id:
+    if student["class_id"] is None:
+        raise HTTPException(400, "Siswa belum ditetapkan ke kelas. Tetapkan kelas pada profil siswa terlebih dahulu.")
+    if student["class_id"] != payload.class_id:
         raise HTTPException(400, "Kelas yang dipilih tidak sesuai dengan data siswa.")
     subject = payload.subject_name.strip()
     year = payload.academic_year.strip()
