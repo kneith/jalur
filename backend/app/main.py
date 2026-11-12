@@ -519,6 +519,20 @@ class SchoolUserInput(BaseModel):
     graduation_year: int | None = Field(default=None, ge=1950, le=2100)
 
 
+class SchoolClassInput(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    academic_year: str = Field(min_length=4, max_length=20)
+
+
+class SchoolAlumniInput(BaseModel):
+    full_name: str = Field(min_length=1, max_length=120)
+    graduation_year: int = Field(ge=1950, le=2100)
+    next_step: str | None = Field(default=None, max_length=120)
+    institution: str | None = Field(default=None, max_length=180)
+    program: str | None = Field(default=None, max_length=180)
+    consent_to_share: bool = False
+
+
 class PlatformModeratorInput(BaseModel):
     email: EmailStr
     full_name: str = Field(min_length=1, max_length=120)
@@ -583,6 +597,118 @@ def _decrypt_venting(row) -> str:
     except Exception:
         # Do not expose ciphertext, plaintext or key details in an error response.
         raise HTTPException(500, "Data curhat tidak dapat dibuka dengan kunci enkripsi saat ini.")
+
+
+@app.get("/api/school/students")
+def get_school_students(request: Request):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    with connection() as conn:
+        rows = conn.execute(
+            """SELECT u.id, u.email, u.full_name, u.status,
+                      sp.student_number, sp.graduation_year,
+                      sp.class_id, c.name AS class_name
+               FROM users u
+               JOIN student_profiles sp ON sp.user_id=u.id
+               LEFT JOIN school_classes c ON c.id=sp.class_id AND c.school_id=u.school_id
+               WHERE u.school_id=%s AND u.role='student'
+               ORDER BY c.name NULLS LAST, u.full_name
+               LIMIT 1000""",
+            (school_id,),
+        ).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.get("/api/school/classes")
+def get_school_classes(request: Request):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    with connection() as conn:
+        rows = conn.execute(
+            """SELECT id, name, academic_year, homeroom_teacher_id
+               FROM school_classes WHERE school_id=%s
+               ORDER BY academic_year DESC, name LIMIT 500""",
+            (school_id,),
+        ).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.post("/api/school/classes", status_code=201)
+def create_school_class(payload: SchoolClassInput, request: Request):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    name = payload.name.strip()
+    year = payload.academic_year.strip()
+    if not name or len(year) < 4:
+        raise HTTPException(422, "Nama kelas dan tahun ajaran wajib diisi.")
+    with connection() as conn:
+        duplicate = conn.execute(
+            """SELECT id FROM school_classes
+               WHERE school_id=%s AND lower(name)=lower(%s) AND academic_year=%s
+               LIMIT 1""",
+            (school_id, name, year),
+        ).fetchone()
+        if duplicate:
+            raise HTTPException(409, "Kelas dengan nama dan tahun ajaran tersebut sudah ada.")
+        item = conn.execute(
+            """INSERT INTO school_classes(school_id, name, academic_year)
+               VALUES (%s, %s, %s)
+               RETURNING id, name, academic_year, homeroom_teacher_id""",
+            (school_id, name, year),
+        ).fetchone()
+        _audit_event(conn, actor, "school_class.create", "school_class", item["id"])
+    return {"item": dict(item), "message": "Kelas berhasil dibuat."}
+
+
+@app.get("/api/school/alumni")
+def get_school_alumni(request: Request):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    with connection() as conn:
+        rows = conn.execute(
+            """SELECT id, student_user_id, full_name, graduation_year, next_step,
+                      institution, program, consent_to_share, created_at
+               FROM alumni_profiles WHERE school_id=%s
+               ORDER BY graduation_year DESC, full_name LIMIT 1000""",
+            (school_id,),
+        ).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.post("/api/school/alumni", status_code=201)
+def create_school_alumni(payload: SchoolAlumniInput, request: Request):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    full_name = payload.full_name.strip()
+    if not full_name:
+        raise HTTPException(422, "Nama alumni wajib diisi.")
+    next_step = (payload.next_step or "").strip() or None
+    institution = (payload.institution or "").strip() or None
+    program = (payload.program or "").strip() or None
+    with connection() as conn:
+        item = conn.execute(
+            """INSERT INTO alumni_profiles(
+                   school_id, student_user_id, full_name, graduation_year,
+                   next_step, institution, program, consent_to_share
+               )
+               VALUES (%s, NULL, %s, %s, %s, %s, %s, %s)
+               RETURNING id, full_name, graduation_year, next_step, institution,
+                         program, consent_to_share, created_at""",
+            (school_id, full_name, payload.graduation_year, next_step,
+             institution, program, payload.consent_to_share),
+        ).fetchone()
+        _audit_event(conn, actor, "school_alumni.create", "alumni_profile", item["id"])
+    return {"item": dict(item), "message": "Data alumni berhasil disimpan."}
 
 
 @app.post("/api/school/users", status_code=201)
