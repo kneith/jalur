@@ -84,14 +84,14 @@ function gradeTrendChart(){
  if(!records.length)return '';
  const groups=new Map();
  records.forEach(s=>{const year=String(s.year||'').trim(),semester=String(s.semester||'').trim(),key=year+'|'+semester;const g=groups.get(key)||{year,semester,sum:0,count:0};g.sum+=Number(s.grade);g.count++;groups.set(key,g)});
- const rows=[...groups.values()].map(g=>({...g,average:g.sum/g.count,yearOrder:Number((g.year.match(/\\d{4}/)||[])[0])||0,semesterOrder:Number((g.semester.match(/\\d+/)||[])[0])||0})).sort((a,b)=>a.yearOrder-b.yearOrder||a.semesterOrder-b.semesterOrder||alpha(a.year,b.year));
+ const rows=[...groups.values()].map(g=>({...g,average:g.sum/g.count,yearOrder:Number((g.year.match(/\d{4}/)||[])[0])||0,semesterOrder:Number((g.semester.match(/\d+/)||[])[0])||0})).sort((a,b)=>a.yearOrder-b.yearOrder||a.semesterOrder-b.semesterOrder||alpha(a.year,b.year));
  const w=720,h=230,left=42,right=22,top=18,bottom=48,plotW=w-left-right,plotH=h-top-bottom;
  const x=i=>rows.length===1?left+plotW/2:left+(i/(rows.length-1))*plotW;
  const y=v=>top+((100-v)/100)*plotH;
  const pts=rows.map((r,i)=>({x:x(i),y:y(r.average),r}));
  const path=pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
  const grid=[0,25,50,75,100].map(v=>'<g><line x1="'+left+'" y1="'+y(v)+'" x2="'+(w-right)+'" y2="'+y(v)+'" class="grade-chart-grid"/><text x="'+(left-10)+'" y="'+(y(v)+4)+'" text-anchor="end" class="grade-chart-axis">'+v+'</text></g>').join('');
- const labels=pts.map(p=>'<text x="'+p.x+'" y="'+(h-20)+'" text-anchor="middle" class="grade-chart-label">'+escapeHtml(p.r.semester.replace(/^Semester\\s*/i,'S')+' · '+p.r.year)+'</text>').join('');
+ const labels=pts.map(p=>'<text x="'+p.x+'" y="'+(h-20)+'" text-anchor="middle" class="grade-chart-label">'+escapeHtml(p.r.semester.replace(/^Semester\s*/i,'S')+' · '+p.r.year)+'</text>').join('');
  const dots=pts.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="5" class="grade-chart-point"><title>'+escapeHtml(p.r.semester+' '+p.r.year+': '+p.r.average.toFixed(1)+' ('+p.r.count+' mata pelajaran)')+'</title></circle>').join('');
  const first=rows[0].average,last=rows[rows.length-1].average,delta=last-first;
  const trend=rows.length<2?'Data baru mencakup satu semester. Tambahkan nilai dari semester lain untuk melihat perubahan.':(Math.abs(delta)<0.05?'Rata-rata stabil pada rentang semester yang tercatat.':(delta>0?'Naik ':'Turun ')+Math.abs(delta).toFixed(1)+' poin dibanding semester pertama yang tercatat.');
