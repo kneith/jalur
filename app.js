@@ -244,7 +244,7 @@ function dailyQuoteForToday(){
 }
 function dashboardPage(){
  const pct=Math.min(100,Math.round(state.profile.subjects.length/6*100)),checked=state.checked.length;
- const nickname=String(state.profile.nickname||"").trim(),greeting=nickname?"Halo, "+escapeHtml(nickname)+".":"Selamat datang di JALUR.";
+ const nickname=String(state.profile.nickname||"").trim(),greeting="Halo, "+escapeHtml(nickname||"Pengguna")+".";
  const quote=dailyQuoteForToday(),grade=state.profile.grade?"Kelas "+escapeHtml(state.profile.grade):"Profil belum dilengkapi";
  const next=[];
  if(!state.profile.subjects.length)next.push(["♙","Kenali profil akademikmu","Catatan nilai dapat membantu kamu memahami pengalaman belajar, tetapi tidak dapat menentukan program studi yang harus kamu pilih.","Academic Profile"]);
