@@ -26,36 +26,87 @@ const fallbackPrograms = [
  {id:"p7",name:"Pendidikan Matematika",campus:"Universitas Negeri Yogyakarta",level:"S1",field:"Pendidikan",subjects:["Matematika","Bahasa Indonesia","Bahasa Inggris"],requirements:"Informasi persyaratan di kartu ini bersifat contoh dan perlu diverifikasi.",source:"Data Contoh",updated:"2026 (contoh)"},
  {id:"p8",name:"Ilmu Komunikasi",campus:"Universitas Padjadjaran",level:"S1",field:"Sosial & Humaniora",subjects:["Bahasa Indonesia","Sosiologi","Bahasa Inggris"],requirements:"Periksa detail jalur, jadwal, dan persyaratan pada sumber resmi.",source:"Data Contoh",updated:"2026 (contoh)"}
 ];
-if(window.JALUR_DB_RAW){
- const raw=window.JALUR_DB_RAW;
- const mapRows=(keys,rows)=>rows.map(row=>Object.fromEntries(keys.map((key,index)=>[key,row[index]??null])));
- const rawInstitutions=mapRows(raw.ik,raw.i);
- const institutionIndex=new Map(rawInstitutions.map(item=>[String(item.id),item]));
- const rawPrograms=mapRows(raw.pk,raw.p).map(p=>{
-   const inst=institutionIndex.get(String(p.institutionId))||{};
-   return {...p,province:inst.province||null,city:inst.city||null,institutionForm:inst.form||null,institutionGroup:inst.group||null,
-     institutionStatus:inst.status||null,institutionAccreditation:inst.accreditation||null,institutionAccreditationUntil:inst.accreditationUntil||null,
-     website:inst.website||null,pddikti:inst.pddikti||null,subjects:[],
-     requirements:"Persyaratan penerimaan tidak tersedia pada dataset ini. Periksa situs resmi perguruan tinggi dan SNPMB.",
-     updated:p.referenceYear||"Tidak tercantum",
-     scoreDisclaimer:"Skor penerimaan langsung per program studi yang tervalidasi tidak tersedia. Bobot subtes yang ditampilkan merupakan simulasi, bukan rumus resmi SNPMB."
-   };
- });
- window.JALUR_DB={
-   meta:{title:raw.m.t,sourceFile:raw.m.f,generated:raw.m.d,programCount:raw.m.p,institutionCount:raw.m.i,sheetsIncluded:raw.m.s},
-   programs:rawPrograms,institutions:rawInstitutions,nationalStats:raw.ns,disclaimers:raw.dd,
-   researchSources:raw.rs,routes:raw.rt,scoringGuide:raw.sg,weightMethodology:raw.wm,
-   admissionNotes:raw.an,qualityReport:raw.qr
- };
-}
-const programs = (window.JALUR_DB?.programs || fallbackPrograms).map(p => ({
+// Start with a tiny fallback set. The full 17.8 MB education directory is
+// downloaded only when a directory/program feature is opened.
+let programs = fallbackPrograms.map(p => ({
   ...p,
   subjects: p.subjects || [],
-  sourceLabel: p.code ? "Basis data JALUR" : (p.source || "Data Contoh"),
-  updated: p.referenceYear || p.updated || "Tidak tercantum",
+  sourceLabel: "Data Contoh",
+  updated: p.updated || "Tidak tercantum",
   field: p.field || p.group || "Belum diklasifikasikan"
 }));
-const institutions = window.JALUR_DB?.institutions || [];
+let institutions = [];
+let programSearchIndex = [];
+let institutionSearchIndex = [];
+let institutionProgramCounts = new Map();
+let directoryDataReady = false;
+let directoryDataPromise = null;
+let directoryDataFailed = false;
+
+function buildDirectoryIndexes(){
+  programSearchIndex=programs.map(p=>({...p,_search:normalizeSearch([p.name,p.campus,p.field,p.group,p.province,p.city,p.location,p.code,p.level,p.programAccreditation,p.institutionAccreditation].filter(Boolean).join(" "))})).sort((a,b)=>alpha(a.name,b.name)||alpha(a.campus,b.campus)||alpha(a.level,b.level));
+  institutionSearchIndex=institutions.map(i=>({...i,_search:normalizeSearch([i.name,i.province,i.city,i.form,i.group,i.status,i.accreditation,i.address].filter(Boolean).join(" "))})).sort((a,b)=>alpha(a.name,b.name)||alpha(a.province,b.province));
+  institutionProgramCounts=new Map();
+  for(const p of programs){const key=String(p.institutionId??"");if(key)institutionProgramCounts.set(key,(institutionProgramCounts.get(key)||0)+1);}
+}
+
+function hydrateDirectoryData(){
+  const raw=window.JALUR_DB_RAW;
+  if(!raw||!Array.isArray(raw.pk)||!Array.isArray(raw.p)||!Array.isArray(raw.ik)||!Array.isArray(raw.i)) {
+    throw new Error("Format direktori JALUR tidak lengkap.");
+  }
+  const mapRows=(keys,rows)=>rows.map(row=>Object.fromEntries(keys.map((key,index)=>[key,row[index]??null])));
+  const rawInstitutions=mapRows(raw.ik,raw.i);
+  const institutionIndex=new Map(rawInstitutions.map(item=>[String(item.id),item]));
+  const rawPrograms=mapRows(raw.pk,raw.p).map(p=>{
+    const inst=institutionIndex.get(String(p.institutionId))||{};
+    return {...p,province:inst.province||null,city:inst.city||null,institutionForm:inst.form||null,institutionGroup:inst.group||null,
+      institutionStatus:inst.status||null,institutionAccreditation:inst.accreditation||null,institutionAccreditationUntil:inst.accreditationUntil||null,
+      website:inst.website||null,pddikti:inst.pddikti||null,subjects:[],
+      requirements:"Persyaratan penerimaan tidak tersedia pada dataset ini. Periksa situs resmi perguruan tinggi dan SNPMB.",
+      updated:p.referenceYear||"Tidak tercantum",
+      scoreDisclaimer:"Skor penerimaan langsung per program studi yang tervalidasi tidak tersedia. Bobot subtes yang ditampilkan merupakan simulasi, bukan rumus resmi SNPMB."
+    };
+  });
+  window.JALUR_DB={
+    meta:{title:raw.m.t,sourceFile:raw.m.f,generated:raw.m.d,programCount:raw.m.p,institutionCount:raw.m.i,sheetsIncluded:raw.m.s},
+    programs:rawPrograms,institutions:rawInstitutions,nationalStats:raw.ns,disclaimers:raw.dd,
+    researchSources:raw.rs,routes:raw.rt,scoringGuide:raw.sg,weightMethodology:raw.wm,
+    admissionNotes:raw.an,qualityReport:raw.qr
+  };
+  programs=rawPrograms.map(p=>({...p,subjects:p.subjects||[],sourceLabel:p.code?"Basis data JALUR":(p.source||"Data Contoh"),updated:p.referenceYear||p.updated||"Tidak tercantum",field:p.field||p.group||"Belum diklasifikasikan"}));
+  institutions=rawInstitutions;
+  buildDirectoryIndexes();
+  directoryDataReady=true;
+  directoryDataFailed=false;
+}
+
+function loadDirectoryData(){
+  if(directoryDataReady)return Promise.resolve();
+  if(directoryDataPromise)return directoryDataPromise;
+  if(window.JALUR_DB_RAW){
+    try{hydrateDirectoryData();return Promise.resolve();}
+    catch(error){directoryDataFailed=true;return Promise.reject(error);}
+  }
+  directoryDataPromise=new Promise((resolve,reject)=>{
+    const script=document.createElement("script");
+    script.async=true;
+    script.src="/backend/data/database.js?v=20261113-r4";
+    script.onload=()=>{try{hydrateDirectoryData();resolve();}catch(error){reject(error);}};
+    script.onerror=()=>reject(new Error("Direktori pendidikan gagal diunduh. Periksa koneksi lalu coba lagi."));
+    document.head.appendChild(script);
+  }).catch(error=>{directoryDataPromise=null;directoryDataFailed=true;throw error;});
+  return directoryDataPromise;
+}
+
+const DIRECTORY_DATA_PAGES=new Set([
+  "Study Program Explorer","Decision Comparison","Plan B Builder","Decision Summary",
+  "Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner",
+  "Campus Life Preview","Education Cost Planner","Decision Journal","Official Sources"
+]);
+function pageNeedsDirectoryData(page){
+  return DIRECTORY_DATA_PAGES.has(page) || (page==="Dashboard" && Boolean(state.mainChoice || state.compared?.length || state.alternatives?.length));
+}
 const alumni = [
  {name:"Alumni A (Demo)",program:"Teknik Informatika",campus:"Kampus contoh",year:"2023",field:"Teknologi",insight:"Mencoba proyek kecil membantu memahami kegiatan belajar di bidang ini."},
  {name:"Alumni B (Demo)",program:"Psikologi",campus:"Kampus contoh",year:"2022",field:"Pendidikan & sosial",insight:"Mencari tahu metode kuliah dan membaca kurikulum membantu menyiapkan ekspektasi."},
@@ -77,11 +128,35 @@ const blindSpots = [
  ["Pembaruan informasi","Catat sumber dan tanggal informasi terakhir diperiksa.","Study Program Explorer"]
 ];
 function loadState(){try{const current=localStorage.getItem(STORE_KEY);const legacy=current===null?localStorage.getItem(LEGACY_STORE_KEY):null;const parsed=JSON.parse(current??legacy??"{}");const merged={...structuredClone(initialState),...parsed};if(!Array.isArray(merged.journal))merged.journal=[];if(!merged.costPlans||typeof merged.costPlans!=="object")merged.costPlans={};if(!merged.pathwayGroups||typeof merged.pathwayGroups!=="object")merged.pathwayGroups={};return merged}catch(e){return structuredClone(initialState)}}
-function saveState(){try{const persisted=structuredClone(state);if(window.JALUR_API?.getUser?.())persisted.journal=[];localStorage.setItem(STORE_KEY,JSON.stringify(persisted));const user=window.JALUR_API?.getUser?.();if(user?.role==="student"&&window.JALUR_API?.request){const workspace={profile:state.profile,notes:state.notes,compared:state.compared,mainChoice:state.mainChoice,alternatives:state.alternatives,checked:state.checked,costPlans:state.costPlans,pathwayGroups:state.pathwayGroups,settings:state.settings};window.JALUR_WORKSPACE_PENDING=workspace;clearTimeout(window.JALUR_WORKSPACE_TIMER);window.JALUR_WORKSPACE_TIMER=setTimeout(()=>window.JALUR_API.request("/workspace",{method:"POST",body:{workspace}}).then(()=>{window.JALUR_WORKSPACE_PENDING=null}).catch(err=>toast(err.message||"Sinkronisasi ruang siswa gagal.","error")),500)}}catch(e){toast("Penyimpanan browser tidak tersedia; perubahan hanya ada di sesi ini.","error")}}
-function logActivity(text){state.activities.unshift({text,time:new Date().toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})});state.activities=state.activities.slice(0,5);saveState()}
-function toast(message,type="success"){const el=document.createElement("div");el.className=`toast ${type}`;el.textContent=message;$("#toastRegion").append(el);setTimeout(()=>el.remove(),5500)}
-function escapeHtml(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-const PAGE_LABELS={"Dashboard":"Beranda","Academic Profile":"Profil Akademik","Study Program Explorer":"Penjelajah Program Studi","Study Tracer Alumni":"Pengalaman Alumni","Decision Comparison":"Perbandingan Program Studi","Plan B Builder":"Rencana Alternatif","Decision Blind Spot Detector":"Daftar Periksa Keputusan","Decision Summary":"Ringkasan Keputusan","Settings":"Pengaturan","Help / About":"Bantuan dan Tentang JALUR","User Guide":"Panduan Penggunaan","Official Sources":"Pusat Informasi Resmi","Program Study Reality Check":"Realitas Perkuliahan","Similarity Explorer":"Program Studi Serupa","Alternative Pathway Planner":"Peta Jalur Alternatif","Campus Life Preview":"Gambaran Kehidupan Kampus","Education Cost Planner":"Perencana Biaya Pendidikan","Decision Journal":"Jurnal Keputusan","BK Consultation":"Konsultasi BK","Anonymous Venting":"Curhat Anonim","School Portal":"Portal Pengelola Sekolah","BK Portal":"Portal Guru BK"};
+function saveState(){try{const persisted=structuredClone(state);if(window.JALUR_API?.getUser?.())persisted.journal=[];localStorage.setItem(STORE_KEY,JSON.stringify(persisted));const user=window.JALUR_API?.getUser?.();if(user?.role==="student"&&window.JALUR_API?.request){const workspace={profile:state.profile,notes:state.notes,compared:state.comparefunction render(){
+  $("#pageCrumb").textContent=PAGE_LABELS[currentPage]||currentPage;
+  $$("[data-page],.bottom-item[data-page],.nav-item[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===currentPage));
+  $("#moreNav")?.classList.toggle("active",!["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"].includes(currentPage));
+  $("#profileAlert").style.display=state.profile.subjects.length?"none":"block";
+  const root=$("#pageRoot");
+  if(pageNeedsDirectoryData(currentPage)&&!directoryDataReady){
+    const requestedPage=currentPage;
+    root.innerHTML=`<section class="panel glass directory-loading" role="status" aria-live="polite">
+      <div class="directory-loading-orb" aria-hidden="true"></div>
+      <h2>Menyiapkan direktori pendidikan</h2>
+      <p>Data lengkap baru dimuat saat fitur ini dibutuhkan. Bagian lain JALUR tetap ringan.</p>
+      ${directoryDataFailed?'<button class="btn primary" id="retryDirectoryData">Coba muat ulang</button>':'<span class="source-line">Mengunduh dan menyiapkan data program studi…</span>'}
+    </section>`;
+    if(!directoryDataFailed)loadDirectoryData().then(()=>{if(currentPage===requestedPage)render();}).catch(error=>{
+      if(currentPage===requestedPage){
+        directoryDataFailed=true;
+        root.innerHTML=`<section class="panel glass directory-loading"><h2>Direktori belum dapat dimuat</h2><p>${escapeHtml(error.message||"Periksa koneksi internet lalu coba lagi.")}</p><button class="btn primary" id="retryDirectoryData">Coba lagi</button></section>`;
+      }
+    });
+    $("#main").focus({preventScroll:true});
+    return;
+  }
+  const renderers={"Dashboard":dashboardPage,"Academic Profile":profilePage,"Study Program Explorer":explorerPage,"Study Tracer Alumni":alumniPage,"Decision Comparison":comparisonPage,"Plan B Builder":planBPage,"Decision Blind Spot Detector":blindSpotPage,"Decision Summary":summaryPage,"Settings":settingsPage,"Help / About":helpPage,"User Guide":guidePage,"Official Sources":sourcesPage,"Program Study Reality Check":realityPage,"Similarity Explorer":similarityPage,"Alternative Pathway Planner":pathwayPage,"Campus Life Preview":campusPage,"Education Cost Planner":costPage,"Decision Journal":journalPage,"BK Consultation":consultationPage,"Anonymous Venting":ventingPage,"School Portal":schoolPortalPage,"BK Portal":bkPortalPage};
+  root.innerHTML=(renderers[currentPage]||dashboardPage)();
+  root.classList.remove("page-enter");void root.offsetWidth;root.classList.add("page-enter");
+  $("#main").focus({preventScroll:true});
+}
+ Studi","Plan B Builder":"Rencana Alternatif","Decision Blind Spot Detector":"Daftar Periksa Keputusan","Decision Summary":"Ringkasan Keputusan","Settings":"Pengaturan","Help / About":"Bantuan dan Tentang JALUR","User Guide":"Panduan Penggunaan","Official Sources":"Pusat Informasi Resmi","Program Study Reality Check":"Realitas Perkuliahan","Similarity Explorer":"Program Studi Serupa","Alternative Pathway Planner":"Peta Jalur Alternatif","Campus Life Preview":"Gambaran Kehidupan Kampus","Education Cost Planner":"Perencana Biaya Pendidikan","Decision Journal":"Jurnal Keputusan","BK Consultation":"Konsultasi BK","Anonymous Venting":"Curhat Anonim","School Portal":"Portal Pengelola Sekolah","BK Portal":"Portal Guru BK"};
 function pageHead(title,desc,action=""){return `<div class="page-head"><div><span class="eyebrow">JALUR / PENDAMPING KEPUTUSAN</span><h1>${PAGE_LABELS[title]||title}</h1><p>${desc}</p></div>${action?`<div class="page-actions">${action}</div>`:""}</div>`}
 function panel(title,content,sub="",actions=""){return `<section class="panel glass"><div class="panel-head"><div><h2>${title}</h2>${sub?`<p class="panel-sub">${sub}</p>`:""}</div>${actions}</div>${content}</section>`}
 function statCard(icon,label,value,hint,page){return `<button class="stat-card glass" data-page="${page}" style="text-align:left;width:100%;color:inherit"><div class="stat-top"><span class="stat-icon">${icon}</span><span class="stat-label">${label}</span></div><div class="stat-value">${value}</div><div class="stat-hint">${hint}</div></button>`}
@@ -116,7 +191,7 @@ function dashboardPage(){
 }
 function profilePage(){
  const rows=state.profile.subjects.map((s,i)=>`<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.semester)}</td><td>${escapeHtml(s.year)}</td><td><strong>${s.grade}</strong></td><td><span class="data-tag ${s.source==="Data Contoh"?"sample":""}">${escapeHtml(s.source||"Input manual")}</span></td><td><div class="table-actions"><button class="text-btn" data-edit-subject="${i}">Edit</button><button class="text-btn" data-delete-subject="${i}">Hapus</button></div></td></tr>`).join("");
- return `${pageHead("Academic Profile","Catat nilai sebagai salah satu bahan pertimbangan, bukan penentu pilihan Anda.",`<button class="btn secondary small" id="importSample">Impor Data Contoh</button>`)}<div class="notice">Profil dan catatan eksplorasi tersimpan di perangkat ini; setelah login sebagai siswa, data profil dan catatan pilihan juga disinkronkan ke server JALUR. Nilai e-Rapor sekolah tetap berasal dari portal sekolah.</div><section class="panel glass"><div class="panel-head"><div><h2>Informasi dasar</h2><p class="panel-sub">Isi seperlunya. Nama panggilan bersifat opsional.</p></div><span class="data-tag sample">Input manual</span></div><form id="profileForm"><div class="form-grid"><div class="field"><label for="nickname">Nama panggilan (opsional)</label><input id="nickname" name="nickname" maxlength="40" value="${escapeHtml(state.profile.nickname)}" placeholder="Mis. Raka"></div><div class="field"><label for="grade">Kelas</label><select id="grade" name="grade"><option ${state.profile.grade==="XI"?"selected":""}>XI</option><option ${state.profile.grade==="X"?"selected":""}>X</option><option ${state.profile.grade==="XII"?"selected":""}>XII</option></select></div><div class="field"><label for="year">Tahun ajaran</label><input id="year" name="year" value="${escapeHtml(state.profile.year)}" placeholder="2026/2027" required></div></div><div class="form-actions"><button class="btn primary" type="submit">Simpan profil</button></div></form></section><section class="panel glass section-gap"><div class="panel-head"><div><h2>Nilai mata pelajaran</h2><p class="panel-sub">Nilai skala 0–100. Hindari memasukkan data pribadi yang tidak diperlukan.</p></div><button class="btn primary small" id="addSubject">＋ Tambah nilai</button></div>${rows?`<div class="table-wrap"><table class="data-table"><caption class="sr-only">Daftar nilai mata pelajaran</caption><thead><tr><th scope="col">Mata pelajaran</th><th scope="col">Semester</th><th scope="col">Tahun ajaran</th><th scope="col">Nilai</th><th scope="col">Sumber</th><th scope="col">Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>`:`<div class="empty-state"><div class="empty-icon">▤</div><h3>Profilmu masih kosong</h3><p>Isi nilai untuk membantu membandingkan program, atau impor Data Contoh untuk mencoba.</p><button class="btn secondary small" id="addSubjectEmpty">Tambah nilai pertama</button></div>`}<p class="source-line">Kelengkapan: ${state.profile.subjects.length===0?"Kosong":state.profile.subjects.length<3?"Dasar":state.profile.subjects.length<6?"Cukup":"Lengkap"} · Cukup = minimal 6 mata pelajaran (batas tampilan).</p></section>`;
+ return `${pageHead("Academic Profile","Catat nilai sebagai salah satu bahan pertimbangan, bukan penentu pilihan Anda.",`<button class="btn secondary small" id="importSample">Impor Data Contoh</button>`)}<div class="notice">Profil dan catatan eksplorasi tersimpan di perangkat ini; setelah login sebagai${state.profile.grade==="X"?"selected":""}>X</option><option ${state.profile.grade==="XII"?"selected":""}>XII</option></select></div><div class="field"><label for="year">Tahun ajaran</label><input id="year" name="year" value="${escapeHtml(state.profile.year)}" placeholder="2026/2027" required></div></div><div class="form-actions"><button class="btn primary" type="submit">Simpan profil</button></div></form></section><section class="panel glass section-gap"><div class="panel-head"><div><h2>Nilai mata pelajaran</h2><p class="panel-sub">Nilai skala 0–100. Hindari memasukkan data pribadi yang tidak diperlukan.</p></div><button class="btn primary small" id="addSubject">＋ Tambah nilai</button></div>${rows?`<div class="table-wrap"><table class="data-table"><caption class="sr-only">Daftar nilai mata pelajaran</caption><thead><tr><th scope="col">Mata pelajaran</th><th scope="col">Semester</th><th scope="col">Tahun ajaran</th><th scope="col">Nilai</th><th scope="col">Sumber</th><th scope="col">Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>`:`<div class="empty-state"><div class="empty-icon">▤</div><h3>Profilmu masih kosong</h3><p>Isi nilai untuk membantu membandingkan program, atau impor Data Contoh untuk mencoba.</p><button class="btn secondary small" id="addSubjectEmpty">Tambah nilai pertama</button></div>`}<p class="source-line">Kelengkapan: ${state.profile.subjects.length===0?"Kosong":state.profile.subjects.length<3?"Dasar":state.profile.subjects.length<6?"Cukup":"Lengkap"} · Cukup = minimal 6 mata pelajaran (batas tampilan).</p></section>`;
 }
 function programById(id){return programs.find(p=>p.id===id)}
 function normalizeSearch(value=""){
@@ -290,7 +365,7 @@ document.addEventListener("click",async e=>{
 function enterApplication(mode="guest",displayName="Pengunjung"){
   activeRole="guest";
   if(displayName){state.profile.nickname=displayName;saveState()}
-  sessionStorage.setItem("jalur-app-open","1");$("#welcome").classList.add("hidden");$("#app").classList.remove("hidden");currentPage=jalurPageFromHash()||jalurStoredPage()||(JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");state.currentPage=currentPage;jalurWriteRoute(currentPage,true);render();
+  try{localStorage.setItem("jalur-app-open","1")}catch{}sessionStorage.setItem("jalur-app-open","1");$("#welcome").classList.add("hidden");$("#app").classList.remove("hidden");currentPage=jalurPageFromHash()||jalurStoredPage()||(JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");state.currentPage=currentPage;jalurWriteRoute(currentPage,true);render();
   toast(mode==="account"?`Selamat datang, ${displayName}. Akun ini hanya tersimpan di peramban ini.`:"Anda masuk sebagai pengunjung. Data tersimpan secara lokal pada peramban ini.","info");
 }
 const ACCOUNTS_KEY="jalur-local-accounts-v1";
@@ -363,7 +438,7 @@ document.addEventListener("change",e=>{
  if(e.target.id==="realityProgram"||e.target.id==="similarityProgram"){const p=programById(e.target.value);if(p){state.mainChoice=p.id;saveState();render()}return}
  if(e.target.id==="importDataFile"){const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const payload=JSON.parse(String(reader.result||""));if(payload.app!=="JALUR"||!payload.state||!payload.state.profile||!Array.isArray(payload.state.profile.subjects))throw new Error("format");if(!confirm("Pulihkan cadangan ini? Data JALUR yang sekarang tersimpan akan digantikan.")){e.target.value="";return}state={...structuredClone(initialState),...payload.state};saveState();render();toast("Cadangan berhasil dipulihkan.")}catch(err){toast("Berkas tidak sesuai dengan format cadangan JALUR.","error")}e.target.value=""};reader.readAsText(file);return}
  if(e.target.id==="largeText"){state.settings.largeText=e.target.checked;document.body.style.fontSize=e.target.checked?"17px":"";saveState()}
- if(e.target.id==="reduceMotion"){state.settings.reduceMotion=e.target.checked;document.documentElement.style.scrollBehavior=e.target.checked?"auto":"";saveState()}
+ if(e.target.id==="reduceMotion"){state.settings.reduceMotion=e.target.checked;document.documentElement.style.scrollBehavior=e.target.checked?"auto":"";document.documentElement.classList.toggle("jalur-reduce-motion",e.target.checked);saveState()}
  if(e.target.matches("[data-check-spot]")){const i=Number(e.target.dataset.checkSpot);if(e.target.checked&&!state.checked.includes(i))state.checked.push(i);if(!e.target.checked)state.checked=state.checked.filter(x=>x!==i);saveState();render();toast(e.target.checked?"Aspek ditandai sudah diperiksa.":"Tanda pemeriksaan dibatalkan.","info")}
 });
 document.addEventListener("input",e=>{
@@ -379,6 +454,7 @@ document.addEventListener("click",async e=>{
  if(e.target.id==="saveCosts"){state.costPlans={};$$('[data-cost]').forEach(el=>state.costPlans[el.dataset.cost]=Math.max(0,Number(el.value)||0));saveState();render();toast("Perkiraan biaya disimpan.");return}
  if(e.target.id==="savePathways"){ $$('[data-pathway]').forEach(el=>state.pathwayGroups[el.dataset.pathway]=el.value);saveState();toast("Pengelompokan pilihan disimpan.");return}
  const delJournal=e.target.closest('[data-delete-journal]');if(delJournal){const index=Number(delJournal.dataset.deleteJournal),entry=state.journal[index];try{if(window.JALUR_API?.getUser?.()&&entry?.id){await window.JALUR_API.request(`/journal/${encodeURIComponent(entry.id)}`,{method:"DELETE"});const saved=await window.JALUR_API.request("/journal");state.journal=saved.items||[];}else state.journal.splice(index,1);saveState();render();toast("Catatan dihapus.","info");}catch(err){toast(err.message||"Catatan gagal dihapus.","error");}return}
+ if(e.target.id==="retryDirectoryData"){directoryDataFailed=false;directoryDataPromise=null;render();return;}
  if(e.target.id==="exportData"){const payload={app:"JALUR",version:1,exportedAt:new Date().toISOString(),state};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`jalur-cadangan-${new Date().toISOString().slice(0,10)}.json`;document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);toast("Cadangan data berhasil disiapkan.");return}
  if(e.target.id==="importData"){const f=$("#importDataFile");if(f)f.click();return}
  if(e.target.id==="addSubject"||e.target.id==="addSubjectEmpty")subjectForm();
@@ -396,7 +472,7 @@ document.addEventListener("click",async e=>{
  if(e.target.id==="resetSession"){if(confirm("Hapus semua data sesi dari browser ini? Tindakan ini tidak dapat dibatalkan.")){localStorage.removeItem(STORE_KEY);sessionStorage.removeItem("jalur-app-open");history.replaceState({},"",location.pathname+location.search);state=structuredClone(initialState);currentPage="Dashboard";$("#app").classList.add("hidden");$("#welcome").classList.remove("hidden");toast("Data sesi dihapus.","success")}}
 });
 if(state.settings.largeText)document.body.style.fontSize="17px";
-if(state.settings.reduceMotion)document.documentElement.style.scrollBehavior="auto";
+if(state.settings.reduceMotion){document.documentElement.style.scrollBehavior="auto";document.documentElement.classList.add("jalur-reduce-motion");}
 
 window.JALUR_SET_JOURNAL = items => { state.journal = Array.isArray(items) ? items : []; saveState(); render(); };
 window.JALUR_GET_WORKSPACE = () => ({profile:state.profile,notes:state.notes,compared:state.compared,mainChoice:state.mainChoice,alternatives:state.alternatives,checked:state.checked,costPlans:state.costPlans,pathwayGroups:state.pathwayGroups,settings:state.settings});
@@ -407,7 +483,7 @@ window.JALUR_SET_ACTIVE_PAGE = page => { if(!JALUR_PAGES.includes(page))return;c
 
 // Restore the last in-app page after a refresh in this tab. A new visit still
 // starts at the welcome screen; only an active session is resumed.
-if (sessionStorage.getItem("jalur-app-open")==="1") {
+if (localStorage.getItem("jalur-app-open")==="1" || sessionStorage.getItem("jalur-app-open")==="1") {
   $("#welcome")?.classList.add("hidden");
   $("#app")?.classList.remove("hidden");
   render();
