@@ -822,3 +822,28 @@ html:not(.jalur-welcome-mode) .ambient::before{background:rgba(14,10,14,.12)}
  html.jalur-welcome-mode .welcome-visual-spark,
  html.jalur-welcome-mode .orbit-satellite{animation:none!important;transition:none!important}
 }
+
+/* Dashboard personal and daily reflection. */
+.dashboard-welcome{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.55fr);align-items:center;gap:22px;padding:clamp(20px,3vw,34px);border-radius:26px;background:radial-gradient(ellipse at 88% 20%,rgba(217,139,155,.12),transparent 42%),linear-gradient(125deg,rgba(249,237,240,.075),rgba(249,237,240,.025))}
+.dashboard-welcome h1{font-size:clamp(27px,3.4vw,42px);margin:12px 0 9px}.dashboard-welcome-copy>p{max-width:58ch;margin-bottom:18px}.dashboard-welcome-actions{display:flex;gap:10px;flex-wrap:wrap}
+.dashboard-welcome-mark{min-height:132px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;border-left:1px solid var(--border-soft);color:#D98B9B}
+.dashboard-welcome-mark span{font-size:66px;line-height:1;text-shadow:0 0 30px rgba(217,139,155,.22);animation:jalurWelcomeMark 8s ease-in-out infinite}.dashboard-welcome-mark small{font-size:9px;letter-spacing:.14em;color:var(--dim);text-align:center}
+.daily-quote{margin:16px 0;padding:19px 22px 17px;border-radius:21px;background:linear-gradient(112deg,rgba(217,139,155,.09),rgba(210,236,249,.055) 68%,rgba(184,168,216,.055))}
+.daily-quote-label{display:flex;align-items:center;gap:9px;color:#E5B7C1;font-size:10px;font-weight:700;letter-spacing:.13em}.daily-quote-label time{margin-left:auto;color:var(--dim);font-size:11px;letter-spacing:0;font-weight:500}
+.daily-quote blockquote{margin:12px 0 8px;color:var(--text);font:600 clamp(17px,2vw,22px)/1.5 Manrope,"DM Sans",sans-serif;letter-spacing:-.02em;max-width:76ch}.daily-quote>p{margin:0;color:var(--dim);font-size:11px}
+.dashboard-reflection{display:flex;align-items:flex-start;gap:13px;margin:16px 0;padding:16px 19px;border-radius:18px;background:rgba(210,236,249,.045);border-color:rgba(210,236,249,.15)}
+.reflection-icon{flex:0 0 34px;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;color:#D2ECF9;background:rgba(210,236,249,.09)}
+.dashboard-reflection strong{display:block;color:#E7DCE1;font-size:13px;margin:1px 0 4px}.dashboard-reflection p{font-size:12px;line-height:1.65;margin:0;color:var(--muted)}.profile-hint{font-size:11px;line-height:1.65;text-align:left;margin:12px 0 0}
+@keyframes jalurWelcomeMark{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-5px) rotate(5deg)}}
+/* Palette-led button press feedback. */
+.btn,.icon-btn,.nav-item,.quick-action,.bottom-item{transition:transform .18s ease,background-color .22s ease,background-image .22s ease,color .22s ease,border-color .22s ease,box-shadow .22s ease,filter .22s ease}
+.btn.primary{background-size:190% 100%;background-position:0% 50%;background-image:linear-gradient(110deg,#D92744 0%,#EA2F4A 46%,#D98B9B 72%,#B91F3B 100%)}
+.btn.primary:hover{background-position:100% 50%;filter:saturate(1.08) brightness(1.04)}
+.btn.primary:active,.btn.primary.is-pressed{background-position:100% 50%;filter:saturate(1.18) brightness(1.12);transform:translateY(1px) scale(.975);box-shadow:0 0 0 4px rgba(234,47,74,.13),0 8px 22px rgba(159,25,52,.24)}
+.btn.secondary:active,.btn.secondary.is-pressed{background:linear-gradient(110deg,rgba(217,139,155,.17),rgba(210,236,249,.16));border-color:rgba(217,139,155,.4);transform:translateY(1px) scale(.98)}
+.icon-btn:active,.nav-item:active,.quick-action:active,.bottom-item:active{filter:brightness(1.18) saturate(1.12);transform:scale(.975)}
+.nav-item.active{background-image:linear-gradient(110deg,#D92744 0%,#EA2F4A 50%,#D98B9B 100%);background-size:190% 100%}.nav-item.active:active{background-position:100% 50%;filter:brightness(1.12)}
+button:disabled{cursor:not-allowed;filter:grayscale(.35);opacity:.56}input:disabled,select:disabled,textarea:disabled{opacity:.58;cursor:not-allowed}
+[aria-invalid="true"],.field input:invalid:not(:placeholder-shown){border-color:#E58B9A}
+@media(max-width:760px){.dashboard-welcome{grid-template-columns:1fr}.dashboard-welcome-mark{min-height:65px;border-left:0;border-top:1px solid var(--border-soft);padding-top:13px;flex-direction:row}.dashboard-welcome-mark span{font-size:42px}.dashboard-welcome-actions{display:grid;grid-template-columns:1fr}.daily-quote{padding:16px}.daily-quote-label{letter-spacing:.08em}}
+@media(prefers-reduced-motion:reduce){.dashboard-welcome-mark span{animation:none}.btn,.icon-btn,.nav-item,.quick-action,.bottom-item{transition:none}}
