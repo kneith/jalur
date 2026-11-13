@@ -497,7 +497,16 @@ document.addEventListener("focusin",e=>{
 // Restore the last in-app page after a refresh in this tab. A new visit still
 // starts at the welcome screen; only an active session is resumed.
 let jalurResumeApp=false;
-try{jalurResumeApp=localStorage.getItem("jalur-app-open")==="1"||sessionStorage.getItem("jalur-app-open")==="1"}catch{}
+try{
+  jalurResumeApp=localStorage.getItem("jalur-app-open")==="1"
+    ||sessionStorage.getItem("jalur-app-open")==="1"
+    ||Boolean(jalurPageFromHash())
+    ||Boolean(jalurStoredPage());
+  // Migrate sessions created by earlier JALUR releases automatically.
+  if(jalurResumeApp)localStorage.setItem("jalur-app-open","1");
+}catch{
+  jalurResumeApp=sessionStorage.getItem("jalur-app-open")==="1"||Boolean(jalurPageFromHash());
+}
 if(jalurResumeApp){
   $("#welcome")?.classList.add("hidden");
   $("#app")?.classList.remove("hidden");
