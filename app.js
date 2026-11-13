@@ -635,6 +635,7 @@ if(jalurResumeApp){
  });
  const showGradeDetail=point=>{const wrap=point.closest(".grade-chart-wrap");if(!wrap)return;const tip=wrap.querySelector(".grade-chart-tooltip");if(!tip)return;tip.textContent=point.dataset.gradeTooltip||point.getAttribute("aria-label")||"";tip.hidden=false;const wr=wrap.getBoundingClientRect(),pr=point.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(wr.width-tip.offsetWidth-8,pr.left-wr.left+pr.width/2-tip.offsetWidth/2))+"px";tip.style.top=Math.max(4,pr.top-wr.top-tip.offsetHeight-12)+"px";};
  document.addEventListener("pointerover",e=>{const p=e.target.closest?.(".grade-chart-point");if(p&&e.pointerType!=="touch")showGradeDetail(p)});
+  document.addEventListener("pointerout",e=>{const p=e.target.closest?.(".grade-chart-point");if(p&&document.activeElement!==p){const tip=p.closest(".grade-chart-wrap")?.querySelector(".grade-chart-tooltip");if(tip)tip.hidden=true}});
  document.addEventListener("focusin",e=>{const p=e.target.closest?.(".grade-chart-point");if(p)showGradeDetail(p)});
  document.addEventListener("click",e=>{const p=e.target.closest?.(".grade-chart-point");if(p)showGradeDetail(p);else document.querySelectorAll(".grade-chart-tooltip:not([hidden])").forEach(t=>t.hidden=true)});
  document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".grade-chart-tooltip:not([hidden])").forEach(t=>t.hidden=true)});
