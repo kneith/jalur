@@ -547,3 +547,38 @@ if(jalurResumeApp){
 }else{
   document.documentElement.classList.add("jalur-welcome-mode");
 }
+
+/* Accessible pointer/touch drag interaction for welcome-screen satellites. */
+(()=>{
+ const visual=document.querySelector(".welcome-visual");
+ if(!visual||visual.dataset.dragReady==="1")return;
+ visual.dataset.dragReady="1";
+ let active=null,offsetX=0,offsetY=0;
+ const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+ visual.querySelectorAll("[data-draggable='true']").forEach(el=>{
+  el.addEventListener("pointerdown",event=>{
+   if(!document.documentElement.classList.contains("jalur-welcome-mode"))return;
+   const rect=visual.getBoundingClientRect(),item=el.getBoundingClientRect();
+   const left=item.left-rect.left,top=item.top-rect.top;
+   el.style.left=left+"px";el.style.top=top+"px";el.style.right="auto";el.style.bottom="auto";el.style.position="absolute";
+   active=el;offsetX=event.clientX-rect.left-left;offsetY=event.clientY-rect.top-top;
+   el.classList.add("is-dragging");try{el.setPointerCapture(event.pointerId)}catch{}event.preventDefault();
+  });
+  el.addEventListener("pointermove",event=>{
+   if(active!==el)return;
+   const rect=visual.getBoundingClientRect();
+   el.style.left=clamp(event.clientX-rect.left-offsetX,0,rect.width-el.offsetWidth)+"px";
+   el.style.top=clamp(event.clientY-rect.top-offsetY,0,rect.height-el.offsetHeight)+"px";
+  });
+  const finish=()=>{if(active===el){active=null;el.classList.remove("is-dragging")}};
+  el.addEventListener("pointerup",finish);el.addEventListener("pointercancel",finish);el.addEventListener("lostpointercapture",finish);
+  el.addEventListener("keydown",event=>{
+   const step=event.shiftKey?18:8;let dx=0,dy=0;
+   if(event.key==="ArrowLeft")dx=-step;else if(event.key==="ArrowRight")dx=step;else if(event.key==="ArrowUp")dy=-step;else if(event.key==="ArrowDown")dy=step;else return;
+   event.preventDefault();const rect=visual.getBoundingClientRect(),item=el.getBoundingClientRect();
+   const left=el.style.left?parseFloat(el.style.left):item.left-rect.left,top=el.style.top?parseFloat(el.style.top):item.top-rect.top;
+   el.style.position="absolute";el.style.right="auto";el.style.bottom="auto";
+   el.style.left=clamp(left+dx,0,rect.width-el.offsetWidth)+"px";el.style.top=clamp(top+dy,0,rect.height-el.offsetHeight)+"px";
+  });
+ });
+})();
