@@ -133,3 +133,94 @@
 .field-label{display:block;font-size:13px;font-weight:650;margin-bottom:8px;color:var(--text)}
 .question-preview{white-space:pre-wrap;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.035);line-height:1.65}
 @media(max-width:560px){.choice-check-grid{grid-template-columns:1fr}.choice-check{padding:11px 12px}}
+
+
+/* Unified form controls: readable text fields, consistent spacing and responsive sizing. */
+:root {
+  --control-bg: rgba(10, 10, 12, .58);
+  --control-border: rgba(255, 255, 255, .19);
+  --control-border-hover: rgba(255, 255, 255, .34);
+  --control-focus: rgba(232, 102, 58, .2);
+}
+.field { align-content: start; gap: 8px; }
+.field label, .field .field-label {
+  display: block; line-height: 1.5; letter-spacing: .005em;
+}
+.field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.field select, .field textarea,
+input.search-input, textarea.search-input,
+.compare-program textarea,
+#centralModalBackdrop input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+#centralModalBackdrop select, #centralModalBackdrop textarea {
+  display: block; width: 100%; max-width: 100%; min-width: 0;
+  box-sizing: border-box; color: var(--text);
+  background: var(--control-bg); border: 1px solid var(--control-border);
+  border-radius: 14px; padding: 12px 14px; min-height: 48px;
+  font: inherit; font-size: 14px; line-height: 1.55;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+.field textarea, textarea,
+.compare-program textarea {
+  min-height: 132px; padding: 14px 15px; resize: vertical;
+  line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.field textarea[rows="2"], textarea[rows="2"] { min-height: 76px; }
+.field textarea[rows="3"], textarea[rows="3"] { min-height: 98px; }
+.field textarea[rows="4"], textarea[rows="4"] { min-height: 120px; }
+.field textarea[rows="5"], textarea[rows="5"] { min-height: 145px; }
+.field textarea[rows="6"], textarea[rows="6"] { min-height: 168px; }
+.field input::placeholder, .field textarea::placeholder,
+.search-input::placeholder, .compare-program textarea::placeholder {
+  color: rgba(225, 220, 215, .48); opacity: 1;
+}
+.field input:hover:not(:disabled), .field select:hover:not(:disabled),
+.field textarea:hover:not(:disabled), .search-input:hover:not(:disabled),
+.compare-program textarea:hover:not(:disabled) {
+  border-color: var(--control-border-hover);
+}
+.field input:focus, .field select:focus, .field textarea:focus,
+.search-input:focus, .compare-program textarea:focus,
+#centralModalBackdrop input:focus, #centralModalBackdrop select:focus,
+#centralModalBackdrop textarea:focus {
+  outline: none; border-color: var(--accent-hover);
+  background: rgba(12, 12, 14, .82);
+  box-shadow: 0 0 0 3px var(--control-focus);
+}
+.field input:disabled, .field select:disabled, .field textarea:disabled {
+  opacity: .58; cursor: not-allowed;
+}
+.field select, #centralModalBackdrop select {
+  padding-right: 38px; cursor: pointer;
+}
+.field select option, #centralModalBackdrop select option { background: #202025; color: var(--text); }
+.field input[type="date"], .field input[type="datetime-local"],
+.field input[type="time"] { color-scheme: dark; }
+.field input[type="number"] { font-variant-numeric: tabular-nums; }
+.field .help, .field small, .field .source-line {
+  max-width: 70ch; line-height: 1.55;
+}
+.form-grid { align-items: start; row-gap: 17px; column-gap: 16px; }
+.form-actions { gap: 10px; }
+.compare-program textarea {
+  background: var(--control-bg); border-color: var(--control-border);
+  border-radius: 13px; margin-top: 8px;
+}
+@media (max-width: 680px) {
+  .form-grid { gap: 14px; }
+  .field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .field select, .field textarea, #centralModalBackdrop input,
+  #centralModalBackdrop select, #centralModalBackdrop textarea {
+    font-size: 16px; border-radius: 13px;
+  }
+  .field textarea, textarea, .compare-program textarea { min-height: 124px; }
+  .field textarea[rows="2"], textarea[rows="2"] { min-height: 76px; }
+  .field textarea[rows="3"], textarea[rows="3"] { min-height: 96px; }
+  .field textarea[rows="4"], textarea[rows="4"] { min-height: 116px; }
+  .field textarea[rows="5"], textarea[rows="5"] { min-height: 138px; }
+  .field textarea[rows="6"], textarea[rows="6"] { min-height: 158px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .field input, .field select, .field textarea, .search-input,
+  .compare-program textarea { transition: none; }
+}
