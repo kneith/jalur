@@ -565,6 +565,7 @@ if(state.settings.reduceMotion){document.documentElement.style.scrollBehavior="a
 window.JALUR_SET_JOURNAL = items => { state.journal = Array.isArray(items) ? items : []; saveState(); render(); };
 window.JALUR_GET_WORKSPACE = () => ({profile:state.profile,notes:state.notes,compared:state.compared,mainChoice:state.mainChoice,alternatives:state.alternatives,checked:state.checked,costPlans:state.costPlans,pathwayGroups:state.pathwayGroups,settings:state.settings});
 window.JALUR_SET_WORKSPACE = workspace => { if(!workspace||typeof workspace!=="object")return; for(const key of ["profile","notes","compared","mainChoice","alternatives","checked","costPlans","pathwayGroups","settings"])if(Object.prototype.hasOwnProperty.call(workspace,key))state[key]=workspace[key]; saveState(); render(); };
+window.JALUR_SET_ACCOUNT_NAME = name => { const clean=String(name||"").trim(); if(!clean)return; if(!String(state.profile.nickname||"").trim())state.profile.nickname=clean; saveState(); render(); };
 window.JALUR_GET_ACTIVE_PAGE = () => currentPage;
 window.JALUR_SET_ACTIVE_PAGE = page => { if(!JALUR_PAGES.includes(page))return;currentPage=page;state.currentPage=page;jalurWriteRoute(page);saveState();const label=PAGE_LABELS[page]||page;const crumb=$("#pageCrumb");if(crumb)crumb.textContent=label;$$("[data-page],.bottom-item[data-page],.nav-item[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const primaryBottom=["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"];$("#moreNav")?.classList.toggle("active",!primaryBottom.includes(page));const activeNav=$(".side-nav .nav-item.active");if(activeNav&&activeNav.offsetParent!==null)activeNav.scrollIntoView({block:"nearest"}); };
 
@@ -632,4 +633,15 @@ if(jalurResumeApp){
    el.style.left=clamp(left+dx,0,rect.width-el.offsetWidth)+"px";el.style.top=clamp(top+dy,0,rect.height-el.offsetHeight)+"px";
   });
  });
+ // Pointer lighting is restricted to the welcome screen and real mouse input.
+ const ambient=document.querySelector(".ambient");
+ if(ambient&&window.matchMedia("(hover: hover) and (pointer: fine)").matches&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+  window.addEventListener("pointermove",event=>{
+   if(event.pointerType!=="mouse"||!document.documentElement.classList.contains("jalur-welcome-mode"))return;
+   ambient.style.setProperty("--mouse-x",`${Math.round(event.clientX/window.innerWidth*100)}%`);
+   ambient.style.setProperty("--mouse-y",`${Math.round(event.clientY/window.innerHeight*100)}%`);
+   ambient.classList.add("pointer-active");
+  },{passive:true});
+  document.addEventListener("pointerleave",()=>ambient.classList.remove("pointer-active"));
+ }
 })();
