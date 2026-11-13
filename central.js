@@ -61,7 +61,7 @@
         '<section class="panel glass section-gap"><h2>Penugasan guru</h2><p class="source-line">Guru hanya dapat melihat dan mengelola nilai sesuai kelas serta mata pelajaran yang ditugaskan.</p><form id="centralCreateAssignment" class="form-grid">'+
         '<div class="field"><label for="assignmentTeacher">Guru</label><select id="assignmentTeacher" required>'+teacherOptions+'</select></div>'+
         '<div class="field"><label for="assignmentClass">Kelas</label><select id="assignmentClass" required>'+classOptions+'</select></div>'+
-        formField('Mata pelajaran','assignmentSubject','Contoh: Matematika')+
+        formField('Mata pelajaran','assignmentSubject','Misalnya, Matematika')+
         formField('Tahun ajaran','assignmentYear','2026/2027')+
         '<div class="field full"><button class="btn primary" '+(teachers.length&&classes.length?'':'disabled')+'>Simpan penugasan</button></div></form>'+
         '<h3>Penugasan tersimpan</h3>'+assignmentCards+'</section>';
