@@ -624,7 +624,7 @@ h1 em{color:#F49AA8}.welcome-copy h1 em{background:linear-gradient(100deg,#EA2F4
 .welcome-visual::before{background:conic-gradient(from 30deg,transparent 0 16%,rgba(234,47,74,.18) 24%,transparent 35% 56%,rgba(210,236,249,.22) 67%,transparent 79%)}
 .welcome-visual::after{background:linear-gradient(112deg,transparent 18%,rgba(255,255,255,.07) 47%,transparent 70%)}
 .orbit{border-color:rgba(210,236,249,.25);box-shadow:0 0 32px rgba(210,236,249,.06)}.orbit-two{border-color:rgba(217,139,155,.26)}
-.beacon-one{color:rgba(234,47,74,.32);background:radial-gradient(circle,rgba(244,92,112,.7),rgba(234,47,74,.08) 68%,transparent 72%)}
+.beacon-one{color:rgba(113,148,214,.34);background:radial-gradient(circle,rgba(244,92,112,.7),rgba(234,47,74,.08) 68%,transparent 72%)}
 .beacon-two{color:rgba(210,236,249,.32);background:radial-gradient(circle,rgba(210,236,249,.82),rgba(184,168,216,.1) 68%,transparent 72%)}
 .welcome-visual-spark{background:#F6A8B4;box-shadow:0 0 18px 5px rgba(234,47,74,.35)}.spark-two{background:#D2ECF9;box-shadow:0 0 16px 4px rgba(210,236,249,.38)}
 .visual-center{background:rgba(31,23,30,.84);border-color:rgba(239,207,216,.24)}.compass-icon{color:#D2ECF9}
@@ -637,7 +637,7 @@ html:not(.jalur-welcome-mode) .ambient::before{background:rgba(12,8,12,.12)}
 /* Welcome-only draggable satellites: pointer, touch, and keyboard. */
 .orbit-satellite{pointer-events:auto;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;border-color:rgba(210,236,249,.42);background:rgba(51,31,42,.82);color:#F6C1CB;box-shadow:0 0 22px rgba(234,47,74,.18),0 0 30px rgba(210,236,249,.08);transition:box-shadow .18s ease,background .18s ease,scale .18s ease}
 .orbit-satellite:hover,.orbit-satellite:focus-visible{scale:1.12;box-shadow:0 0 26px rgba(234,47,74,.32),0 0 36px rgba(210,236,249,.16)}
-.orbit-satellite.is-dragging{cursor:grabbing;scale:1.16;z-index:8;background:rgba(91,37,53,.94)}
+.orbit-satellite.is-dragging{cursor:grabbing;scale:1.16;z-index:8;background:rgba(36,64,101,.94)}
 html.jalur-welcome-mode .ambient-glow{opacity:.48}html.jalur-welcome-mode .ambient-liquid{opacity:.24}html.jalur-welcome-mode .ambient-orbit{border-color:rgba(210,236,249,.19)}
 @media(max-width:700px){html.jalur-welcome-mode .ambient-glow{opacity:.36}html.jalur-welcome-mode .ambient-liquid{opacity:.18}}
 @media(prefers-reduced-motion:reduce){.ambient-glow,.ambient-liquid,.ambient-orbit,.ambient-star,.ambient-particle,.welcome-visual::before,.welcome-visual::after,.welcome-visual-beacon,.welcome-visual-spark,.orbit-satellite{animation:none!important;transition:none!important}}
@@ -647,63 +647,58 @@ html.jalur-welcome-mode .ambient-glow{opacity:.48}html.jalur-welcome-mode .ambie
    Keep the reference raspberry as the identity accent; balance it with pearl,
    dusty rose, muted mauve and a restrained ice-blue highlight. */
 :root{
- --bg:#21191f;
- --glass:rgba(249,237,240,.055);
- --glass-strong:rgba(249,237,240,.085);
- --solid:#30242c;
- --border:rgba(237,218,224,.18);
- --border-soft:rgba(237,218,224,.10);
- --text:#F7F1F3;
- --muted:#D7C8CE;
- --dim:#B29FA7;
- --accent:#EA2F4A;
- --accent-hover:#F15A70;
+ --bg:#172538;
+ --glass:rgba(230,241,252,.065);
+ --glass-strong:rgba(230,241,252,.10);
+ --solid:#22364D;
+ --border:rgba(210,230,249,.20);
+ --border-soft:rgba(210,230,249,.11);
+ --text:#F2F7FC;
+ --muted:#C4D2E2;
+ --dim:#94A9C0;
+ --accent:#7194D6;
+ --accent-hover:#8FB0ED;
  --cyan:#D2ECF9;
  --green:#A7C8B8;
  --yellow:#E6C27A;
- --red:#EA2F4A;
+ --red:#D98B9B;
  --lavender:#B8A8D8;
  --rose:#D98B9B;
- --shadow:0 22px 60px rgba(10,5,9,.32);
-}
-body{background:#21191f;color:var(--text)}
+ --shadow:0 22px 60px rgba(4,12,25,.36);
+ }
+ body{background:#172538;color:var(--text)}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline-color:#D2ECF9}
 .btn.primary{
- background:linear-gradient(135deg,#D92744 0%,#B91F3B 100%);
- border-color:rgba(247,153,168,.5);color:#fff;
- box-shadow:0 9px 24px rgba(159,25,52,.17);
-}
-.btn.primary:hover{background:linear-gradient(135deg,#EA2F4A 0%,#C72340 100%);box-shadow:0 11px 27px rgba(159,25,52,.23)}
-.nav-item.active{
- background:linear-gradient(135deg,#EA2F4A 0%,#C92342 100%);
- color:#fff;box-shadow:0 7px 21px rgba(159,25,52,.16)
-}
-.brand-mark{background:linear-gradient(145deg,#F17A8B 0%,#D92744 78%);color:#fff;box-shadow:0 7px 22px rgba(188,34,62,.22)}
-.avatar-mini{background:#EA2F4A;color:#fff}
-.stat-icon{background:rgba(234,47,74,.12);color:#F39AA8}
-.grade-chart-line{stroke:#EA2F4A}.grade-chart-point{fill:#EA2F4A;stroke:#30242c}
-.data-tag.sample{color:#B7DFEF}.data-tag.demo{color:#D4C6EA}.data-tag.pending{color:#E6C27A}
+  background:linear-gradient(135deg,#83A6E5 0%,#587DBF 100%);
+  border-color:rgba(210,236,249,.55);color:#101D31;
+  box-shadow:0 9px 24px rgba(77,110,173,.22);
+ }
+ .btn.primary:hover{background:linear-gradient(135deg,#A3BFF0 0%,#7194D6 100%);box-shadow:0 12px 30px rgba(77,110,173,.30)}
+ .nav-item.active{background:linear-gradient(135deg,#7194D6 0%,#587DBF 100%);color:#101D31;box-shadow:0 7px 21px rgba(77,110,173,.22)}
+ .brand-mark{background:linear-gradient(145deg,#D2ECF9 0%,#7194D6 78%);color:#14243A;box-shadow:0 7px 22px rgba(77,110,173,.25)}
+ .avatar-mini{background:#7194D6;color:#14243A}
+ .stat-icon{background:rgba(113,148,214,.16);color:#D2ECF9}
+ .grade-chart-line{stroke:#8FB0ED}.grade-chart-point{fill:#8FB0ED;stroke:#22364D}
+ .data-tag.sample{color:#B7DFEF}.data-tag.demo{color:#D4C6EA}.data-tag.pending{color:#E6C27A}
 .program-kicker,.privacy-note span,.text-btn{color:#D2ECF9}
 .notice{background:rgba(210,236,249,.07);border-color:rgba(210,236,249,.21);color:#D8EDF7}
 .toast.info{border-left-color:#D2ECF9}
 
 /* The welcome/login page gets the richer ambient treatment. */
-html.jalur-welcome-mode body{background:#21191f}
-html.jalur-welcome-mode .ambient{
- background:
-  radial-gradient(ellipse at 15% 17%,rgba(217,139,155,.17) 0%,transparent 38%),
-  radial-gradient(ellipse at 83% 76%,rgba(210,236,249,.105) 0%,transparent 40%),
-  radial-gradient(ellipse at 52% 49%,rgba(184,168,216,.085) 0%,transparent 46%),
-  linear-gradient(132deg,#20171d 0%,#2B2027 48%,#202027 100%);
-}
-html.jalur-welcome-mode .ambient::before{
- background:
-  linear-gradient(105deg,rgba(16,10,15,.035),rgba(16,10,15,.13)),
-  radial-gradient(ellipse at 52% 95%,rgba(234,47,74,.045),transparent 53%);
-}
-html.jalur-welcome-mode .ambient-glow{filter:blur(94px) saturate(.78);opacity:.24}
-html.jalur-welcome-mode .glow-a{background:#D98B9B;opacity:.31}
-html.jalur-welcome-mode .glow-b{background:#D2ECF9;opacity:.25}
+html.jalur-welcome-mode body{background:#172538}
+ html.jalur-welcome-mode .ambient{
+  background:
+   radial-gradient(ellipse at 14% 18%,rgba(113,148,214,.28) 0%,transparent 39%),
+   radial-gradient(ellipse at 84% 75%,rgba(210,236,249,.16) 0%,transparent 42%),
+   radial-gradient(ellipse at 53% 48%,rgba(184,168,216,.10) 0%,transparent 46%),
+   linear-gradient(132deg,#14243A 0%,#1D304A 48%,#172538 100%);
+ }
+ html.jalur-welcome-mode .ambient::before{
+  background:linear-gradient(105deg,rgba(9,20,36,.025),rgba(9,20,36,.10)),radial-gradient(ellipse at 52% 95%,rgba(113,148,214,.09),transparent 53%);
+ }
+ html.jalur-welcome-mode .ambient-glow{filter:blur(94px) saturate(.78);opacity:.24}
+html.jalur-welcome-mode .glow-a{background:#7194D6;opacity:.38}
+html.jalur-welcome-mode .glow-b{background:#D2ECF9;opacity:.30}
 html.jalur-welcome-mode .glow-c{background:#B8A8D8;opacity:.17}
 html.jalur-welcome-mode .ambient-liquid{
  opacity:.105;filter:blur(66px) saturate(.78);
@@ -873,3 +868,32 @@ button:disabled{cursor:not-allowed;filter:grayscale(.35);opacity:.56}input:disab
 html:not(.jalur-welcome-mode) .ambient::after{display:none}
 @media(max-width:700px){.role-entry-grid>button{min-height:52px}.role-entry-grid #howItWorks{grid-column:auto}}
 @media(prefers-reduced-motion:reduce){.ambient::after{display:none!important}}
+
+
+/* Welcome hierarchy: primary portals stay prominent, account shortcuts stay compact. */
+.welcome-auth-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:510px;gap:12px;align-items:stretch}
+.welcome-auth-actions>button:nth-child(-n+4){width:100%;min-height:54px;padding:13px 17px;border-radius:17px;font-size:14px;transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s ease,background .22s ease}
+.welcome-auth-actions>button:nth-child(-n+4):hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(4,14,28,.28)}
+.welcome-auth-actions>button:nth-child(-n+4):active{transform:translateY(0) scale(.985)}
+.welcome-auth-actions>.compact-entry{grid-column:auto;justify-self:stretch;width:100%;min-height:40px;padding:8px 11px;border-radius:13px;font-size:11.5px;line-height:1.3;text-decoration:none;color:var(--muted);border:1px solid rgba(210,230,249,.18);background:rgba(210,230,249,.055);display:flex;align-items:center;justify-content:center;gap:7px;transition:transform .2s ease,background .2s ease,border-color .2s ease,box-shadow .2s ease}
+.welcome-auth-actions>.compact-entry:hover{transform:translateY(-2px);background:rgba(113,148,214,.15);border-color:rgba(210,236,249,.42);box-shadow:0 8px 20px rgba(7,18,35,.22)}
+.welcome-auth-actions>.compact-entry:active{transform:translateY(0) scale(.985)}
+.welcome-auth-actions>#howItWorks{color:#E0ECFA;border-color:rgba(210,236,249,.32);background:linear-gradient(110deg,rgba(113,148,214,.20),rgba(184,168,216,.12));font-weight:700}
+.welcome-auth-actions>#howItWorks::before{content:"✦";color:#D2ECF9}
+@media(max-width:700px){.welcome-auth-actions{grid-template-columns:repeat(2,minmax(0,1fr));max-width:none;gap:9px}.welcome-auth-actions>button:nth-child(-n+4){min-height:50px;padding:11px 9px;font-size:12px}.welcome-auth-actions>.compact-entry{min-height:42px;font-size:11px}.welcome-auth-actions .learn-link{justify-self:stretch}}
+@media(prefers-reduced-motion:reduce){.welcome-auth-actions>button{transition:none!important}.welcome-auth-actions>button:hover{transform:none!important}}
+
+/* Pointer-following light on the welcome scene. */
+.ambient::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(420px circle at var(--mouse-x,50%) var(--mouse-y,45%),rgba(210,236,249,.22),rgba(113,148,214,.12) 34%,rgba(184,168,216,.07) 54%,transparent 76%);transition:opacity .24s ease}
+.ambient.pointer-active::after{opacity:1}
+html:not(.jalur-welcome-mode) .ambient::after{display:none}
+@media(prefers-reduced-motion:reduce){.ambient::after{display:none!important}}
+
+/* Accessible, readable data points for the grade trend graphs. */
+.grade-chart-wrap{position:relative;min-width:0}
+.grade-chart-point{cursor:pointer;stroke-width:2;transition:filter .16s ease,stroke-width .16s ease}
+.grade-chart-point:hover,.grade-chart-point:focus{r:8;stroke:#D2ECF9;stroke-width:3;filter:drop-shadow(0 0 5px rgba(210,236,249,.72));outline:none}
+.grade-chart-point:focus-visible{stroke:#D2ECF9;stroke-width:4}
+.grade-chart-tooltip{position:absolute;z-index:5;max-width:min(260px,85%);padding:9px 12px;border:1px solid rgba(210,236,249,.42);border-radius:12px;background:rgba(17,34,55,.96);box-shadow:0 10px 28px rgba(3,12,24,.34);color:#F2F7FC;font-size:11px;line-height:1.45;pointer-events:none}
+.grade-chart-tooltip[hidden]{display:none}
+.grade-trend-svg{touch-action:pan-y}
