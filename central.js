@@ -120,7 +120,7 @@ function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;c
   $('#enterTeacher')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('teacher')},true);
   const moderator=document.createElement('button');moderator.className='text-btn learn-link';moderator.textContent='Masuk sebagai moderator curhat';moderator.addEventListener('click',()=>login('moderator'));$('.welcome-auth-actions')?.append(moderator);
   const platformLogin=document.createElement('button');platformLogin.className='text-btn learn-link';platformLogin.textContent='Masuk sebagai admin platform';platformLogin.addEventListener('click',()=>login('platform'));$('.welcome-auth-actions')?.append(platformLogin);
-  $('#enterGuest')?.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();window.JALUR_ENTER_GUEST?.();},true);
+  $('#enterGuest')?.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();user=null;csrfToken='';window.JALUR_GUEST_SELECTED=true;sessionStorage.setItem('jalur-guest-mode','1');window.JALUR_ENTER_GUEST?.();},true);
   // Existing student local account controls are intentionally not used for server authentication.
   $('#createAccount')?.addEventListener('click',e=>{e.stopImmediatePropagation();modal('Akun siswa','<p>Akun siswa terhubung dengan sekolah dan dibuat oleh pengelola sekolah. Hubungi sekolah untuk memperoleh akun. Pendaftaran mandiri belum diaktifkan.</p>')},true);
   $('#signIn')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('student')},true);
