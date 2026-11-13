@@ -400,7 +400,8 @@ if(state.settings.reduceMotion)document.documentElement.style.scrollBehavior="au
 window.JALUR_SET_JOURNAL = items => { state.journal = Array.isArray(items) ? items : []; saveState(); render(); };
 window.JALUR_GET_WORKSPACE = () => ({profile:state.profile,notes:state.notes,compared:state.compared,mainChoice:state.mainChoice,alternatives:state.alternatives,checked:state.checked,costPlans:state.costPlans,pathwayGroups:state.pathwayGroups,settings:state.settings});
 window.JALUR_SET_WORKSPACE = workspace => { if(!workspace||typeof workspace!=="object")return; for(const key of ["profile","notes","compared","mainChoice","alternatives","checked","costPlans","pathwayGroups","settings"])if(Object.prototype.hasOwnProperty.call(workspace,key))state[key]=workspace[key]; saveState(); render(); };
-window.JALUR_SET_ACTIVE_PAGE = page => { currentPage=page;state.currentPage=page;jalurWriteRoute(page);saveState();const label=PAGE_LABELS[page]||page;const crumb=$("#pageCrumb");if(crumb)crumb.textContent=label;$$("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const primaryBottom=["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"];$("#moreNav")?.classList.toggle("active",!primaryBottom.includes(page)); };
+window.JALUR_GET_ACTIVE_PAGE = () => currentPage;
+window.JALUR_SET_ACTIVE_PAGE = page => { if(!JALUR_PAGES.includes(page))return;currentPage=page;state.currentPage=page;jalurWriteRoute(page);saveState();const label=PAGE_LABELS[page]||page;const crumb=$("#pageCrumb");if(crumb)crumb.textContent=label;$$("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const primaryBottom=["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"];$("#moreNav")?.classList.toggle("active",!primaryBottom.includes(page)); };
 
 
 // Restore the last in-app page after a refresh in this tab. A new visit still
