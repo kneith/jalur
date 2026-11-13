@@ -858,3 +858,18 @@ button:disabled{cursor:not-allowed;filter:grayscale(.35);opacity:.56}input:disab
   letter-spacing:.015em;
   text-align:right;
 }
+
+
+/* Equal-size role controls with hierarchy expressed through emphasis. */
+.role-entry-grid{align-items:stretch}
+.role-entry-grid>button{width:100%;min-height:54px;padding:13px 16px;display:flex;align-items:center;justify-content:center;white-space:normal;text-align:center;line-height:1.35}
+.role-entry-grid .learn-link{min-height:54px;font-size:14px;font-weight:650;color:var(--text);border:1px solid var(--border);background:rgba(255,255,255,.055);border-radius:999px}
+.role-entry-grid .learn-link:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.35)}
+.role-entry-grid #howItWorks{grid-column:1/-1;border-color:rgba(217,139,155,.55);background:linear-gradient(110deg,rgba(217,139,155,.16),rgba(210,236,249,.10));box-shadow:inset 0 0 0 1px rgba(217,139,155,.08)}
+.role-entry-grid #howItWorks::before{content:"✦";margin-right:9px;color:#E7A8B5}
+.role-entry-grid .role-extra-entry{font-size:14px}
+.ambient::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(360px circle at var(--mouse-x,50%) var(--mouse-y,45%),rgba(164,202,242,.18),rgba(217,139,155,.075) 36%,transparent 72%);transition:opacity .28s ease}
+.ambient.pointer-active::after{opacity:1}
+html:not(.jalur-welcome-mode) .ambient::after{display:none}
+@media(max-width:700px){.role-entry-grid>button{min-height:52px}.role-entry-grid #howItWorks{grid-column:auto}}
+@media(prefers-reduced-motion:reduce){.ambient::after{display:none!important}}
