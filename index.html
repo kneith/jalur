@@ -195,15 +195,16 @@
   <script src="backend/data/database.js"></script>
   <script src="app.js"></script>
 
-  <!-- Keep preview frontend traffic on the matching preview API; production uses production API. -->
+  <!-- Deployed JALUR builds use the stable API domain. Preview API aliases may
+       be protected by Vercel SSO and redirect OPTIONS preflights, which browsers block. -->
   <script>
     (() => {
       const host = window.location.hostname;
-      const productionHosts = new Set(["jalur-frontend.vercel.app", "jalur-frontend-kneith.vercel.app"]);
-      const apiHost = productionHosts.has(host)
-        ? "https://jalur-api.vercel.app"
-        : "https://jalur-api-git-migration-python-fastapi-kneith.vercel.app";
-      window.JALUR_API_BASE = apiHost + "/api";
+      const isLocal = host === "localhost" || host === "127.0.0.1";
+      const apiOrigin = isLocal
+        ? "http://127.0.0.1:8000"
+        : "https://jalur-api.vercel.app";
+      window.JALUR_API_BASE = apiOrigin + "/api";
     })();
   </script>
 
