@@ -102,7 +102,7 @@ function loadDirectoryData(){
 const DIRECTORY_DATA_PAGES=new Set([
   "Study Program Explorer","Decision Comparison","Plan B Builder","Decision Summary",
   "Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner",
-  "Campus Life Preview","Education Cost Planner","Decision Journal","Official Sources"
+  "Campus Life Preview","Education Cost Planner","Official Sources"
 ]);
 function pageNeedsDirectoryData(page){
   return DIRECTORY_DATA_PAGES.has(page) || (page==="Dashboard" && Boolean(state.mainChoice || state.compared?.length || state.alternatives?.length));
@@ -481,9 +481,24 @@ window.JALUR_GET_ACTIVE_PAGE = () => currentPage;
 window.JALUR_SET_ACTIVE_PAGE = page => { if(!JALUR_PAGES.includes(page))return;currentPage=page;state.currentPage=page;jalurWriteRoute(page);saveState();const label=PAGE_LABELS[page]||page;const crumb=$("#pageCrumb");if(crumb)crumb.textContent=label;$$("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const primaryBottom=["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"];$("#moreNav")?.classList.toggle("active",!primaryBottom.includes(page)); };
 
 
+// The optional journal program selector hydrates only when a user opens it.
+document.addEventListener("focusin",e=>{
+  if(e.target?.id!=="journalProgram"||directoryDataReady||directoryDataFailed)return;
+  const select=e.target,selected=select.value;
+  select.disabled=true;
+  loadDirectoryData().then(()=>{
+    if(select.isConnected){select.innerHTML=programOptions(selected);select.disabled=false;}
+  }).catch(error=>{
+    if(select.isConnected)select.disabled=false;
+    toast(error.message||"Direktori program studi belum dapat dimuat.","error");
+  });
+});
+
 // Restore the last in-app page after a refresh in this tab. A new visit still
 // starts at the welcome screen; only an active session is resumed.
-if (localStorage.getItem("jalur-app-open")==="1" || sessionStorage.getItem("jalur-app-open")==="1") {
+let jalurResumeApp=false;
+try{jalurResumeApp=localStorage.getItem("jalur-app-open")==="1"||sessionStorage.getItem("jalur-app-open")==="1"}catch{}
+if(jalurResumeApp){
   $("#welcome")?.classList.add("hidden");
   $("#app")?.classList.remove("hidden");
   render();
