@@ -67,6 +67,6 @@ class PostgresDirectoryRepository(DirectoryRepository):
             data = row["data"]
             item = {"type":row["type"],"id":row["id"],"name":row["name"],"data":data}
             if row["type"] == "program":
-                item.update({"institution_name":row["institution_name"],"level":row["level"],"field":row["field"]})
+                item.update({"institution_name":row["institution_name"] or data.get("campus") or "","level":row["level"],"field":row["field"]})
             items.append(item)
         return items, count
