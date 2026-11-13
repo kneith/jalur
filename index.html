@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#21191f">
   <meta name="description" content="JALUR | Pendamping eksplorasi pendidikan tinggi yang membantu siswa memahami dan membandingkan berbagai pilihan.">
   <title>JALUR | Pendamping Eksplorasi Pendidikan Tinggi</title>
-  <link rel="stylesheet" href="/styles.css?v=20261113-r14">
+  <link rel="stylesheet" href="/styles.css?v=20261113-r15">
 </head>
 <body>
   <a class="skip-link" href="#main">Lewati ke konten utama</a>
@@ -49,7 +49,7 @@
 
         <h1>Rancang langkah berikutnya, <em>dengan lebih tenang.</em></h1>
 
-        <p>Kenali beragam program studi, pelajari hal-hal yang perlu dipertimbangkan, dan bandingkan beberapa alternatif berdasarkan kebutuhanmu. JALUR menyediakan informasi dan ruang refleksi agar kamu dapat mengambil keputusan dengan lebih sadar; keputusan akhirnya tetap berada di tanganmu.</p>
+        <p>Kenali beragam program studi, pelajari hal-hal yang perlu dipertimbangkan, dan bandingkan beberapa alternatif berdasarkan kebutuhanmu. JALUR menyediakan informasi dan ruang refleksi agar kamu dapat memahami alasan di balik setiap pilihan. Keputusan akhirnya tetap berada di tanganmu.</p>
 
         <div class="welcome-actions welcome-auth-actions role-entry-grid">
           <button class="btn primary large" id="enterGuest">
@@ -60,12 +60,12 @@
           <button class="btn secondary large" id="enterTeacher">Portal Guru Mata Pelajaran</button>
           <button class="text-btn learn-link" id="createAccount">Buat akun siswa</button>
           <button class="text-btn learn-link" id="signIn">Masuk ke akun siswa</button>
-          <button class="text-btn learn-link" id="howItWorks">Pelajari cara kerja JALUR</button>
+          <button class="text-btn learn-link" id="howItWorks">Mengenal JALUR</button>
         </div>
 
         <div class="privacy-note">
           <span aria-hidden="true">◈</span>
-          Portal sekolah dan guru BK memerlukan akun dengan akses yang telah diatur melalui server. Akun siswa disediakan oleh pihak sekolah sesuai kebijakan yang berlaku.
+          Portal sekolah dan guru BK hanya dapat digunakan melalui akun dengan akses yang telah diatur oleh server. Untuk akun siswa, silakan mengikuti ketentuan pendaftaran dari sekolah.
         </div>
       </div>
 
@@ -164,7 +164,7 @@
         <button class="nav-item" data-page="Help / About"><span class="nav-icon">?</span><span>Panduan</span></button>
         <div class="sidebar-note">
           PENDAMPING PENDIDIKAN TINGGI<br>
-          <span>Mode Pengunjung · Data tersimpan lokal</span>
+          <span>Kamu menggunakan mode pengunjung dan data disimpan di perangkat ini.</span>
         </div>
       </div>
     </aside>
@@ -200,7 +200,7 @@
         <button class="bottom-item" data-page="Study Program Explorer"><span>⌕</span><small>Program</small></button>
         <button class="bottom-item" data-page="Decision Comparison"><span>⇄</span><small>Bandingkan</small></button>
         <button class="bottom-item" data-page="Plan B Builder"><span>⑂</span><small>Alternatif</small></button>
-        <button class="bottom-item" id="moreNav"><span>•••</span><small>Lainnya</small></button>
+        <button class="bottom-item" id="moreNav"><span>⋯</span><small>Lainnya</small></button>
       </nav>
     </div>
   </div>
@@ -210,7 +210,7 @@
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
 
   <!-- The large education directory is fetched on demand by app.js. -->
-  <script defer src="/app.js?v=20261113-r14"></script>
+  <script defer src="/app.js?v=20261113-r15"></script>
 
   <!-- Deployed JALUR builds use the stable API domain. Preview API aliases may
        be protected by Vercel SSO and redirect OPTIONS preflights, which browsers block. -->
@@ -226,6 +226,6 @@
   </script>
 
   <!-- Integrasi backend harus dimuat setelah konfigurasi API -->
-  <script defer src="/central.js?v=20261113-r8"></script>
+  <script defer src="/central.js?v=20261113-r9"></script>
 </body>
 </html>
