@@ -264,3 +264,69 @@ input.search-input, textarea.search-input,
   .jalur-writing-surface{min-height:145px;padding:15px 16px;border-radius:15px;font-size:13px}
   .jalur-writing-surface.journal-writing-surface{min-height:180px}
 }
+
+
+/* Mobile refinement: compact, aligned reflection choices (including Android Chrome). */
+.choice-check-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+  margin:8px 0 14px;
+}
+.choice-check{
+  display:grid !important;
+  grid-template-columns:20px minmax(0,1fr);
+  align-items:center !important;
+  gap:11px;
+  min-height:52px;
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:13px;
+  background:rgba(255,255,255,.035);
+  line-height:1.45;
+}
+.choice-check input[type="checkbox"]{
+  appearance:auto !important;
+  -webkit-appearance:checkbox !important;
+  display:block !important;
+  width:19px !important;
+  min-width:19px !important;
+  max-width:19px !important;
+  height:19px !important;
+  min-height:19px !important;
+  margin:0 !important;
+  padding:0 !important;
+  accent-color:var(--accent);
+  justify-self:center;
+  flex:none;
+}
+.choice-check span{
+  display:block;
+  min-width:0;
+  font-size:13px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+.choice-check:has(input:checked){
+  border-color:rgba(232,102,58,.7);
+  background:rgba(232,102,58,.11);
+}
+#journalForm{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+#journalForm .field.full{grid-column:1/-1}
+#journalForm .field{min-width:0}
+#journalForm .field-label{margin-bottom:2px}
+#journalForm .jalur-writing-surface{
+  min-height:156px;
+  padding:15px 16px;
+  border-radius:14px;
+  font-size:14px;
+  line-height:1.65;
+}
+#journalForm .help{font-size:11px;line-height:1.5}
+@media(max-width:680px){
+  .panel{padding:17px}
+  #journalForm{grid-template-columns:minmax(0,1fr);gap:13px}
+  #journalForm .field.full{grid-column:1}
+  #journalForm .jalur-writing-surface{min-height:140px;padding:14px}
+  .choice-check{min-height:48px;padding:10px 12px}
+}
