@@ -10,10 +10,11 @@ const initialState = {
 let state = loadState();
 const JALUR_PAGES = ["Dashboard","Academic Profile","Study Program Explorer","Study Tracer Alumni","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","BK Consultation","Anonymous Venting","School Portal","BK Portal"];
 function jalurPageFromHash(){try{const raw=location.hash.startsWith("#page=")?decodeURIComponent(location.hash.slice(6)):"";return JALUR_PAGES.includes(raw)?raw:null}catch{return null}}
-let currentPage = jalurPageFromHash() || (JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");
+function jalurStoredPage(){try{const saved=localStorage.getItem("jalur-last-page");return JALUR_PAGES.includes(saved)?saved:null}catch{return null}}
+let currentPage = jalurPageFromHash() || jalurStoredPage() || (JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");
 let jalurSuppressHistory = false;
-function jalurWriteRoute(page,replace=false){if(!JALUR_PAGES.includes(page))return;const url="#page="+encodeURIComponent(page);if(location.hash===url)return;try{history[replace?"replaceState":"pushState"]({jalurPage:page},"",url)}catch{}}
-function jalurRestoreRoute(){const page=jalurPageFromHash() || (JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");jalurSuppressHistory=true;try{if(window.navigate)window.navigate(page);else{currentPage=page;state.currentPage=page;render()}}finally{jalurSuppressHistory=false}}
+function jalurWriteRoute(page,replace=false){if(!JALUR_PAGES.includes(page))return;try{localStorage.setItem("jalur-last-page",page)}catch{}const url="#page="+encodeURIComponent(page);if(location.hash===url)return;try{history[replace?"replaceState":"pushState"]({jalurPage:page},"",url)}catch{}}
+function jalurRestoreRoute(){const page=jalurPageFromHash() || jalurStoredPage() || (JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");jalurSuppressHistory=true;try{if(window.navigate)window.navigate(page);else{currentPage=page;state.currentPage=page;render()}}finally{jalurSuppressHistory=false}}
 window.addEventListener("popstate",jalurRestoreRoute);
 const fallbackPrograms = [
  {id:"p1",name:"Teknik Informatika",campus:"Institut Teknologi Bandung",level:"S1",field:"Teknologi",subjects:["Matematika","Informatika","Fisika"],requirements:"Persyaratan akademik dan jalur masuk mengikuti ketentuan resmi kampus.",source:"Data Contoh",updated:"2026 (contoh)"},
@@ -289,7 +290,7 @@ document.addEventListener("click",async e=>{
 function enterApplication(mode="guest",displayName="Pengunjung"){
   activeRole="guest";
   if(displayName){state.profile.nickname=displayName;saveState()}
-  sessionStorage.setItem("jalur-app-open","1");$("#welcome").classList.add("hidden");$("#app").classList.remove("hidden");currentPage=jalurPageFromHash()||"Dashboard";state.currentPage=currentPage;jalurWriteRoute(currentPage,true);render();
+  sessionStorage.setItem("jalur-app-open","1");$("#welcome").classList.add("hidden");$("#app").classList.remove("hidden");currentPage=jalurPageFromHash()||jalurStoredPage()||(JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");state.currentPage=currentPage;jalurWriteRoute(currentPage,true);render();
   toast(mode==="account"?`Selamat datang, ${displayName}. Akun ini hanya tersimpan di peramban ini.`:"Anda masuk sebagai pengunjung. Data tersimpan secara lokal pada peramban ini.","info");
 }
 const ACCOUNTS_KEY="jalur-local-accounts-v1";
