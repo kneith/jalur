@@ -641,3 +641,184 @@ html:not(.jalur-welcome-mode) .ambient::before{background:rgba(12,8,12,.12)}
 html.jalur-welcome-mode .ambient-glow{opacity:.48}html.jalur-welcome-mode .ambient-liquid{opacity:.24}html.jalur-welcome-mode .ambient-orbit{border-color:rgba(210,236,249,.19)}
 @media(max-width:700px){html.jalur-welcome-mode .ambient-glow{opacity:.36}html.jalur-welcome-mode .ambient-liquid{opacity:.18}}
 @media(prefers-reduced-motion:reduce){.ambient-glow,.ambient-liquid,.ambient-orbit,.ambient-star,.ambient-particle,.welcome-visual::before,.welcome-visual::after,.welcome-visual-beacon,.welcome-visual-spark,.orbit-satellite{animation:none!important;transition:none!important}}
+
+
+/* JALUR Soft Editorial — Raspberry + Pearl.
+   Keep the reference raspberry as the identity accent; balance it with pearl,
+   dusty rose, muted mauve and a restrained ice-blue highlight. */
+:root{
+ --bg:#21191f;
+ --glass:rgba(249,237,240,.055);
+ --glass-strong:rgba(249,237,240,.085);
+ --solid:#30242c;
+ --border:rgba(237,218,224,.18);
+ --border-soft:rgba(237,218,224,.10);
+ --text:#F7F1F3;
+ --muted:#D7C8CE;
+ --dim:#B29FA7;
+ --accent:#EA2F4A;
+ --accent-hover:#F15A70;
+ --cyan:#D2ECF9;
+ --green:#A7C8B8;
+ --yellow:#E6C27A;
+ --red:#EA2F4A;
+ --lavender:#B8A8D8;
+ --rose:#D98B9B;
+ --shadow:0 22px 60px rgba(10,5,9,.32);
+}
+body{background:#21191f;color:var(--text)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline-color:#D2ECF9}
+.btn.primary{
+ background:linear-gradient(135deg,#D92744 0%,#B91F3B 100%);
+ border-color:rgba(247,153,168,.5);color:#fff;
+ box-shadow:0 9px 24px rgba(159,25,52,.17);
+}
+.btn.primary:hover{background:linear-gradient(135deg,#EA2F4A 0%,#C72340 100%);box-shadow:0 11px 27px rgba(159,25,52,.23)}
+.nav-item.active{
+ background:linear-gradient(135deg,#EA2F4A 0%,#C92342 100%);
+ color:#fff;box-shadow:0 7px 21px rgba(159,25,52,.16)
+}
+.brand-mark{background:linear-gradient(145deg,#F17A8B 0%,#D92744 78%);color:#fff;box-shadow:0 7px 22px rgba(188,34,62,.22)}
+.avatar-mini{background:#EA2F4A;color:#fff}
+.stat-icon{background:rgba(234,47,74,.12);color:#F39AA8}
+.grade-chart-line{stroke:#EA2F4A}.grade-chart-point{fill:#EA2F4A;stroke:#30242c}
+.data-tag.sample{color:#B7DFEF}.data-tag.demo{color:#D4C6EA}.data-tag.pending{color:#E6C27A}
+.program-kicker,.privacy-note span,.text-btn{color:#D2ECF9}
+.notice{background:rgba(210,236,249,.07);border-color:rgba(210,236,249,.21);color:#D8EDF7}
+.toast.info{border-left-color:#D2ECF9}
+
+/* The welcome/login page gets the richer ambient treatment. */
+html.jalur-welcome-mode body{background:#21191f}
+html.jalur-welcome-mode .ambient{
+ background:
+  radial-gradient(ellipse at 15% 17%,rgba(217,139,155,.17) 0%,transparent 38%),
+  radial-gradient(ellipse at 83% 76%,rgba(210,236,249,.105) 0%,transparent 40%),
+  radial-gradient(ellipse at 52% 49%,rgba(184,168,216,.085) 0%,transparent 46%),
+  linear-gradient(132deg,#20171d 0%,#2B2027 48%,#202027 100%);
+}
+html.jalur-welcome-mode .ambient::before{
+ background:
+  linear-gradient(105deg,rgba(16,10,15,.035),rgba(16,10,15,.13)),
+  radial-gradient(ellipse at 52% 95%,rgba(234,47,74,.045),transparent 53%);
+}
+html.jalur-welcome-mode .ambient-glow{filter:blur(94px) saturate(.78);opacity:.24}
+html.jalur-welcome-mode .glow-a{background:#D98B9B;opacity:.31}
+html.jalur-welcome-mode .glow-b{background:#D2ECF9;opacity:.25}
+html.jalur-welcome-mode .glow-c{background:#B8A8D8;opacity:.17}
+html.jalur-welcome-mode .ambient-liquid{
+ opacity:.105;filter:blur(66px) saturate(.78);
+ background:
+  radial-gradient(ellipse at 35% 45%,rgba(217,139,155,.56),transparent 56%),
+  radial-gradient(ellipse at 72% 55%,rgba(210,236,249,.5),transparent 60%);
+}
+html.jalur-welcome-mode .liquid-b{
+ background:
+  radial-gradient(ellipse at 42% 46%,rgba(184,168,216,.48),transparent 56%),
+  radial-gradient(ellipse at 70% 58%,rgba(210,236,249,.45),transparent 63%);
+}
+html.jalur-welcome-mode .ambient-particle{
+ width:3px;height:3px;background:rgba(246,228,234,.62);
+ box-shadow:0 0 10px rgba(210,236,249,.22);
+}
+html.jalur-welcome-mode .particle-3,
+html.jalur-welcome-mode .particle-5,
+html.jalur-welcome-mode .particle-8{background:rgba(210,236,249,.72);box-shadow:0 0 11px rgba(210,236,249,.28)}
+html.jalur-welcome-mode .ambient-orbit{border-color:rgba(239,222,230,.09);filter:none;mix-blend-mode:normal}
+html.jalur-welcome-mode .ambient-orbit-two{border-color:rgba(210,236,249,.085)}
+html.jalur-welcome-mode .ambient-star{width:3px;height:3px;opacity:.58;box-shadow:0 0 9px 2px rgba(230,221,244,.24)}
+
+/* Softer editorial typography and more breathing room around the entry actions. */
+html.jalur-welcome-mode .welcome-brand{gap:14px}
+html.jalur-welcome-mode .welcome-brand strong{letter-spacing:.17em}
+html.jalur-welcome-mode .welcome-brand small{color:#C9B9C0}
+html.jalur-welcome-mode .welcome-copy .eyebrow{color:#E1D1D7}
+html.jalur-welcome-mode .welcome-copy h1{letter-spacing:-.045em;text-wrap:balance}
+html.jalur-welcome-mode .welcome-copy h1 em{
+ background:linear-gradient(100deg,#F0788C 0%,#D98B9B 48%,#D2ECF9 100%);
+ background-clip:text;-webkit-background-clip:text;color:transparent;
+}
+html.jalur-welcome-mode .welcome-copy>p{color:#D8C9CE;max-width:48ch;line-height:1.82}
+html.jalur-welcome-mode .welcome-actions{gap:13px}
+html.jalur-welcome-mode .welcome-actions .btn{min-height:50px;border-radius:15px;letter-spacing:.005em}
+html.jalur-welcome-mode .welcome-actions .btn.primary{border-color:rgba(255,192,202,.3)}
+html.jalur-welcome-mode .welcome-actions .btn.secondary{
+ background:rgba(247,232,237,.045);border-color:rgba(237,218,224,.19);color:#F1E8EB;
+ backdrop-filter:blur(14px);
+}
+html.jalur-welcome-mode .welcome-actions .btn.secondary:hover{background:rgba(247,232,237,.085);border-color:rgba(237,218,224,.31)}
+html.jalur-welcome-mode .welcome-actions .text-btn{color:#D2ECF9}
+html.jalur-welcome-mode .privacy-note{color:#BCAAB2;max-width:55ch;line-height:1.7}
+html.jalur-welcome-mode .privacy-note span{color:#D2ECF9}
+
+/* Pearl glass artwork: one focal surface, restrained edge lighting, no competing neon. */
+html.jalur-welcome-mode .welcome-visual{
+ border:1px solid rgba(239,222,230,.19);border-radius:34px;
+ background:
+  radial-gradient(ellipse at 48% 42%,rgba(217,139,155,.105),transparent 40%),
+  radial-gradient(ellipse at 78% 76%,rgba(210,236,249,.08),transparent 45%),
+  linear-gradient(145deg,rgba(249,237,240,.075),rgba(39,29,37,.52) 58%,rgba(23,22,29,.72));
+ box-shadow:0 26px 70px rgba(10,5,9,.24),inset 0 1px 0 rgba(255,255,255,.055);
+ backdrop-filter:blur(22px) saturate(108%);
+}
+html.jalur-welcome-mode .welcome-visual::before{
+ background:conic-gradient(from 35deg,transparent 0 19%,rgba(217,139,155,.12) 27%,transparent 39% 61%,rgba(210,236,249,.14) 72%,transparent 83%);
+ filter:blur(9px);animation:jalurVisualHalo 46s linear infinite;
+}
+html.jalur-welcome-mode .welcome-visual::after{
+ background:linear-gradient(112deg,transparent 24%,rgba(255,248,250,.065) 49%,transparent 72%);
+ animation:jalurVisualShimmer 16s ease-in-out infinite;
+}
+html.jalur-welcome-mode .orbit{border-color:rgba(239,222,230,.15);box-shadow:0 0 25px rgba(210,236,249,.035)}
+html.jalur-welcome-mode .orbit-two{border-color:rgba(217,139,155,.17)}
+html.jalur-welcome-mode .visual-center{
+ background:rgba(37,28,35,.77);border-color:rgba(239,222,230,.2);
+ box-shadow:0 15px 44px rgba(10,5,9,.2),inset 0 1px 0 rgba(255,255,255,.06);
+ backdrop-filter:blur(20px);
+}
+html.jalur-welcome-mode .compass-icon{color:#D2ECF9}
+html.jalur-welcome-mode .path-node{
+ background:rgba(43,32,40,.79);border-color:rgba(239,222,230,.2);
+ box-shadow:0 9px 25px rgba(10,5,9,.16);backdrop-filter:blur(16px);
+}
+html.jalur-welcome-mode .path-node span{background:rgba(234,47,74,.15);color:#F49AA8}
+html.jalur-welcome-mode .welcome-visual-beacon{filter:blur(4px);opacity:.65}
+html.jalur-welcome-mode .beacon-one{background:radial-gradient(circle,rgba(217,139,155,.64),rgba(217,139,155,.05) 68%,transparent 72%)}
+html.jalur-welcome-mode .beacon-two{background:radial-gradient(circle,rgba(210,236,249,.68),rgba(184,168,216,.06) 68%,transparent 72%)}
+html.jalur-welcome-mode .welcome-visual-spark{width:4px;height:4px;box-shadow:0 0 10px 3px rgba(246,228,234,.28)}
+html.jalur-welcome-mode .spark-two{background:#D2ECF9;box-shadow:0 0 10px 3px rgba(210,236,249,.25)}
+html.jalur-welcome-mode .visual-caption{color:#C9B9C0}
+
+/* The raspberry is an accent, not an all-over glow. Keep the login CTA clear. */
+html.jalur-welcome-mode .brand-mark{box-shadow:0 7px 22px rgba(159,25,52,.16)}
+html.jalur-welcome-mode .status-dot{background:#A7C8B8;box-shadow:0 0 9px rgba(167,200,184,.28)}
+html.jalur-welcome-mode .welcome-footer{color:#B7A6AE;border-color:rgba(237,218,224,.1)}
+
+/* Drag affordance stays subtle and becomes slightly more tactile on interaction. */
+html.jalur-welcome-mode .orbit-satellite{
+ border-color:rgba(239,222,230,.27);background:rgba(49,36,45,.76);color:#E9DCE2;
+ box-shadow:0 5px 18px rgba(10,5,9,.16),0 0 16px rgba(210,236,249,.055);
+ animation-duration:11s;transition:box-shadow .2s ease,background .2s ease,scale .2s ease;
+}
+html.jalur-welcome-mode .orbit-satellite:hover,
+html.jalur-welcome-mode .orbit-satellite:focus-visible{
+ background:rgba(72,45,57,.92);box-shadow:0 7px 22px rgba(10,5,9,.2),0 0 19px rgba(210,236,249,.1)
+}
+html.jalur-welcome-mode .orbit-satellite.is-dragging{background:rgba(88,38,53,.94)}
+/* Once inside the app, retain the brand but remove ambient decoration and motion. */
+html:not(.jalur-welcome-mode) .ambient{
+ background:linear-gradient(135deg,#21191f 0%,#241d24 54%,#1e2027 100%);
+}
+html:not(.jalur-welcome-mode) .ambient::before{background:rgba(14,10,14,.12)}
+@media(max-width:700px){
+ html.jalur-welcome-mode .welcome-screen{padding-top:22px}
+ html.jalur-welcome-mode .welcome-content{gap:28px;padding-top:42px}
+ html.jalur-welcome-mode .welcome-visual{border-radius:27px}
+ html.jalur-welcome-mode .welcome-actions .btn{min-height:48px}
+}
+@media(prefers-reduced-motion:reduce){
+ html.jalur-welcome-mode .welcome-visual::before,
+ html.jalur-welcome-mode .welcome-visual::after,
+ html.jalur-welcome-mode .welcome-visual-beacon,
+ html.jalur-welcome-mode .welcome-visual-spark,
+ html.jalur-welcome-mode .orbit-satellite{animation:none!important;transition:none!important}
+}
