@@ -127,36 +127,61 @@ const blindSpots = [
  ["Kapasitas dan jadwal belajar","Pertimbangkan kebiasaan belajar, dukungan, dan hal yang ingin Anda kembangkan.","Academic Profile"],
  ["Pembaruan informasi","Catat sumber dan tanggal informasi terakhir diperiksa.","Study Program Explorer"]
 ];
-function loadState(){try{const current=localStorage.getItem(STORE_KEY);const legacy=current===null?localStorage.getItem(LEGACY_STORE_KEY):null;const parsed=JSON.parse(current??legacy??"{}");const merged={...structuredClone(initialState),...parsed};if(!Array.isArray(merged.journal))merged.journal=[];if(!merged.costPlans||typeof merged.costPlans!=="object")merged.costPlans={};if(!merged.pathwayGroups||typeof merged.pathwayGroups!=="object")merged.pathwayGroups={};return merged}catch(e){return structuredClone(initialState)}}
+function loadState(){
+ try{
+  const current=localStorage.getItem(STORE_KEY);
+  const legacy=current===null?localStorage.getItem(LEGACY_STORE_KEY):null;
+  const parsed=JSON.parse(current??legacy??"{}");
+  const defaults=structuredClone(initialState);
+  const merged={...defaults,...(parsed&&typeof parsed==="object"?parsed:{})};
+  merged.profile={...defaults.profile,...(parsed.profile&&typeof parsed.profile==="object"?parsed.profile:{})};
+  merged.profile.subjects=Array.isArray(merged.profile.subjects)?merged.profile.subjects:[];
+  merged.settings={...defaults.settings,...(parsed.settings&&typeof parsed.settings==="object"?parsed.settings:{})};
+  for(const key of ["compared","alternatives","checked","activities","journal"])if(!Array.isArray(merged[key]))merged[key]=[];
+  for(const key of ["notes","costPlans","pathwayGroups"])if(!merged[key]||typeof merged[key]!=="object"||Array.isArray(merged[key]))merged[key]={};
+  if(!("mainChoice" in merged))merged.mainChoice=null;
+  return merged;
+ }catch(e){return structuredClone(initialState)}
+}
 function saveState(){try{const persisted=structuredClone(state);if(window.JALUR_API?.getUser?.())persisted.journal=[];localStorage.setItem(STORE_KEY,JSON.stringify(persisted));const user=window.JALUR_API?.getUser?.();if(user?.role==="student"&&window.JALUR_API?.request){const workspace={profile:state.profile,notes:state.notes,compared:state.compared,mainChoice:state.mainChoice,alternatives:state.alternatives,checked:state.checked,costPlans:state.costPlans,pathwayGroups:state.pathwayGroups,settings:state.settings};window.JALUR_WORKSPACE_PENDING=workspace;clearTimeout(window.JALUR_WORKSPACE_TIMER);window.JALUR_WORKSPACE_TIMER=setTimeout(()=>window.JALUR_API.request("/workspace",{method:"POST",body:{workspace}}).then(()=>{window.JALUR_WORKSPACE_PENDING=null}).catch(err=>toast(err.message||"Sinkronisasi ruang siswa gagal.","error")),500)}}catch(e){toast("Penyimpanan browser tidak tersedia; perubahan hanya ada di sesi ini.","error")}}
 function logActivity(text){state.activities.unshift({text,time:new Date().toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})});state.activities=state.activities.slice(0,5);saveState()}
 function toast(message,type="success"){const el=document.createElement("div");el.className=`toast ${type}`;el.textContent=message;$("#toastRegion").append(el);setTimeout(()=>el.remove(),5500)}
 function escapeHtml(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 const PAGE_LABELS={"Dashboard":"Beranda","Academic Profile":"Profil Akademik","Study Program Explorer":"Penjelajah Program Studi","Study Tracer Alumni":"Pengalaman Alumni","Decision Comparison":"Perbandingan Program Studi","Plan B Builder":"Rencana Alternatif","Decision Blind Spot Detector":"Daftar Periksa Keputusan","Decision Summary":"Ringkasan Keputusan","Settings":"Pengaturan","Help / About":"Bantuan dan Tentang JALUR","User Guide":"Panduan Penggunaan","Official Sources":"Pusat Informasi Resmi","Program Study Reality Check":"Realitas Perkuliahan","Similarity Explorer":"Program Studi Serupa","Alternative Pathway Planner":"Peta Jalur Alternatif","Campus Life Preview":"Gambaran Kehidupan Kampus","Education Cost Planner":"Perencana Biaya Pendidikan","Decision Journal":"Jurnal Keputusan","BK Consultation":"Konsultasi BK","Anonymous Venting":"Curhat Anonim","School Portal":"Portal Pengelola Sekolah","BK Portal":"Portal Guru BK"};
 function render(){
-  $("#pageCrumb").textContent=PAGE_LABELS[currentPage]||currentPage;
-  $("[data-page],.bottom-item[data-page],.nav-item[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===currentPage));
+ const root=$("#pageRoot");
+ if(!root)return;
+ try{
+  const crumb=$("#pageCrumb");
+  if(crumb)crumb.textContent=PAGE_LABELS[currentPage]||currentPage;
+  $$("[data-page],.bottom-item[data-page],.nav-item[data-page]").forEach(button=>button.classList.toggle("active",button.dataset.page===currentPage));
+  $("#moreNav")?.classList.toggle("active",!["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"].includes(currentPage));
+  const profileAlert=$("#profileAlert");
+  if(profileAlert)profileAlert.style.display=Array.isArray(state.profile?.subjects)&&state.profile.subjects.length?"none":"block";
   const activeNav=$(".side-nav .nav-item.active");
   if(activeNav&&activeNav.offsetParent!==null)activeNav.scrollIntoView({block:"nearest"});
-  $("#moreNav")?.classList.toggle("active",!["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"].includes(currentPage));
-  $("#profileAlert").style.display=state.profile.subjects.length?"none":"block";
-  const root=$("#pageRoot");
   if(pageNeedsDirectoryData(currentPage)&&!directoryDataReady){
-    const requestedPage=currentPage;
-    root.innerHTML=`<section class="directory-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat…</span></section>`
-    if(!directoryDataFailed)loadDirectoryData().then(()=>{if(currentPage===requestedPage)render();}).catch(error=>{
-      if(currentPage===requestedPage){
-        directoryDataFailed=true;
-        root.innerHTML=`<section class="panel glass directory-loading"><h2>Direktori belum dapat dimuat</h2><p>${escapeHtml(error.message||"Periksa koneksi internet lalu coba lagi.")}</p><button class="btn primary" id="retryDirectoryData">Coba lagi</button></section>`;
-      }
-    });
-    $("#main").focus({preventScroll:true});
-    return;
+   const requestedPage=currentPage;
+   root.innerHTML=`<section class="directory-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat…</span></section>`;
+   if(!directoryDataFailed)loadDirectoryData().then(()=>{if(currentPage===requestedPage)render();}).catch(error=>{
+    if(currentPage===requestedPage){
+     directoryDataFailed=true;
+     root.innerHTML=`<section class="panel glass directory-loading"><h2>Direktori belum dapat dimuat</h2><p>${escapeHtml(error.message||"Periksa koneksi internet lalu coba lagi.")}</p><button class="btn primary" id="retryDirectoryData">Coba lagi</button></section>`;
+    }
+   });
+   $("#main")?.focus({preventScroll:true});
+   return;
   }
   const renderers={"Dashboard":dashboardPage,"Academic Profile":profilePage,"Study Program Explorer":explorerPage,"Study Tracer Alumni":alumniPage,"Decision Comparison":comparisonPage,"Plan B Builder":planBPage,"Decision Blind Spot Detector":blindSpotPage,"Decision Summary":summaryPage,"Settings":settingsPage,"Help / About":helpPage,"User Guide":guidePage,"Official Sources":sourcesPage,"Program Study Reality Check":realityPage,"Similarity Explorer":similarityPage,"Alternative Pathway Planner":pathwayPage,"Campus Life Preview":campusPage,"Education Cost Planner":costPage,"Decision Journal":journalPage,"BK Consultation":consultationPage,"Anonymous Venting":ventingPage,"School Portal":schoolPortalPage,"BK Portal":bkPortalPage};
   root.innerHTML=(renderers[currentPage]||dashboardPage)();
-  root.classList.remove("page-enter");void root.offsetWidth;root.classList.add("page-enter");
-  $("#main").focus({preventScroll:true});
+  root.classList.remove("page-enter");
+  void root.offsetWidth;
+  root.classList.add("page-enter");
+  $("#main")?.focus({preventScroll:true});
+ }catch(error){
+  console.error("JALUR page render failed:",error);
+  root.innerHTML=`<section class="panel glass app-error-state" role="alert"><span class="eyebrow">JALUR · PEMULIHAN HALAMAN</span><h2>Halaman belum dapat ditampilkan</h2><p>Data sesi lama mungkin belum sesuai dengan versi aplikasi ini. Muat ulang halaman ini untuk mencoba pemulihan otomatis. Data yang tersimpan tidak dihapus.</p><div class="form-actions"><button class="btn primary" id="retryPageRender">Coba lagi</button><button class="btn secondary" data-return-welcome>Halaman awal</button></div></section>`;
+ }
 }
 function pageHead(title,desc,action=""){return `<div class="page-head"><div><span class="eyebrow">JALUR / PENDAMPING KEPUTUSAN</span><h1>${PAGE_LABELS[title]||title}</h1><p>${desc}</p></div>${action?`<div class="page-actions">${action}</div>`:""}</div>`}
 function panel(title,content,sub="",actions=""){return `<section class="panel glass"><div class="panel-head"><div><h2>${title}</h2>${sub?`<p class="panel-sub">${sub}</p>`:""}</div>${actions}</div>${content}</section>`}
@@ -346,7 +371,7 @@ document.addEventListener("click",async e=>{
  const delVent=e.target.closest("[data-delete-vent]");if(delVent){const d=portalData();d.vents.splice(Number(delVent.dataset.deleteVent),1);savePortalData(d);render();return;}
  const delSchool=e.target.closest("[data-delete-school]");if(delSchool){const d=portalData(),[key,idx]=delSchool.dataset.deleteSchool.split(":");d[key].splice(Number(idx),1);savePortalData(d);render();return;}
  const schoolTab=e.target.closest("[data-school-tab]");if(schoolTab){const d=portalData();$("#schoolRecordList").innerHTML=schoolList(d,schoolTab.dataset.schoolTab);$("#schoolDataType").value=schoolTab.dataset.schoolTab;return;}
- if(e.target.closest("[data-return-welcome]")){activeRole="guest";sessionStorage.removeItem("jalur-app-open");try{localStorage.removeItem("jalur-app-open");localStorage.removeItem("jalur-last-page")}catch{}currentPage="Dashboard";state.currentPage=currentPage;saveState();history.replaceState({},"",location.pathname+location.search);$("#app").classList.add("hidden");$("#welcome").classList.remove("hidden");return;}
+ if(e.target.closest("[data-return-welcome]")){activeRole="guest";window.JALUR_WELCOME_REQUESTED=true;sessionStorage.removeItem("jalur-app-open");try{localStorage.removeItem("jalur-app-open");localStorage.removeItem("jalur-last-page")}catch{}currentPage="Dashboard";state.currentPage=currentPage;saveState();history.replaceState({},"",location.pathname+location.search);document.documentElement.classList.add("jalur-welcome-mode");$("#app").classList.add("hidden");$("#welcome").classList.remove("hidden");window.scrollTo({top:0,behavior:"auto"});return;}
  if(e.target.id==="exportSchoolData"){const blob=new Blob([JSON.stringify(portalData(),null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="jalur-data-sekolah-lokal.json";a.click();URL.revokeObjectURL(url);return;}
  const pageBtn=e.target.closest("[data-page]");if(pageBtn){navigate(pageBtn.dataset.page);return}
  const mainPick=e.target.closest("[data-set-main]");if(mainPick){const p=programById(mainPick.dataset.setMain);if(!p){toast("Program tidak ditemukan dalam basis data.","error");return}state.mainChoice=p.id;saveState();logActivity(`${p.name} ditetapkan sebagai pilihan utama`);render();toast("Pilihan utama berhasil diperbarui.");return}
@@ -361,7 +386,7 @@ document.addEventListener("click",async e=>{
 function enterApplication(mode="guest",displayName="Pengunjung"){
   activeRole="guest";
   if(displayName){state.profile.nickname=displayName;saveState()}
-  try{localStorage.setItem("jalur-app-open","1")}catch{}sessionStorage.setItem("jalur-app-open","1");$("#welcome").classList.add("hidden");$("#app").classList.remove("hidden");currentPage=jalurPageFromHash()||jalurStoredPage()||(JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");state.currentPage=currentPage;jalurWriteRoute(currentPage,true);render();
+  window.JALUR_WELCOME_REQUESTED=false;sessionStorage.setItem("jalur-app-open","1");document.documentElement.classList.remove("jalur-welcome-mode");$("#welcome").classList.add("hidden");$("#app").classList.remove("hidden");currentPage=jalurPageFromHash()||jalurStoredPage()||(JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");state.currentPage=currentPage;jalurWriteRoute(currentPage,true);render();
   toast(mode==="account"?`Selamat datang, ${displayName}. Akun ini hanya tersimpan di peramban ini.`:"Anda masuk sebagai pengunjung. Data tersimpan secara lokal pada peramban ini.","info");
 }
 const ACCOUNTS_KEY="jalur-local-accounts-v1";
@@ -451,6 +476,7 @@ document.addEventListener("click",async e=>{
  if(e.target.id==="savePathways"){ $$('[data-pathway]').forEach(el=>state.pathwayGroups[el.dataset.pathway]=el.value);saveState();toast("Pengelompokan pilihan disimpan.");return}
  const delJournal=e.target.closest('[data-delete-journal]');if(delJournal){const index=Number(delJournal.dataset.deleteJournal),entry=state.journal[index];try{if(window.JALUR_API?.getUser?.()&&entry?.id){await window.JALUR_API.request(`/journal/${encodeURIComponent(entry.id)}`,{method:"DELETE"});const saved=await window.JALUR_API.request("/journal");state.journal=saved.items||[];}else state.journal.splice(index,1);saveState();render();toast("Catatan dihapus.","info");}catch(err){toast(err.message||"Catatan gagal dihapus.","error");}return}
  if(e.target.id==="retryDirectoryData"){directoryDataFailed=false;directoryDataPromise=null;render();return;}
+ if(e.target.id==="retryPageRender"){render();return;}
  if(e.target.id==="exportData"){const payload={app:"JALUR",version:1,exportedAt:new Date().toISOString(),state};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`jalur-cadangan-${new Date().toISOString().slice(0,10)}.json`;document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);toast("Cadangan data berhasil disiapkan.");return}
  if(e.target.id==="importData"){const f=$("#importDataFile");if(f)f.click();return}
  if(e.target.id==="addSubject"||e.target.id==="addSubjectEmpty")subjectForm();
@@ -474,7 +500,7 @@ window.JALUR_SET_JOURNAL = items => { state.journal = Array.isArray(items) ? ite
 window.JALUR_GET_WORKSPACE = () => ({profile:state.profile,notes:state.notes,compared:state.compared,mainChoice:state.mainChoice,alternatives:state.alternatives,checked:state.checked,costPlans:state.costPlans,pathwayGroups:state.pathwayGroups,settings:state.settings});
 window.JALUR_SET_WORKSPACE = workspace => { if(!workspace||typeof workspace!=="object")return; for(const key of ["profile","notes","compared","mainChoice","alternatives","checked","costPlans","pathwayGroups","settings"])if(Object.prototype.hasOwnProperty.call(workspace,key))state[key]=workspace[key]; saveState(); render(); };
 window.JALUR_GET_ACTIVE_PAGE = () => currentPage;
-window.JALUR_SET_ACTIVE_PAGE = page => { if(!JALUR_PAGES.includes(page))return;currentPage=page;state.currentPage=page;jalurWriteRoute(page);saveState();const label=PAGE_LABELS[page]||page;const crumb=$("#pageCrumb");if(crumb)crumb.textContent=label;$("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const primaryBottom=["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"];$("#moreNav")?.classList.toggle("active",!primaryBottom.includes(page));const activeNav=$(".side-nav .nav-item.active");if(activeNav&&activeNav.offsetParent!==null)activeNav.scrollIntoView({block:"nearest"}); };
+window.JALUR_SET_ACTIVE_PAGE = page => { if(!JALUR_PAGES.includes(page))return;currentPage=page;state.currentPage=page;jalurWriteRoute(page);saveState();const label=PAGE_LABELS[page]||page;const crumb=$("#pageCrumb");if(crumb)crumb.textContent=label;$("[data-page],.bottom-item[data-page],.nav-item[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const primaryBottom=["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"];$("#moreNav")?.classList.toggle("active",!primaryBottom.includes(page));const activeNav=$(".side-nav .nav-item.active");if(activeNav&&activeNav.offsetParent!==null)activeNav.scrollIntoView({block:"nearest"}); };
 
 
 // The optional journal program selector hydrates only when a user opens it.
@@ -494,18 +520,15 @@ document.addEventListener("focusin",e=>{
 // starts at the welcome screen; only an active session is resumed.
 let jalurResumeApp=false;
 try{
-  jalurResumeApp=localStorage.getItem("jalur-app-open")==="1"
-    ||sessionStorage.getItem("jalur-app-open")==="1"
-    ||Boolean(jalurPageFromHash())
-    ||Boolean(jalurStoredPage())
-    ||(JALUR_PAGES.includes(state.currentPage)&&state.currentPage!=="Dashboard");
-  // Migrate sessions created by earlier JALUR releases automatically.
-  if(jalurResumeApp)localStorage.setItem("jalur-app-open","1");
-}catch{
-  jalurResumeApp=sessionStorage.getItem("jalur-app-open")==="1"||Boolean(jalurPageFromHash());
-}
+  // Refresh resumes only in this tab; a fresh visit opens the welcome/login screen.
+  jalurResumeApp=sessionStorage.getItem("jalur-app-open")==="1";
+  localStorage.removeItem("jalur-app-open");
+}catch{jalurResumeApp=false;}
 if(jalurResumeApp){
+  document.documentElement.classList.remove("jalur-welcome-mode");
   $("#welcome")?.classList.add("hidden");
   $("#app")?.classList.remove("hidden");
   render();
+}else{
+  document.documentElement.classList.add("jalur-welcome-mode");
 }

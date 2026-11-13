@@ -1,13 +1,13 @@
 
 <!doctype html>
-<html lang="id">
+<html lang="id" class="jalur-welcome-mode">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#101013">
   <meta name="description" content="JALUR — bantu siswa mengeksplorasi dan membandingkan pilihan pendidikan tinggi dengan terstruktur.">
   <title>JALUR — Pendamping Eksplorasi Pendidikan Tinggi</title>
-  <link rel="stylesheet" href="/styles.css?v=20261113-r6">
+  <link rel="stylesheet" href="/styles.css?v=20261113-r7">
 </head>
 <body>
   <a class="skip-link" href="#main">Lewati ke konten utama</a>
@@ -70,6 +70,10 @@
       <div class="welcome-visual glass">
         <div class="orbit orbit-one"></div>
         <div class="orbit orbit-two"></div>
+        <div class="welcome-visual-beacon beacon-one" aria-hidden="true"></div>
+        <div class="welcome-visual-beacon beacon-two" aria-hidden="true"></div>
+        <div class="welcome-visual-spark spark-one" aria-hidden="true"></div>
+        <div class="welcome-visual-spark spark-two" aria-hidden="true"></div>
 
         <div class="path-node node-one">
           <span>01</span><b>Kenali</b><small>Profil akademik</small>
@@ -174,6 +178,7 @@
 
         <div class="top-actions">
           <span class="guest-badge"><span class="status-dot"></span> Mode Pengunjung</span>
+          <button type="button" class="home-return" data-return-welcome aria-label="Kembali ke halaman awal" title="Kembali ke halaman awal"><span class="home-return-icon" aria-hidden="true">⌂</span><span>Halaman awal</span></button>
           <button class="icon-btn" id="helpQuick" aria-label="Bantuan">?</button>
           <button class="profile-chip" data-page="Academic Profile">
             <span class="avatar-mini">G</span>
@@ -202,7 +207,7 @@
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
 
   <!-- The large education directory is fetched on demand by app.js. -->
-  <script defer src="/app.js?v=20261113-r8"></script>
+  <script defer src="/app.js?v=20261113-r9"></script>
 
   <!-- Deployed JALUR builds use the stable API domain. Preview API aliases may
        be protected by Vercel SSO and redirect OPTIONS preflights, which browsers block. -->
@@ -218,6 +223,6 @@
   </script>
 
   <!-- Integrasi backend harus dimuat setelah konfigurasi API -->
-  <script defer src="/central.js?v=20261113-r5"></script>
+  <script defer src="/central.js?v=20261113-r6"></script>
 </body>
 </html>
