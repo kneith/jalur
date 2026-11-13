@@ -847,3 +847,14 @@ button:disabled{cursor:not-allowed;filter:grayscale(.35);opacity:.56}input:disab
 [aria-invalid="true"],.field input:invalid:not(:placeholder-shown){border-color:#E58B9A}
 @media(max-width:760px){.dashboard-welcome{grid-template-columns:1fr}.dashboard-welcome-mark{min-height:65px;border-left:0;border-top:1px solid var(--border-soft);padding-top:13px;flex-direction:row}.dashboard-welcome-mark span{font-size:42px}.dashboard-welcome-actions{display:grid;grid-template-columns:1fr}.daily-quote{padding:16px}.daily-quote-label{letter-spacing:.08em}}
 @media(prefers-reduced-motion:reduce){.dashboard-welcome-mark span{animation:none}.btn,.icon-btn,.nav-item,.quick-action,.bottom-item{transition:none}}
+
+
+/* Attribution for the daily English quotation. */
+.daily-quote .quote-attribution{
+  margin:.55rem 0 .35rem;
+  color:var(--muted,#766b73);
+  font-size:.86rem;
+  font-weight:650;
+  letter-spacing:.015em;
+  text-align:right;
+}
