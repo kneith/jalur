@@ -350,7 +350,7 @@ document.addEventListener("click",async e=>{
  const delVent=e.target.closest("[data-delete-vent]");if(delVent){const d=portalData();d.vents.splice(Number(delVent.dataset.deleteVent),1);savePortalData(d);render();return;}
  const delSchool=e.target.closest("[data-delete-school]");if(delSchool){const d=portalData(),[key,idx]=delSchool.dataset.deleteSchool.split(":");d[key].splice(Number(idx),1);savePortalData(d);render();return;}
  const schoolTab=e.target.closest("[data-school-tab]");if(schoolTab){const d=portalData();$("#schoolRecordList").innerHTML=schoolList(d,schoolTab.dataset.schoolTab);$("#schoolDataType").value=schoolTab.dataset.schoolTab;return;}
- if(e.target.closest("[data-return-welcome]")){activeRole="guest";sessionStorage.removeItem("jalur-app-open");history.replaceState({},"",location.pathname+location.search);$("#app").classList.add("hidden");$("#welcome").classList.remove("hidden");currentPage="Dashboard";state.currentPage=currentPage;return;}
+ if(e.target.closest("[data-return-welcome]")){activeRole="guest";sessionStorage.removeItem("jalur-app-open");try{localStorage.removeItem("jalur-app-open");localStorage.removeItem("jalur-last-page")}catch{}currentPage="Dashboard";state.currentPage=currentPage;saveState();history.replaceState({},"",location.pathname+location.search);$("#app").classList.add("hidden");$("#welcome").classList.remove("hidden");return;}
  if(e.target.id==="exportSchoolData"){const blob=new Blob([JSON.stringify(portalData(),null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="jalur-data-sekolah-lokal.json";a.click();URL.revokeObjectURL(url);return;}
  const pageBtn=e.target.closest("[data-page]");if(pageBtn){navigate(pageBtn.dataset.page);return}
  const mainPick=e.target.closest("[data-set-main]");if(mainPick){const p=programById(mainPick.dataset.setMain);if(!p){toast("Program tidak ditemukan dalam basis data.","error");return}state.mainChoice=p.id;saveState();logActivity(`${p.name} ditetapkan sebagai pilihan utama`);render();toast("Pilihan utama berhasil diperbarui.");return}
@@ -501,7 +501,8 @@ try{
   jalurResumeApp=localStorage.getItem("jalur-app-open")==="1"
     ||sessionStorage.getItem("jalur-app-open")==="1"
     ||Boolean(jalurPageFromHash())
-    ||Boolean(jalurStoredPage());
+    ||Boolean(jalurStoredPage())
+    ||(JALUR_PAGES.includes(state.currentPage)&&state.currentPage!=="Dashboard");
   // Migrate sessions created by earlier JALUR releases automatically.
   if(jalurResumeApp)localStorage.setItem("jalur-app-open","1");
 }catch{
