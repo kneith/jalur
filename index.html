@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#101013">
   <meta name="description" content="JALUR — bantu siswa mengeksplorasi dan membandingkan pilihan pendidikan tinggi dengan terstruktur.">
   <title>JALUR — Pendamping Eksplorasi Pendidikan Tinggi</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/styles.css?v=20261113-r4">
 </head>
 <body>
   <a class="skip-link" href="#main">Lewati ke konten utama</a>
@@ -191,9 +191,8 @@
   <div id="modalRoot"></div>
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
 
-  <!-- Memuat direktori lokal dan aplikasi utama -->
-  <script src="backend/data/database.js"></script>
-  <script src="app.js"></script>
+  <!-- The large education directory is fetched on demand by app.js. -->
+  <script defer src="/app.js?v=20261113-r4"></script>
 
   <!-- Deployed JALUR builds use the stable API domain. Preview API aliases may
        be protected by Vercel SSO and redirect OPTIONS preflights, which browsers block. -->
@@ -209,6 +208,6 @@
   </script>
 
   <!-- Integrasi backend harus dimuat setelah konfigurasi API -->
-  <script src="central.js"></script>
+  <script defer src="/central.js?v=20261113-r4"></script>
 </body>
 </html>
