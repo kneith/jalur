@@ -118,8 +118,8 @@ function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;c
   $('#enterSchool')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('school')},true);
   $('#enterBK')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('bk')},true);
   $('#enterTeacher')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('teacher')},true);
-  const moderator=document.createElement('button');moderator.className='btn secondary large role-extra-entry';moderator.textContent='Masuk sebagai moderator curhat';moderator.addEventListener('click',()=>login('moderator'));$('.welcome-auth-actions')?.append(moderator);
-  const platformLogin=document.createElement('button');platformLogin.className='btn secondary large role-extra-entry';platformLogin.textContent='Masuk sebagai admin platform';platformLogin.addEventListener('click',()=>login('platform'));$('.welcome-auth-actions')?.append(platformLogin);
+  const moderator=document.createElement('button');moderator.className='btn secondary role-extra-entry compact-entry';moderator.textContent='Masuk sebagai moderator curhat';moderator.addEventListener('click',()=>login('moderator'));$('.welcome-auth-actions')?.append(moderator);
+  const platformLogin=document.createElement('button');platformLogin.className='btn secondary role-extra-entry compact-entry';platformLogin.textContent='Masuk sebagai admin platform';platformLogin.addEventListener('click',()=>login('platform'));$('.welcome-auth-actions')?.append(platformLogin);
   $('#enterGuest')?.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();user=null;csrfToken='';window.JALUR_GUEST_SELECTED=true;sessionStorage.setItem('jalur-guest-mode','1');window.JALUR_ENTER_GUEST?.();},true);
   // Existing student local account controls are intentionally not used for server authentication.
   $('#createAccount')?.addEventListener('click',e=>{e.stopImmediatePropagation();modal('Akun siswa','<p>Akun siswa terhubung dengan sekolah dan dibuat oleh pengelola sekolah. Hubungi sekolah untuk memperoleh akun. Pendaftaran mandiri belum diaktifkan.</p>')},true);
