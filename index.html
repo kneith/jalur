@@ -4,10 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#101013">
+  <meta name="theme-color" content="#0b1423">
   <meta name="description" content="JALUR — bantu siswa mengeksplorasi dan membandingkan pilihan pendidikan tinggi dengan terstruktur.">
   <title>JALUR — Pendamping Eksplorasi Pendidikan Tinggi</title>
-  <link rel="stylesheet" href="/styles.css?v=20261113-r7">
+  <link rel="stylesheet" href="/styles.css?v=20261113-r8">
 </head>
 <body>
   <a class="skip-link" href="#main">Lewati ke konten utama</a>
@@ -18,6 +18,8 @@
     <div class="ambient-glow glow-c"></div>
     <div class="ambient-liquid liquid-a"></div>
     <div class="ambient-liquid liquid-b"></div>
+    <div class="ambient-orbit ambient-orbit-one"></div><div class="ambient-orbit ambient-orbit-two"></div>
+    <span class="ambient-star star-a"></span><span class="ambient-star star-b"></span><span class="ambient-star star-c"></span><span class="ambient-star star-d"></span>
     <span class="ambient-particle particle-1"></span>
     <span class="ambient-particle particle-2"></span>
     <span class="ambient-particle particle-3"></span>
@@ -70,6 +72,7 @@
       <div class="welcome-visual glass">
         <div class="orbit orbit-one"></div>
         <div class="orbit orbit-two"></div>
+        <div class="orbit-satellite satellite-one" aria-hidden="true">✧</div><div class="orbit-satellite satellite-two" aria-hidden="true">✦</div><div class="orbit-satellite satellite-three" aria-hidden="true">✳</div>
         <div class="welcome-visual-beacon beacon-one" aria-hidden="true"></div>
         <div class="welcome-visual-beacon beacon-two" aria-hidden="true"></div>
         <div class="welcome-visual-spark spark-one" aria-hidden="true"></div>
@@ -207,7 +210,7 @@
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
 
   <!-- The large education directory is fetched on demand by app.js. -->
-  <script defer src="/app.js?v=20261113-r9"></script>
+  <script defer src="/app.js?v=20261113-r10"></script>
 
   <!-- Deployed JALUR builds use the stable API domain. Preview API aliases may
        be protected by Vercel SSO and redirect OPTIONS preflights, which browsers block. -->
@@ -223,6 +226,6 @@
   </script>
 
   <!-- Integrasi backend harus dimuat setelah konfigurasi API -->
-  <script defer src="/central.js?v=20261113-r6"></script>
+  <script defer src="/central.js?v=20261113-r7"></script>
 </body>
 </html>

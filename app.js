@@ -383,6 +383,21 @@ document.addEventListener("click",async e=>{
  const editSub=e.target.closest("[data-edit-subject]");if(editSub){subjectForm(Number(editSub.dataset.editSubject));return}
  const alumniBtn=e.target.closest("[data-alumni-detail]");if(alumniBtn){const a=alumni[Number(alumniBtn.dataset.alumniDetail)];openModal(a.name,`<p><strong>${a.program}</strong> · ${a.campus}</p><p>${a.insight}</p><h3>Contoh perjalanan</h3><ol><li>SMA: mulai mengeksplorasi minat dan mata pelajaran.</li><li>Memilih program: mencari tahu kurikulum dan persyaratan.</li><li>Kuliah: mencoba berbagai kegiatan pembelajaran.</li><li>Saat ini: terus belajar dan meninjau pilihan.</li></ol><p class="source-line">Seluruh cerita ini Data Simulasi, bukan kisah nyata.</p>`,`<button class="btn primary" id="closeAlumni">Tutup</button>`);$("#closeAlumni").onclick=closeModal;return}
 });
+window.JALUR_ENTER_GUEST = () => {
+ activeRole="guest";
+ window.JALUR_GUEST_SELECTED=true;
+ window.JALUR_LOGIN_REQUESTED=false;
+ window.JALUR_WELCOME_REQUESTED=false;
+ sessionStorage.setItem("jalur-guest-mode","1");
+ sessionStorage.setItem("jalur-app-open","1");
+ try{localStorage.removeItem("jalur-last-page");}catch{}
+ history.replaceState({},"",location.pathname+location.search);
+ currentPage="Dashboard";state.currentPage="Dashboard";
+ document.documentElement.classList.remove("jalur-welcome-mode");
+ $("#welcome")?.classList.add("hidden");$("#app")?.classList.remove("hidden");
+ jalurWriteRoute("Dashboard",true);render();
+ toast("Anda masuk sebagai pengunjung. Data tersimpan secara lokal pada peramban ini.","info");
+};
 function enterApplication(mode="guest",displayName="Pengunjung"){
   activeRole="guest";
   if(displayName){state.profile.nickname=displayName;saveState()}
