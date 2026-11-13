@@ -199,7 +199,7 @@ function gradeTrendChart(){
  const path=pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
  const grid=[0,25,50,75,100].map(v=>'<g><line x1="'+left+'" y1="'+y(v)+'" x2="'+(w-right)+'" y2="'+y(v)+'" class="grade-chart-grid"/><text x="'+(left-10)+'" y="'+(y(v)+4)+'" text-anchor="end" class="grade-chart-axis">'+v+'</text></g>').join('');
  const labels=pts.map(p=>'<text x="'+p.x+'" y="'+(h-20)+'" text-anchor="middle" class="grade-chart-label">'+escapeHtml(p.r.semester.replace(/^Semester\s*/i,'S')+', '+p.r.year)+'</text>').join('');
- const dots=pts.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="5" class="grade-chart-point"><title>'+escapeHtml(p.r.semester+' '+p.r.year+': '+p.r.average.toFixed(1)+' ('+p.r.count+' mata pelajaran)')+'</title></circle>').join('');
+ const dots=pts.map(p=>{const detail=p.r.semester+" "+p.r.year+" · Rata-rata "+p.r.average.toFixed(1)+" · "+p.r.count+" mata pelajaran";return '<circle cx="'+p.x+'" cy="'+p.y+'" r="6" tabindex="0" role="button" aria-label="'+escapeHtml(detail)+'" data-grade-tooltip="'+escapeHtml(detail)+'" class="grade-chart-point"><title>'+escapeHtml(detail)+'</title></circle>'}).join('');
  const first=rows[0].average,last=rows[rows.length-1].average,delta=last-first;
  const trend=rows.length<2?'Data baru mencakup satu semester. Tambahkan nilai dari semester lain untuk melihat perubahan.':(Math.abs(delta)<0.05?'Rata-rata stabil pada rentang semester yang tercatat.':(delta>0?'Naik ':'Turun ')+Math.abs(delta).toFixed(1)+' poin dibanding semester pertama yang tercatat.');
  return '<div class="grade-trend"><div class="grade-trend-meta"><strong>Rata-rata per semester</strong><span>'+rows.length+' periode, '+records.length+' nilai</span></div><svg class="grade-trend-svg" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Grafik rata-rata nilai per semester"><title>Tren rata-rata nilai akademik</title><desc>'+escapeHtml(trend)+'</desc>'+grid+(rows.length>1?'<path d="'+path+'" class="grade-chart-line"/>':'')+dots+labels+'</svg><p class="grade-trend-caption">'+escapeHtml(trend)+'</p><p class="source-line">Rata-rata dihitung dari nilai yang tersimpan untuk setiap semester dan tahun ajaran. Data Contoh tetap merupakan simulasi.</p></div>';
@@ -633,6 +633,11 @@ if(jalurResumeApp){
    el.style.left=clamp(left+dx,0,rect.width-el.offsetWidth)+"px";el.style.top=clamp(top+dy,0,rect.height-el.offsetHeight)+"px";
   });
  });
+ const showGradeDetail=point=>{const wrap=point.closest(".grade-chart-wrap");if(!wrap)return;const tip=wrap.querySelector(".grade-chart-tooltip");if(!tip)return;tip.textContent=point.dataset.gradeTooltip||point.getAttribute("aria-label")||"";tip.hidden=false;const wr=wrap.getBoundingClientRect(),pr=point.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(wr.width-tip.offsetWidth-8,pr.left-wr.left+pr.width/2-tip.offsetWidth/2))+"px";tip.style.top=Math.max(4,pr.top-wr.top-tip.offsetHeight-12)+"px";};
+ document.addEventListener("pointerover",e=>{const p=e.target.closest?.(".grade-chart-point");if(p&&e.pointerType!=="touch")showGradeDetail(p)});
+ document.addEventListener("focusin",e=>{const p=e.target.closest?.(".grade-chart-point");if(p)showGradeDetail(p)});
+ document.addEventListener("click",e=>{const p=e.target.closest?.(".grade-chart-point");if(p)showGradeDetail(p);else document.querySelectorAll(".grade-chart-tooltip:not([hidden])").forEach(t=>t.hidden=true)});
+ document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".grade-chart-tooltip:not([hidden])").forEach(t=>t.hidden=true)});
  // Pointer lighting is restricted to the welcome screen and real mouse input.
  const ambient=document.querySelector(".ambient");
  if(ambient&&window.matchMedia("(hover: hover) and (pointer: fine)").matches&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
