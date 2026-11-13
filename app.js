@@ -223,7 +223,7 @@ function dailyQuoteForToday(){
  ["Act as if what you do makes a difference. It does.","William James"],
  ["You must be the change you wish to see in the world.","Mahatma Gandhi"],
  ["Nothing is impossible. The word itself says 'I'm possible!'","Audrey Hepburn"],
- ["Start where you are. Use what you have. Do what you can.","Winston Churchill"],
+ ["The most effective way to do it, is to do it.","Amelia Earhart"],
  ["If opportunity doesn't knock, build a door.","Milton Berle"],
  ["The only limit to our realization of tomorrow is our doubts of today.","Franklin D. Roosevelt"],
  ["Well done is better than well said.","Benjamin Franklin"],
