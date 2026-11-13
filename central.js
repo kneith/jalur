@@ -125,7 +125,7 @@ function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;c
   $('#createAccount')?.addEventListener('click',e=>{e.stopImmediatePropagation();modal('Akun siswa','<p>Akun siswa terhubung dengan sekolah dan dibuat oleh pengelola sekolah. Hubungi sekolah untuk memperoleh akun. Pendaftaran mandiri belum diaktifkan.</p>')},true);
   $('#signIn')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('student')},true);
   async function hydrateStudentWorkspace(){if(user?.role!=='student')return;const remote=await api('/workspace');if(remote.workspace)window.JALUR_SET_WORKSPACE?.(remote.workspace);else{const local=window.JALUR_GET_WORKSPACE?.();if(local)await api('/workspace',{method:'POST',body:{workspace:local}});}}
-  window.addEventListener('DOMContentLoaded',async()=>{try{const d=await api('/auth/me');user=d.user;csrfToken=d.csrfToken||cookie('jalur_csrf');await hydrateStudentWorkspace();}catch{}});
+  window.addEventListener('DOMContentLoaded',async()=>{try{const d=await api('/auth/me');user=d.user;csrfToken=d.csrfToken||cookie('jalur_csrf');await hydrateStudentWorkspace();sessionStorage.setItem('jalur-app-open','1');$('#welcome')?.classList.add('hidden');$('#app')?.classList.remove('hidden');const saved=window.JALUR_GET_ACTIVE_PAGE?.()||'Dashboard';window.navigate?.(saved);}catch{}});
   // Role-aware navigation shortcut is deliberately server-rendered for protected modules.
   const oldNav=window.navigate;
   window.JALUR_API = { request: api, getUser: () => user };
