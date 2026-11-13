@@ -8,7 +8,13 @@ const initialState = {
   activities:[], journal:[], costPlans:{}, pathwayGroups:{}, currentPage:"Dashboard", settings:{largeText:false,reduceMotion:false}
 };
 let state = loadState();
-let currentPage = "Dashboard";
+const JALUR_PAGES = ["Dashboard","Academic Profile","Study Program Explorer","Study Tracer Alumni","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","BK Consultation","Anonymous Venting","School Portal","BK Portal"];
+function jalurPageFromHash(){try{const raw=location.hash.startsWith("#page=")?decodeURIComponent(location.hash.slice(6)):"";return JALUR_PAGES.includes(raw)?raw:null}catch{return null}}
+let currentPage = jalurPageFromHash() || (JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");
+let jalurSuppressHistory = false;
+function jalurWriteRoute(page,replace=false){if(!JALUR_PAGES.includes(page))return;const url="#page="+encodeURIComponent(page);if(location.hash===url)return;try{history[replace?"replaceState":"pushState"]({jalurPage:page},"",url)}catch{}}
+function jalurRestoreRoute(){const page=jalurPageFromHash() || (JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");jalurSuppressHistory=true;try{if(window.navigate)window.navigate(page);else{currentPage=page;state.currentPage=page;render()}}finally{jalurSuppressHistory=false}}
+window.addEventListener("popstate",jalurRestoreRoute);
 const fallbackPrograms = [
  {id:"p1",name:"Teknik Informatika",campus:"Institut Teknologi Bandung",level:"S1",field:"Teknologi",subjects:["Matematika","Informatika","Fisika"],requirements:"Persyaratan akademik dan jalur masuk mengikuti ketentuan resmi kampus.",source:"Data Contoh",updated:"2026 (contoh)"},
  {id:"p2",name:"Sistem Informasi",campus:"Universitas Indonesia",level:"S1",field:"Teknologi",subjects:["Matematika","Ekonomi","Informatika"],requirements:"Periksa persyaratan jalur masuk dan mata pelajaran pendukung di situs resmi.",source:"Data Contoh",updated:"2026 (contoh)"},
@@ -262,13 +268,13 @@ function bkPortalPage(){const d=portalData();return `${pageHead("BK Portal","Kel
 
 function openDrawer(){ $("#drawerBackdrop").classList.remove("hidden");$("#drawerBackdrop").innerHTML=`<div class="mobile-drawer" role="dialog" aria-label="Menu lainnya"><h3>Menu lainnya <button class="text-btn" id="closeDrawer" style="float:right">Tutup ×</button></h3>${["Academic Profile","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","BK Consultation","Anonymous Venting","Study Tracer Alumni","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources"].map(p=>`<button class="${p===currentPage?"active":""}" data-drawer-page="${p}">${PAGE_LABELS[p]||p}</button>`).join("")}</div>`;$("#closeDrawer").onclick=closeDrawer;$$("[data-drawer-page]").forEach(b=>b.onclick=()=>{closeDrawer();navigate(b.dataset.drawerPage)});$("#drawerBackdrop").onclick=e=>{if(e.target.id==="drawerBackdrop")closeDrawer()}}
 function closeDrawer(){$("#drawerBackdrop").classList.add("hidden");$("#drawerBackdrop").innerHTML=""}
-function navigate(page){if(page==="School Portal"&&activeRole!=="school"){toast("Portal pengelola hanya tersedia melalui jalur masuk sekolah.","error");return}if(page==="BK Portal"&&activeRole!=="bk"){toast("Portal BK hanya tersedia melalui jalur masuk guru BK.","error");return}currentPage=page;state.currentPage=page;saveState();render();window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
+function navigate(page){if(page==="School Portal"&&activeRole!=="school"){toast("Portal pengelola hanya tersedia melalui jalur masuk sekolah.","error");return}if(page==="BK Portal"&&activeRole!=="bk"){toast("Portal BK hanya tersedia melalui jalur masuk guru BK.","error");return}currentPage=page;state.currentPage=page;if(!jalurSuppressHistory)jalurWriteRoute(page);saveState();render();window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
 document.addEventListener("click",async e=>{
  const delConsult=e.target.closest("[data-delete-consult]");if(delConsult){const d=portalData();d.consultations.splice(Number(delConsult.dataset.deleteConsult),1);savePortalData(d);render();return;}
  const delVent=e.target.closest("[data-delete-vent]");if(delVent){const d=portalData();d.vents.splice(Number(delVent.dataset.deleteVent),1);savePortalData(d);render();return;}
  const delSchool=e.target.closest("[data-delete-school]");if(delSchool){const d=portalData(),[key,idx]=delSchool.dataset.deleteSchool.split(":");d[key].splice(Number(idx),1);savePortalData(d);render();return;}
  const schoolTab=e.target.closest("[data-school-tab]");if(schoolTab){const d=portalData();$("#schoolRecordList").innerHTML=schoolList(d,schoolTab.dataset.schoolTab);$("#schoolDataType").value=schoolTab.dataset.schoolTab;return;}
- if(e.target.closest("[data-return-welcome]")){activeRole="guest";$("#app").classList.add("hidden");$("#welcome").classList.remove("hidden");currentPage="Dashboard";return;}
+ if(e.target.closest("[data-return-welcome]")){activeRole="guest";sessionStorage.removeItem("jalur-app-open");history.replaceState({},"",location.pathname+location.search);$("#app").classList.add("hidden");$("#welcome").classList.remove("hidden");currentPage="Dashboard";state.currentPage=currentPage;return;}
  if(e.target.id==="exportSchoolData"){const blob=new Blob([JSON.stringify(portalData(),null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="jalur-data-sekolah-lokal.json";a.click();URL.revokeObjectURL(url);return;}
  const pageBtn=e.target.closest("[data-page]");if(pageBtn){navigate(pageBtn.dataset.page);return}
  const mainPick=e.target.closest("[data-set-main]");if(mainPick){const p=programById(mainPick.dataset.setMain);if(!p){toast("Program tidak ditemukan dalam basis data.","error");return}state.mainChoice=p.id;saveState();logActivity(`${p.name} ditetapkan sebagai pilihan utama`);render();toast("Pilihan utama berhasil diperbarui.");return}
@@ -283,7 +289,7 @@ document.addEventListener("click",async e=>{
 function enterApplication(mode="guest",displayName="Pengunjung"){
   activeRole="guest";
   if(displayName){state.profile.nickname=displayName;saveState()}
-  $("#welcome").classList.add("hidden");$("#app").classList.remove("hidden");currentPage="Dashboard";render();
+  sessionStorage.setItem("jalur-app-open","1");$("#welcome").classList.add("hidden");$("#app").classList.remove("hidden");currentPage=jalurPageFromHash()||"Dashboard";state.currentPage=currentPage;jalurWriteRoute(currentPage,true);render();
   toast(mode==="account"?`Selamat datang, ${displayName}. Akun ini hanya tersimpan di peramban ini.`:"Anda masuk sebagai pengunjung. Data tersimpan secara lokal pada peramban ini.","info");
 }
 const ACCOUNTS_KEY="jalur-local-accounts-v1";
@@ -386,7 +392,7 @@ document.addEventListener("click",async e=>{
  if(e.target.id==="addAlternative")openProgramPicker("alternative");
  if(e.target.id==="clearMain"){state.mainChoice=null;saveState();render()}
  if(e.target.id==="printSummary")window.print();
- if(e.target.id==="resetSession"){if(confirm("Hapus semua data sesi dari browser ini? Tindakan ini tidak dapat dibatalkan.")){localStorage.removeItem(STORE_KEY);state=structuredClone(initialState);currentPage="Dashboard";$("#app").classList.add("hidden");$("#welcome").classList.remove("hidden");toast("Data sesi dihapus.","success")}}
+ if(e.target.id==="resetSession"){if(confirm("Hapus semua data sesi dari browser ini? Tindakan ini tidak dapat dibatalkan.")){localStorage.removeItem(STORE_KEY);sessionStorage.removeItem("jalur-app-open");history.replaceState({},"",location.pathname+location.search);state=structuredClone(initialState);currentPage="Dashboard";$("#app").classList.add("hidden");$("#welcome").classList.remove("hidden");toast("Data sesi dihapus.","success")}}
 });
 if(state.settings.largeText)document.body.style.fontSize="17px";
 if(state.settings.reduceMotion)document.documentElement.style.scrollBehavior="auto";
@@ -394,4 +400,13 @@ if(state.settings.reduceMotion)document.documentElement.style.scrollBehavior="au
 window.JALUR_SET_JOURNAL = items => { state.journal = Array.isArray(items) ? items : []; saveState(); render(); };
 window.JALUR_GET_WORKSPACE = () => ({profile:state.profile,notes:state.notes,compared:state.compared,mainChoice:state.mainChoice,alternatives:state.alternatives,checked:state.checked,costPlans:state.costPlans,pathwayGroups:state.pathwayGroups,settings:state.settings});
 window.JALUR_SET_WORKSPACE = workspace => { if(!workspace||typeof workspace!=="object")return; for(const key of ["profile","notes","compared","mainChoice","alternatives","checked","costPlans","pathwayGroups","settings"])if(Object.prototype.hasOwnProperty.call(workspace,key))state[key]=workspace[key]; saveState(); render(); };
-window.JALUR_SET_ACTIVE_PAGE = page => { currentPage=page;state.currentPage=page;const label=PAGE_LABELS[page]||page;const crumb=$("#pageCrumb");if(crumb)crumb.textContent=label;$$("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const primaryBottom=["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"];$("#moreNav")?.classList.toggle("active",!primaryBottom.includes(page)); };
+window.JALUR_SET_ACTIVE_PAGE = page => { currentPage=page;state.currentPage=page;jalurWriteRoute(page);saveState();const label=PAGE_LABELS[page]||page;const crumb=$("#pageCrumb");if(crumb)crumb.textContent=label;$$("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const primaryBottom=["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"];$("#moreNav")?.classList.toggle("active",!primaryBottom.includes(page)); };
+
+
+// Restore the last in-app page after a refresh in this tab. A new visit still
+// starts at the welcome screen; only an active session is resumed.
+if (sessionStorage.getItem("jalur-app-open")==="1") {
+  $("#welcome")?.classList.add("hidden");
+  $("#app")?.classList.remove("hidden");
+  render();
+}
