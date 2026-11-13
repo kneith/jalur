@@ -435,3 +435,43 @@ input.search-input, textarea.search-input,
 .jalur-reduce-motion .visual-center,
 .jalur-reduce-motion #pageRoot.page-enter,
 .jalur-reduce-motion .directory-loading-orb{animation:none!important;will-change:auto}
+
+
+/* JALUR visual polish: restrained motion, with reduced-motion support */
+.ambient-glow{
+  will-change:transform,opacity;
+  animation:jalurGlowFloat 24s ease-in-out infinite alternate;
+}
+.glow-b{animation-duration:29s;animation-delay:-8s}
+.glow-c{animation-duration:33s;animation-delay:-13s}
+.welcome-visual{isolation:isolate}
+.welcome-visual::before{
+  content:"";position:absolute;inset:-38%;pointer-events:none;opacity:.18;
+  background:conic-gradient(from 30deg,transparent 0 18%,rgba(232,102,58,.42) 27%,transparent 38% 62%,rgba(92,200,214,.22) 72%,transparent 84%);
+  animation:jalurOrbit 38s linear infinite;
+}
+.welcome-visual::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.075) 47%,transparent 68%);
+  transform:translateX(-130%);animation:jalurShimmer 12s ease-in-out infinite;
+}
+.path-node{transition:transform .28s ease,border-color .28s ease,box-shadow .28s ease;animation:jalurNodeFloat 7s ease-in-out infinite}
+.node-two{animation-delay:-2.2s}.node-three{animation-delay:-4.4s}
+.path-node:hover{transform:translateY(-4px);border-color:rgba(240,122,82,.58);box-shadow:0 16px 36px rgba(0,0,0,.38)}
+.visual-center{transition:transform .3s ease,border-color .3s ease}
+.welcome-visual:hover .visual-center{transform:translateY(-2px);border-color:rgba(240,122,82,.45)}
+.nav-item,.bottom-item,.mobile-drawer button{transition:transform .2s ease,background .2s ease,border-color .2s ease,color .2s ease}
+.nav-item:hover{transform:translateX(3px)}
+.mobile-drawer button:hover{transform:translateY(-2px);border-color:rgba(240,122,82,.5)}
+.stat-card,.program-card,.source-card{transition:transform .24s ease,border-color .24s ease,box-shadow .24s ease}
+.stat-card:hover,.program-card:hover,.source-card:hover{transform:translateY(-3px);border-color:rgba(240,122,82,.38);box-shadow:0 18px 42px rgba(0,0,0,.28)}
+#pageRoot.page-enter{animation:jalurPageReveal .34s cubic-bezier(.2,.75,.25,1) both}
+@keyframes jalurGlowFloat{from{transform:translate3d(0,0,0) scale(1);opacity:.16}to{transform:translate3d(18px,-14px,0) scale(1.06);opacity:.3}}
+@keyframes jalurOrbit{to{transform:rotate(390deg)}}
+@keyframes jalurShimmer{0%,58%{transform:translateX(-130%)}78%,100%{transform:translateX(130%)}}
+@keyframes jalurNodeFloat{0%,100%{translate:0 0}50%{translate:0 -5px}}
+@keyframes jalurPageReveal{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){
+  .ambient-glow,.welcome-visual::before,.welcome-visual::after,.path-node,#pageRoot.page-enter{animation:none!important}
+  .path-node,.visual-center,.nav-item,.bottom-item,.mobile-drawer button,.stat-card,.program-card,.source-card{transition:none!important}
+}
