@@ -343,7 +343,7 @@ input.search-input, textarea.search-input,
  background-size:130% 130%;mix-blend-mode:screen;
  animation:jalur-aurora 34s ease-in-out infinite alternate;
 }
-.ambient-glow{will-change:transform;animation:jalur-drift 27s ease-in-out infinite alternate}
+.ambient-glow{z-index:2;will-change:transform;animation:jalur-drift 27s ease-in-out infinite alternate}
 .glow-a{animation-delay:-8s}.glow-b{animation-delay:-16s}.glow-c{animation-delay:-3s}
 .topbar{overflow:hidden}
 .topbar:after{
@@ -365,15 +365,15 @@ input.search-input, textarea.search-input,
 /* JALUR living aurora: low-cost layered gradients, no canvas or continuous JS. */
 .ambient{isolation:isolate}
 .ambient:after{
-  content:"";position:absolute;inset:-18%;
-  pointer-events:none;z-index:-1;opacity:.56;
+  content:"";position:absolute;inset:-20%;
+  pointer-events:none;z-index:1;opacity:.82;mix-blend-mode:screen;
   background:
-    radial-gradient(ellipse 34% 25% at 18% 28%,rgba(83,174,128,.24),transparent 72%),
-    radial-gradient(ellipse 30% 27% at 76% 36%,rgba(73,174,190,.19),transparent 72%),
-    radial-gradient(ellipse 36% 28% at 62% 82%,rgba(232,102,58,.19),transparent 74%);
-  filter:blur(34px);
+    radial-gradient(ellipse 40% 32% at 16% 28%,rgba(89,196,136,.31),transparent 72%),
+    radial-gradient(ellipse 38% 34% at 78% 34%,rgba(74,188,205,.26),transparent 72%),
+    radial-gradient(ellipse 43% 34% at 63% 82%,rgba(245,112,62,.29),transparent 74%);
+  filter:blur(46px);
   transform:translate3d(0,0,0);
-  animation:jalur-aurora-drift 26s ease-in-out infinite alternate;
+  animation:jalur-aurora-drift 19s ease-in-out infinite alternate;
   will-change:transform;
 }
 .ambient-glow{will-change:transform;animation:jalur-glow-float 31s ease-in-out infinite alternate}
@@ -396,3 +396,42 @@ input.search-input, textarea.search-input,
 @media(prefers-reduced-motion:reduce){
   .ambient:after,.ambient-glow{animation:none!important;will-change:auto}
 }
+
+
+/* Lightweight motion cues: aurora atmosphere, orbit movement, and page arrival. */
+.orbit-one{animation:jalur-orbit-one 32s linear infinite}
+.orbit-two{animation:jalur-orbit-two 44s linear infinite}
+.visual-center{animation:jalur-compass-breathe 7s ease-in-out infinite}
+@keyframes jalur-orbit-one{from{transform:rotate(-20deg)}to{transform:rotate(340deg)}}
+@keyframes jalur-orbit-two{from{transform:rotate(35deg)}to{transform:rotate(-325deg)}}
+@keyframes jalur-compass-breathe{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-5px,0)}}
+#pageRoot.page-enter{animation:jalur-page-arrive .34s cubic-bezier(.2,.75,.25,1) both}
+@keyframes jalur-page-arrive{from{opacity:0;transform:translate3d(0,9px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+.directory-loading{min-height:220px;display:grid;justify-items:center;align-content:center;text-align:center;gap:10px;padding:30px}
+.directory-loading h2{margin:0}
+.directory-loading p{max-width:52ch;margin:0}
+.directory-loading-orb{
+  width:46px;height:46px;border-radius:50%;
+  background:conic-gradient(from 0deg,#59c488,#57c8d5,#ef8052,#59c488);
+  position:relative;animation:jalur-loader-spin 2.4s linear infinite;
+  box-shadow:0 0 30px rgba(88,190,155,.18);
+}
+.directory-loading-orb:after{content:"";position:absolute;inset:5px;border-radius:50%;background:#151518;border:1px solid rgba(255,255,255,.12)}
+@keyframes jalur-loader-spin{to{transform:rotate(360deg)}}
+@media(max-width:700px){
+  .ambient:after{filter:blur(34px);opacity:.62;animation-duration:28s}
+  .ambient-glow{filter:blur(48px);opacity:.18}
+  .welcome-visual{min-height:300px}
+}
+@media(prefers-reduced-motion:reduce){
+  .ambient:after,.ambient-glow,.orbit-one,.orbit-two,.visual-center,#pageRoot.page-enter,.directory-loading-orb{
+    animation:none!important;will-change:auto
+  }
+}
+.jalur-reduce-motion .ambient:after,
+.jalur-reduce-motion .ambient-glow,
+.jalur-reduce-motion .orbit-one,
+.jalur-reduce-motion .orbit-two,
+.jalur-reduce-motion .visual-center,
+.jalur-reduce-motion #pageRoot.page-enter,
+.jalur-reduce-motion .directory-loading-orb{animation:none!important;will-change:auto}
