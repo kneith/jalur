@@ -9,7 +9,7 @@ const initialState = {
 };
 let state = loadState();
 let activeRole = "guest";
-const JALUR_PAGES = ["Dashboard","Academic Profile","Study Program Explorer","Study Tracer Alumni","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","BK Consultation","Anonymous Venting","School Portal","BK Portal"];
+const JALUR_PAGES = ["Dashboard","Academic Profile","Study Program Explorer","Study Tracer Alumni","SNBT Predictor","SNBP Data","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","BK Consultation","Anonymous Venting","School Portal","BK Portal"];
 
 const JALUR_ROLE_MENUS = {
  guest:["Dashboard","Study Program Explorer","Academic Profile","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","Study Tracer Alumni","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources"],
@@ -20,6 +20,13 @@ const JALUR_ROLE_MENUS = {
  wellbeing_moderator:["Dashboard","Anonymous Venting","Settings","Help / About","User Guide"],
  platform_admin:["Dashboard","Settings","Help / About","User Guide"]
 };
+for (const role of ["guest","student","school_admin","teacher","counselor"]) {
+  const menu=JALUR_ROLE_MENUS[role]||[];
+  for (const page of ["Study Tracer Alumni","SNBT Predictor","SNBP Data"]) if(!menu.includes(page)) {
+    const at=menu.indexOf("Study Program Explorer");
+    menu.splice(at>=0?at+1:menu.length,0,page);
+  }
+}
 const JALUR_ROLE_BOTTOM = {
  guest:["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"],
  student:["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"],
@@ -249,7 +256,7 @@ function saveState(){try{const persisted=structuredClone(state);if(window.JALUR_
 function logActivity(text){state.activities.unshift({text,time:new Date().toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})});state.activities=state.activities.slice(0,5);saveState()}
 function toast(message,type="success"){const el=document.createElement("div");el.className=`toast ${type}`;el.textContent=message;$("#toastRegion").append(el);setTimeout(()=>el.remove(),5500)}
 function escapeHtml(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-const PAGE_LABELS={"Dashboard":"Beranda","Academic Profile":"Profil Akademik","Study Program Explorer":"Penjelajah Program Studi","Study Tracer Alumni":"Pengalaman Alumni","Decision Comparison":"Perbandingan Program Studi","Plan B Builder":"Rencana Alternatif","Decision Blind Spot Detector":"Daftar Periksa Keputusan","Decision Summary":"Ringkasan Keputusan","Settings":"Pengaturan","Help / About":"Bantuan dan Tentang JALUR","User Guide":"Panduan Penggunaan","Official Sources":"Pusat Informasi Resmi","Program Study Reality Check":"Realitas Perkuliahan","Similarity Explorer":"Program Studi Serupa","Alternative Pathway Planner":"Peta Jalur Alternatif","Campus Life Preview":"Gambaran Kehidupan Kampus","Education Cost Planner":"Perencana Biaya Pendidikan","Decision Journal":"Jurnal Keputusan","BK Consultation":"Konsultasi BK","Anonymous Venting":"Curhat Anonim","School Portal":"Portal Pengelola Sekolah","BK Portal":"Portal Guru BK"};
+const PAGE_LABELS={"Dashboard":"Beranda","Academic Profile":"Profil Akademik","Study Program Explorer":"Penjelajah Program Studi","Study Tracer Alumni":"Data Alumni","SNBT Predictor":"Prediksi SNBT","SNBP Data":"Data SNBP","Decision Comparison":"Perbandingan Program Studi","Plan B Builder":"Rencana Alternatif","Decision Blind Spot Detector":"Daftar Periksa Keputusan","Decision Summary":"Ringkasan Keputusan","Settings":"Pengaturan","Help / About":"Bantuan dan Tentang JALUR","User Guide":"Panduan Penggunaan","Official Sources":"Pusat Informasi Resmi","Program Study Reality Check":"Realitas Perkuliahan","Similarity Explorer":"Program Studi Serupa","Alternative Pathway Planner":"Peta Jalur Alternatif","Campus Life Preview":"Gambaran Kehidupan Kampus","Education Cost Planner":"Perencana Biaya Pendidikan","Decision Journal":"Jurnal Keputusan","BK Consultation":"Konsultasi BK","Anonymous Venting":"Curhat Anonim","School Portal":"Portal Pengelola Sekolah","BK Portal":"Portal Guru BK"};
 function render(){
  const root=$("#pageRoot");
  if(!root)return;
@@ -280,7 +287,12 @@ function render(){
    $("#main")?.focus({preventScroll:true});
    return;
   }
-  const renderers={"Dashboard":dashboardPage,"Academic Profile":profilePage,"Study Program Explorer":explorerPage,"Study Tracer Alumni":alumniPage,"Decision Comparison":comparisonPage,"Plan B Builder":planBPage,"Decision Blind Spot Detector":blindSpotPage,"Decision Summary":summaryPage,"Settings":settingsPage,"Help / About":helpPage,"User Guide":guidePage,"Official Sources":sourcesPage,"Program Study Reality Check":realityPage,"Similarity Explorer":similarityPage,"Alternative Pathway Planner":pathwayPage,"Campus Life Preview":campusPage,"Education Cost Planner":costPage,"Decision Journal":journalPage,"BK Consultation":consultationPage,"Anonymous Venting":ventingPage,"School Portal":schoolPortalPage,"BK Portal":bkPortalPage};
+  if(ADMISSIONS_DATA_PAGES.has(currentPage)&&!window.JALUR_ADMISSIONS){
+   root.innerHTML='<section class="directory-loading" role="status"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat data alumni dan seleksi nasional…</span></section>';
+   loadAdmissionsData().then(()=>{if(currentPage&&ADMISSIONS_DATA_PAGES.has(currentPage))render();}).catch(error=>{root.innerHTML=`<section class="panel glass"><h2>Data belum dapat dimuat</h2><p>${escapeHtml(error.message||"Periksa koneksi lalu coba lagi.")}</p><button class="btn primary" id="retryAdmissionsData">Coba lagi</button></section>`;});
+   $("#main")?.focus({preventScroll:true});return;
+  }
+  const renderers={"Dashboard":dashboardPage,"Academic Profile":profilePage,"Study Program Explorer":explorerPage,"Study Tracer Alumni":alumniPage,"SNBT Predictor":snbtPredictorPage,"SNBP Data":snbpDataPage,"Decision Comparison":comparisonPage,"Plan B Builder":planBPage,"Decision Blind Spot Detector":blindSpotPage,"Decision Summary":summaryPage,"Settings":settingsPage,"Help / About":helpPage,"User Guide":guidePage,"Official Sources":sourcesPage,"Program Study Reality Check":realityPage,"Similarity Explorer":similarityPage,"Alternative Pathway Planner":pathwayPage,"Campus Life Preview":campusPage,"Education Cost Planner":costPage,"Decision Journal":journalPage,"BK Consultation":consultationPage,"Anonymous Venting":ventingPage,"School Portal":schoolPortalPage,"BK Portal":bkPortalPage};
   root.innerHTML=(renderers[currentPage]||dashboardPage)();
   root.classList.remove("page-enter");
   void root.offsetWidth;
@@ -461,6 +473,87 @@ function explorerPage(){
  <section class="panel glass section-gap"><div class="panel-head"><div><h2>Ringkasan cakupan data</h2><p class="panel-sub">Jumlah entri yang dimuat pada aplikasi ini.</p></div></div><div class="stat-grid">${statCard("⌕","Program studi",formatNum(dbCount),"Seluruh entri tersedia melalui pencarian","Study Program Explorer")}${statCard("⌂","Perguruan tinggi",formatNum(instCount),"Seluruh entri tersedia melalui pencarian","Study Program Explorer")}${statCard("A–Z","Pengurutan","Alfabetis","Nama program dan perguruan tinggi","Study Program Explorer")}</div></section>
  <section class="panel glass section-gap"><div class="panel-head"><div><h2>Statistik seleksi nasional</h2><p class="panel-sub">Angka agregat nasional yang tersedia pada dataset; bukan peluang pribadi atau angka per program studi.</p></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Tahun</th><th>Jalur</th><th>Daya tampung</th><th>Pendaftar</th><th>Diterima</th><th>Diterima/pendaftar</th><th>Sumber</th></tr></thead><tbody>${(window.JALUR_DB?.nationalStats||[]).map(s=>`<tr><td>${escapeHtml(String(s.year??"Belum tersedia"))}</td><td>${escapeHtml(String(s.route??"Belum tersedia"))}</td><td>${s.capacity_total==null?"Tidak tersedia":formatNum(s.capacity_total)}</td><td>${s.applicants_total==null?"Tidak tersedia":formatNum(s.applicants_total)}</td><td>${s.admitted_total==null?"Tidak tersedia":formatNum(s.admitted_total)}</td><td>${s.admitted_to_applicants_pct==null?"Tidak tersedia":`${escapeHtml(String(s.admitted_to_applicants_pct))}%`}</td><td>${s.source_url?`<a href="${escapeHtml(s.source_url)}" target="_blank" rel="noopener noreferrer">Sumber ↗</a>`:"Tidak tersedia"}</td></tr>`).join("")}</tbody></table></div><p class="source-line">Angka agregat tidak dapat digunakan sebagai skor ambang atau peluang kelulusan individual.</p></section>`;
 }
+
+const ADMISSIONS_DATA_PAGES = new Set(["Study Tracer Alumni","SNBT Predictor","SNBP Data"]);
+function loadAdmissionsData(){
+ if(window.JALUR_ADMISSIONS)return Promise.resolve(window.JALUR_ADMISSIONS);
+ if(window.JALUR_ADMISSIONS_PROMISE)return window.JALUR_ADMISSIONS_PROMISE;
+ window.JALUR_ADMISSIONS_PROMISE=(async()=>{
+  const response=await fetch("/data/admissions/admissions-data.b64",{cache:"force-cache"});
+  if(!response.ok)throw new Error("Berkas data penerimaan tidak ditemukan ("+response.status+").");
+  const encoded=(await response.text()).trim();
+  const binary=atob(encoded);
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  if(typeof DecompressionStream==="undefined")throw new Error("Browser ini belum mendukung pembacaan arsip data. Gunakan Chrome, Edge, atau Firefox versi terbaru.");
+  const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  const data=await new Response(stream).json();
+  if(data?.alumni?.length!==252||data?.snbt?.length!==4643||!data?.snbp?.capacityByLevel?.length)throw new Error("Validasi isi data penerimaan tidak cocok dengan sumber.");
+  window.JALUR_ADMISSIONS=data;
+  return data;
+ })().catch(error=>{window.JALUR_ADMISSIONS_PROMISE=null;throw error;});
+ return window.JALUR_ADMISSIONS_PROMISE;
+}
+function admissionFormatNum(value){return value===null||value===undefined?"—":Number(value).toLocaleString("id-ID");}
+function admissionStatCard(label,value,hint){return '<article class="stat-card glass"><div class="stat-top"><span class="stat-icon">◈</span><span class="stat-label">'+escapeHtml(label)+'</span></div><div class="stat-value">'+value+'</div><div class="stat-hint">'+escapeHtml(hint||"")+'</div></article>';}
+function admissionTable(headers, rows){
+ return `<div class="table-wrap"><table class="data-table"><thead><tr>${headers.map(x=>`<th>${escapeHtml(x)}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${cell??"—"}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+function alumniPage(){
+ const data=window.JALUR_ADMISSIONS;
+ const rows=data.alumni;
+ const routeCounts={}; const classCounts={};
+ rows.forEach(r=>{routeCounts[r[4]||"Belum diisi"]=(routeCounts[r[4]||"Belum diisi"]||0)+1;classCounts[r[0]||"Belum diisi"]=(classCounts[r[0]||"Belum diisi"]||0)+1;});
+ const routeCards=Object.entries(routeCounts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>admissionStatCard(k,admissionFormatNum(v),"Alumni"));
+ const classOptions=Object.keys(classCounts).sort(alpha).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+ const tableRows=rows.map((r,i)=>`<tr class="alumni-data-row" data-search="${escapeHtml(normalizeSearch(r.join(" ")))}" data-class="${escapeHtml(r[0])}" data-route="${escapeHtml(r[4])}"><td>${i+1}</td><td><strong>${escapeHtml(r[1]||"—")}</strong></td><td>${escapeHtml(r[0]||"—")}</td><td>${escapeHtml(r[2]||"Belum diisi")}</td><td>${escapeHtml(r[3]||"Belum diisi")}</td><td>${escapeHtml(r[4]||"Belum diisi")}</td></tr>`).join("");
+ return `${pageHead("Data Alumni","Rekap hasil alumni sekolah berdasarkan file REKAP OUTPUT 26 FIX. Nama, kelas, program studi, perguruan tinggi, dan jalur ditampilkan; NIS tidak ditampilkan.")}<div class="stats-grid">${admissionStatCard("Total alumni",admissionFormatNum(rows.length),"Data sumber")}${admissionStatCard("Rombel",admissionFormatNum(Object.keys(classCounts).length),"Kelas XII")}${admissionStatCard("Jalur tercatat",admissionFormatNum(Object.keys(routeCounts).length),"Kategori")}</div><section class="panel glass section-gap"><div class="panel-head"><div><h2>Distribusi jalur</h2><p class="panel-sub">Seluruh data 252 baris dari lembar rekap.</p></div></div><div class="stats-grid">${routeCards.join("")}</div></section><section class="panel glass section-gap"><div class="panel-head"><div><h2>Daftar alumni</h2><p class="panel-sub" id="alumniResultCount">Menampilkan 252 dari 252 data.</p></div><span class="data-tag">NIS disembunyikan</span></div><div class="filter-grid"><div class="field"><label for="alumniSearch">Cari nama, prodi, kampus, atau jalur</label><input id="alumniSearch" type="search" placeholder="Ketik kata kunci…"></div><div class="field"><label for="alumniClassFilter">Kelas</label><select id="alumniClassFilter"><option value="">Semua kelas</option>${classOptions}</select></div><div class="field"><label for="alumniRouteFilter">Jalur</label><select id="alumniRouteFilter"><option value="">Semua jalur</option>${Object.keys(routeCounts).sort(alpha).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("")}</select></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>No.</th><th>Nama</th><th>Kelas</th><th>Program studi</th><th>Perguruan tinggi</th><th>Jalur</th></tr></thead><tbody id="alumniRows">${tableRows}</tbody></table></div><p class="source-line">Sumber: REKAP OUTPUT 26 FIX.xlsx. Entri kosong pada file sumber tetap ditampilkan sebagai “Belum diisi”. Data pribadi berupa NIS tidak disajikan.</p></section>`;
+}
+function applyAlumniFilters(){
+ const q=normalizeSearch($("#alumniSearch")?.value||"");
+ const cls=$("#alumniClassFilter")?.value||"";
+ const route=$("#alumniRouteFilter")?.value||"";
+ let count=0;
+ $(".alumni-data-row").forEach(row=>{const show=(!q||row.dataset.search.includes(q))&&(!cls||row.dataset.class===cls)&&(!route||row.dataset.route===route);row.hidden=!show;if(show)count++;});
+ const label=$("#alumniResultCount");if(label)label.textContent=`Menampilkan ${admissionFormatNum(count)} dari 252 data.`;
+}
+function snbtPredictorPage(){
+ const data=window.JALUR_ADMISSIONS;const filters=window.snbtFilters||{query:"",level:"",score:""};
+ const q=normalizeSearch(filters.query||"");const level=filters.level||"";
+ const score=filters.score!==""&&Number.isFinite(Number(filters.score))?Number(filters.score):null;
+ let rows=data.snbt.filter(r=>(!level||r[3]===level)&&(!q||normalizeSearch(r[0]+" "+r[1]+" "+r[2]).includes(q)));
+ if(score!==null)rows.sort((a,b)=>Math.abs(score-a[6])-Math.abs(score-b[6]));
+ const limit=window.snbtLimit||50;const shown=rows.slice(0,limit);
+ const trs=shown.map(r=>{const diff=score===null?null:score-r[6];const comparison=diff===null?"Masukkan skor":Math.abs(diff)<0.005?"Setara referensi":diff>0?"Di atas referensi":"Di bawah referensi";return `<tr><td>${escapeHtml(r[0])}</td><td><strong>${escapeHtml(r[1])}</strong></td><td>${escapeHtml(r[2])}</td><td>${escapeHtml(r[3])}</td><td>${admissionFormatNum(r[4])}</td><td>${r[5]===null?"Prodi baru":admissionFormatNum(r[5])}</td><td><strong>${Number(r[6]).toFixed(2)}</strong></td><td>${diff===null?"—":(diff>0?"+":"")+diff.toFixed(2)}</td><td>${comparison}</td><td><button class="btn secondary small" data-snbt-detail="${escapeHtml(r[0])}">Detail prodi</button></td></tr>`;}).join("");
+ return `${pageHead("Prediksi Pembanding SNBT","Bandingkan skor UTBK yang kamu masukkan dengan nilai referensi P. Grade pada daftar PTN UTBK-SNBT 2025. Ini alat pembanding historis, bukan prediksi peluang atau jaminan kelulusan.")}<div class="notice"><strong>Penting:</strong> P. Grade pada sumber adalah referensi pihak ketiga, bukan passing grade resmi SNPMB, bukan skor minimum terverifikasi, dan bukan dasar untuk menghitung peluang kelulusan. Hasil hanya menunjukkan jarak skor terhadap angka referensi.</div><section class="panel glass"><div class="filter-grid"><div class="field"><label for="snbtSearch">Cari universitas / program studi / kode</label><input id="snbtSearch" type="search" value="${escapeHtml(filters.query||"")}" placeholder="Mis. Kedokteran, UGM, 111016"></div><div class="field"><label for="snbtLevel">Jenjang</label><select id="snbtLevel"><option value="">Semua jenjang (D3, D4, S1)</option><option value="S1" ${level==="S1"?"selected":""}>S1</option><option value="D-III" ${level==="D-III"?"selected":""}>D-III</option><option value="D-IV" ${level==="D-IV"?"selected":""}>D-IV</option></select></div><div class="field"><label for="snbtScore">Skor UTBK kamu</label><input id="snbtScore" type="number" min="0" max="1000" step="0.01" value="${filters.score??""}" placeholder="Masukkan skor total"></div></div><p class="panel-sub">Ditemukan <strong>${admissionFormatNum(rows.length)}</strong> program dari 4.643 baris pada sumber. Menampilkan ${admissionFormatNum(shown.length)} program pertama${score!==null?" yang diurutkan berdasarkan kedekatan nilai referensi":""}.</p><div class="table-wrap"><table class="data-table"><thead><tr><th>Kode</th><th>PTN</th><th>Program studi</th><th>Jenjang</th><th>Daya tampung</th><th>Peminat</th><th>P. Grade 2025</th><th>Selisih skor</th><th>Perbandingan</th><th></th></tr></thead><tbody>${trs||'<tr><td colspan="10">Tidak ada data yang sesuai dengan pencarian.</td></tr>'}</tbody></table></div><div class="form-actions"><button class="btn secondary" id="snbtLoadMore" ${shown.length>=rows.length?"disabled":""}>Tampilkan 50 berikutnya</button></div><p class="source-line">Sumber: Daftar PTN UTBK-SNBT 2025 (PDF referensi pihak ketiga). Data yang dimuat: S1, D-III, D-IV; S2/S3 dan kategori kedinasan/militer/polisi tidak dimasukkan. Nilai dan daya tampung dapat berubah pada seleksi tahun berikutnya.</p></section>`;
+}
+function snbpDataPage(){
+ const d=window.JALUR_ADMISSIONS.snbp;const years=[2024,2025,2026];
+ const capacities=admissionTable(["Jenis PTN","SNBP","SNBT","Mandiri","Total"],d.capacityByInstitutionType.map(r=>[r.type,...["snbp","snbt","mandiri","total"].map(k=>admissionFormatNum(r[k]))]));
+ const levels=admissionTable(["Jenjang","SNBP","SNBT","Mandiri","Total"],d.capacityByLevel.map(r=>[r.level,...["snbp","snbt","mandiri","total"].map(k=>admissionFormatNum(r[k]))]));
+ const participation=admissionTable(["Indikator","2024","2025","2026"],d.participationByYear.map(r=>[r.metric,...r.values.map((v,i)=>admissionFormatNum(v)+(r.eRaport?.[i]?` (${admissionFormatNum(r.eRaport[i])} e-Rapor)`:""))]));
+ const school=admissionTable(["Jenis sekolah","2024","2025","2026"],d.applicantsBySchoolType.map(r=>[r.type,...r.values.map(formatNum)]));
+ const byInst=admissionTable(["Kategori pendaftar","2024","2025","2026"],["academic","vocational"].flatMap(k=>{const x=d.applicantsByInstitutionType[k];return [[k==="academic"?"PTN Akademik – KIP Kuliah":"PTN Vokasi – KIP Kuliah",...x.kip.map(formatNum)],[k==="academic"?"PTN Akademik – Reguler":"PTN Vokasi – Reguler",...x.regular.map(formatNum)],[k==="academic"?"PTN Akademik – Total":"PTN Vokasi – Total",...x.total.map(formatNum)]]}));
+ const resultRows=["academic","vocational"].map(k=>{const x=d.result2026[k];return [k==="academic"?"PTN Akademik":"PTN Vokasi",...["capacity","applicants","applicantsChoice1","applicantsChoice2","kipApplicants","admitted","admittedChoice1","admittedChoice2","kipAdmitted"].map(n=>admissionFormatNum(x[n])),x.capacityFillPct+"%",x.admittedApplicantsPct+"%",x.kipAdmissionPct+"%"]});
+ const result=admissionTable(["Jenis PTN","Daya tampung","Pendaftar","Pendaftar P1","Pendaftar P2","Pendaftar KIP","Diterima","Diterima P1","Diterima P2","Diterima KIP","Isi kuota","Diterima/pendaftar","Diterima KIP/pendaftar KIP"],resultRows);
+ const admitted=admissionTable(["Kelompok diterima","2024","2025","2026"],["academic","vocational"].flatMap(k=>{const x=d.admittedByYear[k];const label=k==="academic"?"PTN Akademik":"PTN Vokasi";return [[label+" – KIP Kuliah",...x.kip.map(formatNum)],[label+" – Reguler",...x.regular.map(formatNum)],[label+" – Total",...x.total.map(formatNum)]]}));
+ const uniRows=d.topUniversitiesByApplicants.map((r,i)=>[i+1,r.type,escapeHtml(r.name),admissionFormatNum(r.count)]);
+ const kipRows=d.topUniversitiesByKipAccepted.map((r,i)=>[i+1,r.type,escapeHtml(r.name),admissionFormatNum(r.count)]);
+ const programRows=d.topProgramsByApplicants.map((r,i)=>[i+1,r.type,escapeHtml(r.program),escapeHtml(r.institution),admissionFormatNum(r.applicants),admissionFormatNum(r.admitted),`<button class="btn secondary small" data-snbp-detail="${i}">Cari detail prodi</button>`]);
+ const quota=admissionTable(["Jalur","PTN BLU/SATKER","PTNBH"],d.quotaPolicy.map(r=>[r.pathway,r.ptnSatkerBlu,r.ptnbh]));
+ const mirrors=d.mirrorUrls.map((u,i)=>`<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer">${escapeHtml(new URL(u).hostname.replace("snbp.",""))}</a>`).join(" · ");
+ return `${pageHead("Data dan Statistik SNBP 2026","Ringkasan lengkap tabel dan angka utama pada Paparan Hasil SNBP 2026 Panitia SNPMB, dipaparkan 31 Maret 2026. Halaman ini bersifat informatif, bukan prediksi kelulusan.")}<div class="stats-grid">${admissionStatCard("Pendaftar SNBP 2026",admissionFormatNum(806242),"Nasional")}${admissionStatCard("Daya tampung SNBP",admissionFormatNum(189017),"Seluruh jenis PTN")}${admissionStatCard("Diterima PTN akademik",admissionFormatNum(155543),"2026")}${admissionStatCard("Diterima PTN vokasi",admissionFormatNum(23438),"2026")}</div><section class="panel glass section-gap"><h2>Ketentuan kuota jalur</h2>${quota}<p class="source-line">Persentase sesuai slide kuota SNPMB 2026; seleksi Mandiri mengikuti ketentuan PTN.</p></section><section class="panel glass section-gap"><h2>Daya tampung berdasarkan jenis PTN</h2>${capacities}<h2 class="section-gap">Daya tampung berdasarkan jenjang</h2>${levels}</section><section class="panel glass section-gap"><h2>Data partisipasi 2024–2026</h2>${participation}<h2 class="section-gap">Pendaftar berdasarkan jenis sekolah</h2>${school}<h2 class="section-gap">Pendaftar PTN akademik dan vokasi</h2>${byInst}</section><section class="panel glass section-gap"><h2>Hasil seleksi SNBP 2026</h2>${result}<h2 class="section-gap">Jumlah siswa diterima 2024–2026</h2>${admitted}</section><section class="panel glass section-gap"><h2>10 PTN akademik dan vokasi dengan peminat terbanyak</h2>${admissionTable(["No.","Jenis","Perguruan tinggi","Pendaftar"],uniRows)}<h2 class="section-gap">10 PTN dengan penerima KIP Kuliah terbanyak</h2>${admissionTable(["No.","Jenis","Perguruan tinggi","Diterima KIP"],kipRows)}</section><section class="panel glass section-gap"><h2>Program studi dengan pendaftar terbanyak</h2><p class="panel-sub">Seluruh 10 prodi PTN akademik dan 10 prodi PTN vokasi yang dicantumkan pada slide 15–16. Tombol akan mencari detail pada direktori program JALUR.</p>${admissionTable(["No.","Jenis","Program / unit","Perguruan tinggi","Pendaftar","Diterima","Direktori"],programRows)}</section><section class="panel glass section-gap"><h2>Tautan laman pengumuman SNBP 2026</h2><p class="panel-sub">Laman utama dan seluruh 42 tautan mirror yang dicantumkan pada presentasi.</p><p class="link-list">${mirrors}</p></section><p class="source-line">Sumber utama: Paparan Hasil SNBP 2026, Panitia SNPMB, 31 Maret 2026, halaman 2–17. Angka berasal dari presentasi; angka agregat tidak dapat digunakan sebagai skor ambang atau peluang kelulusan individual.</p>`;
+}
+async function openAdmissionProgram(programName,institutionName){
+ await loadDirectoryData();
+ const q=normalizeSearch(programName);const campus=normalizeSearch(institutionName);
+ let match=programs.find(p=>normalizeSearch(p.name)===q&&(!campus||normalizeSearch(p.campus).includes(campus)));
+ if(!match)match=programs.find(p=>normalizeSearch(p.name)===q);
+ if(match){showProgramDetail(match.id);return;}
+ window.explorerQuery=programName;window.explorerScope="Program studi";window.explorerLimit=30;navigate("Study Program Explorer");
+ toast("Nama pada tabel SNBP tidak cocok persis dengan nama program direktori; hasil pencarian dibuka agar dapat diperiksa.","info");
+}
+
 function alumniPage(){
  const prompts=[['Kegiatan belajar','Seperti apa satu minggu perkuliahan yang umum? Berapa banyak kuliah, proyek, diskusi, praktikum, atau tugas mandiri?'],['Tugas dan tantangan','Tugas apa yang paling sering ditemui? Kemampuan apa yang ternyata paling dibutuhkan?'],['Dukungan kampus','Bagaimana akses ke dosen, penasihat akademik, layanan konseling, beasiswa, dan fasilitas belajar?'],['Kehidupan sehari-hari','Bagaimana transportasi, tempat tinggal, organisasi, biaya hidup, dan keseimbangan waktu?'],['Refleksi pilihan','Apa yang ingin diketahui sebelum masuk? Apa yang akan disarankan untuk calon mahasiswa?']];
  return `${pageHead("Pengalaman Alumni","Bagian ini membantumu menyusun pertanyaan dan mencari pengalaman langsung dari mahasiswa maupun alumni. JALUR tidak menampilkan cerita rekaan sebagai testimoni nyata; karena itu, gunakan sumber dan percakapan yang dapat kamu verifikasi ketika ingin memahami kehidupan perkuliahan.")}
@@ -813,6 +906,12 @@ document.addEventListener("change",e=>{
 });
 let jalurExplorerSearchTimer=null;
 document.addEventListener("input",e=>{
+ if(e.target.id==="alumniSearch"){applyAlumniFilters();return;}
+ if(["snbtSearch","snbtScore"].includes(e.target.id)){
+  window.snbtFilters=window.snbtFilters||{};window.snbtFilters[e.target.id==="snbtSearch"?"query":"score"]=e.target.value;window.snbtLimit=50;
+  const id=e.target.id,position=e.target.selectionStart;const root=$("#pageRoot");if(root){root.innerHTML=snbtPredictorPage();const next=$("#"+id);if(next){next.focus({preventScroll:true});if(position!==null&&id==="snbtSearch")next.setSelectionRange(position,position);}}return;
+ }
+
  if(e.target.id==="programSearch"){
   const value=e.target.value,position=e.target.selectionStart;
   clearTimeout(jalurExplorerSearchTimer);
@@ -823,9 +922,21 @@ document.addEventListener("input",e=>{
    const next=$("#programSearch");if(next){next.focus({preventScroll:true});if(position!==null)next.setSelectionRange(position,position);}
   },140);return;
  }
- if(e.target.id==="alumniSearch"){$(".alumni-card").forEach(card=>card.style.display=card.dataset.search.includes(e.target.value.toLowerCase())?"flex":"none")}
+
+});
+document.addEventListener("change",e=>{
+ if(["alumniClassFilter","alumniRouteFilter"].includes(e.target.id)){applyAlumniFilters();return;}
+ if(e.target.id==="snbtLevel"){
+  window.snbtFilters=window.snbtFilters||{};window.snbtFilters.level=e.target.value;window.snbtLimit=50;
+  const root=$("#pageRoot");if(root)root.innerHTML=snbtPredictorPage();
+ }
 });
 document.addEventListener("click",async e=>{
+ if(e.target.closest("#retryAdmissionsData")){window.JALUR_ADMISSIONS_PROMISE=null;loadAdmissionsData().then(()=>render()).catch(err=>toast(err.message,"error"));return;}
+ if(e.target.closest("#snbtLoadMore")){window.snbtLimit=(window.snbtLimit||50)+50;const root=$("#pageRoot");if(root)root.innerHTML=snbtPredictorPage();return;}
+ const snbtDetail=e.target.closest("[data-snbt-detail]");if(snbtDetail){const record=window.JALUR_ADMISSIONS?.snbt?.find(r=>r[0]===snbtDetail.dataset.snbtDetail);if(record)openAdmissionProgram(record[2],record[1]).catch(err=>toast(err.message,"error"));return;}
+ const snbpDetail=e.target.closest("[data-snbp-detail]");if(snbpDetail){const record=window.JALUR_ADMISSIONS?.snbp?.topProgramsByApplicants?.[Number(snbpDetail.dataset.snbpDetail)];if(record)openAdmissionProgram(record.program,record.institution).catch(err=>toast(err.message,"error"));return;}
+
  const copyQuestion=e.target.closest("[data-copy-question]");if(copyQuestion){const qs=[["Kegiatan belajar","Seperti apa satu minggu perkuliahan yang umum? Berapa banyak kuliah, proyek, diskusi, praktikum, atau tugas mandiri?"],["Tugas dan tantangan","Tugas apa yang paling sering ditemui? Kemampuan apa yang ternyata paling dibutuhkan?"],["Dukungan kampus","Bagaimana akses ke dosen, penasihat akademik, layanan konseling, beasiswa, dan fasilitas belajar?"],["Kehidupan sehari-hari","Bagaimana transportasi, tempat tinggal, organisasi, biaya hidup, dan keseimbangan waktu?"],["Refleksi pilihan","Apa yang ingin diketahui sebelum masuk? Apa yang akan disarankan untuk calon mahasiswa?"]];const q=qs[Number(copyQuestion.dataset.copyQuestion)];if(q){if(navigator.clipboard?.writeText){navigator.clipboard.writeText(q[1]).then(()=>toast("Pertanyaan berhasil disalin."),()=>openModal("Salin pertanyaan",`<div class="question-preview" role="note">${escapeHtml(q[1])}</div>`))}else openModal("Salin pertanyaan",`<div class="question-preview" role="note">${escapeHtml(q[1])}</div>`)}return}
  const campusSearch=e.target.closest("[data-search-campus]");if(campusSearch){window.explorerQuery=campusSearch.dataset.searchCampus||"";window.explorerScope="Program studi";window.explorerField="Semua bidang";window.explorerLevel="Semua jenjang";window.explorerProvince="Semua provinsi";window.explorerLimit=30;render();return}
  if(e.target.id==="searchInstitutions"){searchInstitutions();return}
