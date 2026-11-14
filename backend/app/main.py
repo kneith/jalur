@@ -10,6 +10,8 @@ import json
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from psycopg_pool import PoolTimeout
 from pydantic import BaseModel, EmailStr, Field
 from app.core.config import settings
 from app.core.database import connection, close_pool
@@ -36,6 +38,17 @@ app = FastAPI(title="JALUR API", version="2.0.0", lifespan=lifespan, docs_url="/
 app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins),
                    allow_credentials=True, allow_methods=["GET","POST","PATCH","DELETE","OPTIONS"],
                    allow_headers=["Content-Type","X-CSRF-Token"])
+
+
+@app.exception_handler(PoolTimeout)
+async def database_pool_timeout_handler(request: Request, exc: PoolTimeout):
+    # Pool exhaustion is transient; return a retryable response instead of 500.
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Layanan database sedang sibuk. Silakan coba lagi."},
+        headers={"Retry-After": "3"},
+    )
+
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
@@ -107,9 +120,13 @@ def health():
         with connection() as conn: conn.execute("SELECT 1")
         result["database"] = "connected"
     except RuntimeError:
+        result["ok"] = False
         result["database"] = "not_configured"
+        return JSONResponse(status_code=503, content=result)
     except Exception:
+        result["ok"] = False
         result["database"] = "unavailable"
+        return JSONResponse(status_code=503, content=result)
     return result
 
 @app.get("/api/directory/search")
