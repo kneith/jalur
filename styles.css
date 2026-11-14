@@ -1070,3 +1070,12 @@ h1 em{color:#A88FCF}
  .welcome-staff-menu summary span{transition:none}
  .welcome-auth-actions button:hover{transform:none!important}
 }
+
+/* Warm supporting accents keep the pastel mix balanced rather than blue-only. */
+.ambient{background:
+ radial-gradient(ellipse at 14% 18%,rgba(169,203,245,.48),transparent 42%),
+ radial-gradient(ellipse at 84% 72%,rgba(244,221,232,.52),transparent 43%),
+ radial-gradient(ellipse at 53% 48%,rgba(232,224,250,.42),transparent 48%),
+ radial-gradient(ellipse at 28% 88%,rgba(221,241,232,.26),transparent 34%),
+ radial-gradient(ellipse at 76% 14%,rgba(255,240,215,.30),transparent 30%),
+ linear-gradient(132deg,#F5F8FF 0%,#EDF4FF 48%,#FFF7FB 100%)!important}
