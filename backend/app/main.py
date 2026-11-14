@@ -915,10 +915,10 @@ def create_bk_appointment(payload: BKAppointmentInput, request: Request):
 
 @app.get("/api/bk/appointments")
 def get_bk_appointments(request: Request):
-    actor = _require_roles(request, "counselor", "school_admin")
+    actor = _require_roles(request, "counselor")
     school_id = actor["school_id"]
     if not school_id:
-        raise HTTPException(403, "Akun Guru BK/pengelola belum terhubung ke sekolah.")
+        raise HTTPException(403, "Akun Guru BK belum terhubung ke sekolah.")
     with connection() as conn:
         rows = conn.execute(
             """SELECT a.id, a.requested_at, a.mode, a.topic, a.student_note, a.status, a.created_at,
@@ -936,10 +936,10 @@ def get_bk_appointments(request: Request):
 
 @app.patch("/api/bk/appointments/{appointment_id}/status")
 def update_bk_appointment_status(appointment_id: uuid.UUID, payload: BKAppointmentStatusInput, request: Request):
-    actor = _require_roles(request, "counselor", "school_admin")
+    actor = _require_roles(request, "counselor")
     school_id = actor["school_id"]
     if not school_id:
-        raise HTTPException(403, "Akun Guru BK/pengelola belum terhubung ke sekolah.")
+        raise HTTPException(403, "Akun Guru BK belum terhubung ke sekolah.")
     with connection() as conn:
         item = conn.execute(
             """UPDATE bk_appointments SET status=%s, counselor_id=%s, updated_at=now()
