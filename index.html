@@ -7,36 +7,29 @@
   <meta name="theme-color" content="#21191f">
   <meta name="description" content="JALUR | Pendamping eksplorasi pendidikan tinggi yang membantu siswa memahami dan membandingkan berbagai pilihan.">
   <title>JALUR | Pendamping Eksplorasi Pendidikan Tinggi</title>
-  <link rel="stylesheet" href="/styles.css?v=20261114-contrast1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">\n  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">\n  <link rel="stylesheet" href="/styles.css?v=20261114-contrast1">
   <style id="jalur-intro-style">
     html.jalur-intro-pending,html.jalur-intro-pending body{overflow:hidden!important}
     html.jalur-intro-pending #welcome{visibility:hidden}
     .jalur-intro-screen{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;overflow:hidden;background:transparent;isolation:isolate;pointer-events:auto}
-    .jalur-intro-screen::before{content:"";position:absolute;inset:0;z-index:-2;background:#fff;animation:jalurIntroBackground 6.5s cubic-bezier(.7,0,.2,1) forwards}
-    .jalur-intro-screen::after{content:"";position:absolute;inset:-12%;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 47%,rgba(130,159,197,.16),transparent 54%),radial-gradient(ellipse at 58% 58%,rgba(169,162,200,.10),transparent 66%);animation:jalurIntroGlow 6.5s ease forwards}
-    .jalur-intro-content{width:min(86vw,520px);display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px;text-align:center;animation:jalurIntroMarkExit 1s ease 5.3s forwards}
-    .jalur-intro-wordmark{display:block;width:min(78vw,390px);height:auto;overflow:visible}
-    .jalur-intro-wordmark path{fill:none;stroke:url(#jalurIntroGradient);stroke-width:9;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:260;stroke-dashoffset:260;animation:jalurIntroDraw 1.12s cubic-bezier(.45,0,.25,1) forwards}
-    .jalur-intro-wordmark .intro-j{animation-delay:.58s}
-    .jalur-intro-wordmark .intro-a{animation-delay:1.12s}
-    .jalur-intro-wordmark .intro-l{animation-delay:1.72s}
-    .jalur-intro-wordmark .intro-u{animation-delay:2.22s}
-    .jalur-intro-wordmark .intro-r{animation-delay:2.72s}
-    .jalur-intro-wordmark .intro-dot{stroke:none;fill:#829FC5;opacity:0;animation:jalurIntroDot .22s ease .48s forwards}
-    .jalur-intro-tagline{margin:0;color:#65748d;font-family:Manrope,"DM Sans",system-ui,sans-serif;font-size:clamp(12px,2.7vw,15px);font-weight:500;letter-spacing:.015em;opacity:0;transform:translateY(5px);animation:jalurIntroTagline .65s ease 3.82s forwards}
-    @keyframes jalurIntroDraw{to{stroke-dashoffset:0}}
-    @keyframes jalurIntroDot{to{opacity:1}}
-    @keyframes jalurIntroTagline{to{opacity:1;transform:translateY(0)}}
-    @keyframes jalurIntroMarkExit{to{opacity:0;transform:scale(.985)}}
-    @keyframes jalurIntroBackground{0%,81.5%{background-color:#fff}94%{background-color:#0b1219}100%{background-color:#0b1219;opacity:0}}
-    @keyframes jalurIntroGlow{0%,78%{opacity:1}94%,100%{opacity:0}}
-    @media(max-width:480px){.jalur-intro-content{gap:9px}.jalur-intro-wordmark{width:min(82vw,350px)}}
+    .jalur-intro-screen::before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(132deg,#fbfaff 0%,#fff 48%,#f7f4ff 100%);animation:jalurIntroBackground 8.2s cubic-bezier(.72,0,.22,1) forwards}
+    .jalur-intro-screen::after{content:"";position:absolute;inset:-18%;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 18% 14%,rgba(191,174,235,.22),transparent 43%),radial-gradient(ellipse at 82% 78%,rgba(172,190,226,.2),transparent 48%),radial-gradient(ellipse at 52% 48%,rgba(130,159,197,.12),transparent 58%);filter:blur(8px);animation:jalurIntroGlow 8.2s ease-in-out forwards}
+    .jalur-intro-content{width:min(90vw,590px);display:flex;flex-direction:column;align-items:center;gap:5px;padding:24px;text-align:center;will-change:opacity,transform;animation:jalurIntroMarkExit 1.45s cubic-bezier(.22,.72,.24,1) 6.55s forwards}
+    .jalur-intro-wordmark{display:block;width:min(86vw,500px);height:auto;overflow:visible;filter:drop-shadow(0 5px 12px rgba(116,133,180,.08))}
+    .jalur-intro-wordmark text{font-family:"Pacifico","Brush Script MT",cursive;font-size:132px;font-weight:400;letter-spacing:-2px;fill:url(#jalurIntroGradient)}
+    .jalur-intro-wordmark .intro-reveal{transform-origin:left center;animation:jalurIntroWrite 3.65s cubic-bezier(.45,.02,.2,1) .48s both}
+    .jalur-intro-tagline{margin:0;color:#77718f;font-family:"DM Sans",Manrope,system-ui,sans-serif;font-size:clamp(13px,2.8vw,16px);font-weight:500;letter-spacing:.005em;opacity:0;transform:translateY(9px);animation:jalurIntroTagline 1.05s cubic-bezier(.2,.72,.25,1) 4.15s forwards}
+    @keyframes jalurIntroWrite{from{width:0}to{width:540px}}
+    @keyframes jalurIntroTagline{0%{opacity:0;transform:translateY(9px)}65%{opacity:1;transform:translateY(-1px)}100%{opacity:1;transform:translateY(0)}}
+    @keyframes jalurIntroMarkExit{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-9px) scale(1.018)}}
+    @keyframes jalurIntroBackground{0%,72%{background-color:#fbfaff;opacity:1}88%{background-color:#0b1219;opacity:.94}100%{background-color:#0b1219;opacity:0}}
+    @keyframes jalurIntroGlow{0%,74%{opacity:1;transform:translate3d(0,0,0) scale(1)}100%{opacity:0;transform:translate3d(0,-2%,0) scale(1.08)}}
+    @media(max-width:480px){.jalur-intro-content{gap:4px}.jalur-intro-wordmark{width:min(91vw,430px)}.jalur-intro-wordmark text{font-size:132px}}
     @media(prefers-reduced-motion:reduce){
-      .jalur-intro-screen::before{animation:jalurIntroReducedBg .65s ease forwards}
+      .jalur-intro-screen::before{animation:jalurIntroReducedBg .8s ease forwards}
       .jalur-intro-screen::after{animation:none;opacity:.45}
-      .jalur-intro-content{animation:jalurIntroReducedExit .45s ease .15s forwards}
-      .jalur-intro-wordmark path{animation:none;stroke-dasharray:none;stroke-dashoffset:0}
-      .jalur-intro-wordmark .intro-dot{animation:none;opacity:1}
+      .jalur-intro-content{animation:jalurIntroReducedExit .5s ease .2s forwards}
+      .jalur-intro-wordmark .intro-reveal{animation:none;width:540px}
       .jalur-intro-tagline{animation:none;opacity:1;transform:none}
       @keyframes jalurIntroReducedBg{to{background-color:#0b1219;opacity:0}}
       @keyframes jalurIntroReducedExit{to{opacity:0}}
@@ -62,20 +55,18 @@
 <body>
   <div id="jalur-intro" class="jalur-intro-screen" aria-hidden="true">
     <div class="jalur-intro-content">
-      <svg class="jalur-intro-wordmark" viewBox="0 0 350 145" role="img" aria-label="jalur">
+      <svg class="jalur-intro-wordmark" viewBox="0 0 540 170" role="img" aria-label="jalur">
         <defs>
           <linearGradient id="jalurIntroGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stop-color="#829FC5"/>
-            <stop offset="60%" stop-color="#A5A5CA"/>
-            <stop offset="100%" stop-color="#CBAABF"/>
+            <stop offset="58%" stop-color="#A5A5CA"/>
+            <stop offset="100%" stop-color="#D69EB7"/>
           </linearGradient>
+          <mask id="jalurIntroWriteMask" maskUnits="userSpaceOnUse" x="0" y="0" width="540" height="170">
+            <rect class="intro-reveal" x="0" y="0" width="0" height="170" fill="white"/>
+          </mask>
         </defs>
-        <circle class="intro-dot" cx="62" cy="23" r="5"/>
-        <path class="intro-j" d="M62 38 C62 57 60 84 56 102 C53 116 43 122 32 116 C26 113 24 107 27 101"/>
-        <path class="intro-a" d="M126 56 C117 46 102 46 91 54 C77 64 75 86 87 96 C100 107 117 96 122 82 C126 70 126 56 126 48 C125 68 124 88 131 97 C137 104 147 100 154 92"/>
-        <path class="intro-l" d="M169 27 C166 49 163 76 164 91 C165 103 173 105 181 96"/>
-        <path class="intro-u" d="M195 57 C192 73 189 91 197 98 C209 108 225 91 232 62 C229 78 227 94 235 99 C243 104 252 96 259 87"/>
-        <path class="intro-r" d="M274 58 C271 72 267 89 267 99 C271 83 279 63 293 57 C301 53 310 57 313 65"/>
+        <text x="270" y="128" text-anchor="middle" mask="url(#jalurIntroWriteMask)">jalur</text>
       </svg>
       <p class="jalur-intro-tagline">Temukan arah, pahami pilihanmu.</p>
     </div>
@@ -316,7 +307,7 @@
         overlay.remove();
         window.__JALUR_INTRO_PENDING = false;
       };
-      window.setTimeout(finish, reduced ? 750 : 6600);
+      window.setTimeout(finish, reduced ? 850 : 8200);
     })();
   </script>
 </body>
