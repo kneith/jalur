@@ -917,7 +917,7 @@ def get_school_account_history(request: Request, limit: int = Query(100, ge=1, l
                WHERE ae.school_id=%s
                  AND ae.action IN (
                    'school_user.create','school_user.update','school_user.status',
-                   'school_user.password_reset','school_class.update'
+                   'school_user.password_reset','school_class.create','school_class.update'
                  )
                ORDER BY ae.created_at DESC
                LIMIT %s""",

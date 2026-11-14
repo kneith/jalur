@@ -156,7 +156,7 @@
           '<td><div class="table-actions"><button class="btn secondary small" data-school-user-edit="'+esc(x.id)+'">Edit</button><button class="btn secondary small" data-school-user-reset="'+esc(x.id)+'">Reset sandi</button><button class="btn secondary small" data-school-user-status="'+esc(x.id)+'" data-next-status="'+(x.status==='active'?'disabled':'active')+'">'+(x.status==='active'?'Nonaktifkan':'Aktifkan')+'</button></div></td></tr>';
       }).join('');
       const historyRows=history.map(x=>{
-        const labels={'school_user.create':'Akun dibuat','school_user.update':'Data akun diubah','school_user.status':'Status akun diubah','school_user.password_reset':'Password direset','school_class.update':'Data kelas diubah'};
+        const labels={'school_user.create':'Akun dibuat','school_user.update':'Data akun diubah','school_user.status':'Status akun diubah','school_user.password_reset':'Password direset','school_class.create':'Kelas dibuat','school_class.update':'Data kelas diubah'};
         const target=x.target_name||x.class_name||x.entity_id||'—';
         return '<tr><td>'+esc(labels[x.action]||x.action)+'</td><td>'+esc(target)+'</td><td>'+esc(x.target_email||'—')+'</td><td>'+esc(x.actor_name||'Pengelola')+'</td><td>'+esc(x.created_at?new Date(x.created_at).toLocaleString('id-ID'):'—')+'</td></tr>';
       }).join('');
