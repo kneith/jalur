@@ -1762,3 +1762,17 @@ input[type="submit"]{
   .stat-grid>.stat-card{padding:15px 16px!important}
   .stat-grid>.stat-card .stat-label{font-size:13px!important}
 }
+
+
+/* The main landmark receives programmatic focus after navigation.
+   Suppress the browser's default dark rectangle while retaining a soft
+   keyboard-only focus indicator for accessibility. */
+#main.page-content:focus{
+  outline:none!important;
+  box-shadow:none!important;
+}
+#main.page-content:focus-visible{
+  outline:2px solid rgba(99,143,196,.62)!important;
+  outline-offset:-2px;
+  border-radius:0 0 4px 4px;
+}
