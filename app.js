@@ -334,11 +334,11 @@ function explorerPage(){
  const resultCards=list.map(r=>{
   if(r.kind==="program"){
    const p=r.item;
-   return `<article class="program-card glass search-result-card"><span class="program-kicker">PROGRAM STUDI, ${escapeHtml(p.level||"Jenjang tidak tercantum")}</span><h3>${escapeHtml(p.name||"Nama program studi tidak tercantum")}</h3><p class="campus">${escapeHtml(p.campus||"Perguruan tinggi tidak tercantum")}${p.city?`, ${escapeHtml(p.city)}`:""}${p.province?`, ${escapeHtml(p.province)}`:""}</p><div class="program-tags">${p.field?`<span class="tag">${escapeHtml(p.field)}</span>`:""}${p.programAccreditation?`<span class="tag">Akreditasi program studi ${escapeHtml(p.programAccreditation)}</span>`:""}${p.status?`<span class="tag">${escapeHtml(p.status)}</span>`:""}</div><p class="source-line">Kode: ${escapeHtml(String(p.code||"Tidak tercantum"))}, Referensi: ${escapeHtml(String(p.updated||"Tidak tercantum"))}, ${escapeHtml(p.verification||"Status verifikasi tidak tercantum")}</p><div class="card-bottom"><button class="btn secondary" data-detail-program="${escapeHtml(p.id)}">Detail program</button><button class="btn ${state.mainChoice===p.id?"primary":"secondary"}" data-set-main="${escapeHtml(p.id)}">${state.mainChoice===p.id?"✓ Pilihan utama":"Jadikan utama"}</button><button class="btn ${state.compared.includes(p.id)?"primary":"secondary"}" data-compare="${escapeHtml(p.id)}">${state.compared.includes(p.id)?"✓ Dibandingkan":"⇄ Bandingkan"}</button></div></article>`;
+   return `<article class="program-card glass search-result-card search-result-program"><div class="search-result-heading"><span class="program-kicker">PROGRAM STUDI</span><span class="result-level">${escapeHtml(p.level||"Jenjang tidak tercantum")}</span></div><h3>${escapeHtml(p.name||"Nama program studi tidak tercantum")}</h3><p class="campus">${escapeHtml(p.campus||"Perguruan tinggi tidak tercantum")}${p.city?`, ${escapeHtml(p.city)}`:""}${p.province?`, ${escapeHtml(p.province)}`:""}</p><div class="program-tags">${p.field?`<span class="tag">${escapeHtml(p.field)}</span>`:""}${p.programAccreditation?`<span class="tag">Akreditasi program studi ${escapeHtml(p.programAccreditation)}</span>`:""}${p.status?`<span class="tag">${escapeHtml(p.status)}</span>`:""}</div><div class="result-meta-grid">${p.code?`<div><small>Kode program</small><strong>${escapeHtml(String(p.code))}</strong></div>`:""}${p.capacity!=null?`<div><small>Daya tampung</small><strong>${escapeHtml(String(p.capacity))}</strong></div>`:""}${p.referenceYear?`<div><small>Tahun referensi</small><strong>${escapeHtml(String(p.referenceYear))}</strong></div>`:""}</div><p class="source-line">Status data: ${escapeHtml(p.verification||"Belum tercantum")}</p><div class="card-bottom"><button class="btn primary" data-detail-program="${escapeHtml(p.id)}">Lihat detail lengkap</button><button class="btn ${state.mainChoice===p.id?"secondary":"secondary"}" data-set-main="${escapeHtml(p.id)}">${state.mainChoice===p.id?"✓ Pilihan utama":"Jadikan utama"}</button><button class="btn ${state.compared.includes(p.id)?"secondary":"secondary"}" data-compare="${escapeHtml(p.id)}">${state.compared.includes(p.id)?"✓ Dibandingkan":"⇄ Bandingkan"}</button></div></article>`;
   }
   const i=r.item,website=String(i.website||"").startsWith("http://")||String(i.website||"").startsWith("https://")?i.website:"",pddikti=String(i.pddikti||"").startsWith("http://")||String(i.pddikti||"").startsWith("https://")?i.pddikti:"";
   const count=institutionProgramCounts.get(String(i.id))||0;
-  return `<article class="program-card glass search-result-card"><span class="program-kicker">PERGURUAN TINGGI${i.form?`, ${escapeHtml(i.form)}`:""}</span><h3>${escapeHtml(i.name||"Nama perguruan tinggi tidak tercantum")}</h3><p class="campus">${escapeHtml([i.city,i.province].filter(Boolean).join(", ")||"Lokasi tidak tercantum")}</p><div class="program-tags">${i.group?`<span class="tag">${escapeHtml(i.group)}</span>`:""}${i.status?`<span class="tag">${escapeHtml(i.status)}</span>`:""}${i.accreditation?`<span class="tag">Akreditasi institusi ${escapeHtml(i.accreditation)}</span>`:""}</div><p class="source-line">${formatNum(count)} program studi terhubung dalam basis data, Referensi: ${escapeHtml(String(i.year||"Tidak tercantum"))}, ${escapeHtml(i.verification||"Status verifikasi tidak tercantum")}</p><div class="card-bottom">${website?`<a class="btn secondary" href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Situs resmi ↗</a>`:""}${pddikti?`<a class="btn secondary" href="${escapeHtml(pddikti)}" target="_blank" rel="noopener noreferrer">PDDikti ↗</a>`:`<a class="btn secondary" href="https://pddikti.kemdiktisaintek.go.id/" target="_blank" rel="noopener noreferrer">Cari di PDDikti ↗</a>`}<button class="btn secondary" data-search-campus="${escapeHtml(i.name||"")}">Lihat program studi</button></div></article>`;
+  return `<article class="program-card glass search-result-card"><span class="program-kicker">PERGURUAN TINGGI${i.form?`, ${escapeHtml(i.form)}`:""}</span><h3>${escapeHtml(i.name||"Nama perguruan tinggi tidak tercantum")}</h3><p class="campus">${escapeHtml([i.city,i.province].filter(Boolean).join(", ")||"Lokasi tidak tercantum")}</p><div class="program-tags">${i.group?`<span class="tag">${escapeHtml(i.group)}</span>`:""}${i.status?`<span class="tag">${escapeHtml(i.status)}</span>`:""}${i.accreditation?`<span class="tag">Akreditasi institusi ${escapeHtml(i.accreditation)}</span>`:""}</div><p class="source-line">${formatNum(count)} program studi terhubung dalam basis data, Referensi: ${escapeHtml(String(i.year||"Tidak tercantum"))}, ${escapeHtml(i.verification||"Status verifikasi tidak tercantum")}</p><div class="card-bottom">${website?`<a class="btn secondary" href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Situs resmi ↗</a>`:""}${pddikti?`<a class="btn secondary" href="${escapeHtml(pddikti)}" target="_blank" rel="noopener noreferrer">PDDikti ↗</a>`:`<a class="btn secondary" href="https://pddikti.kemdiktisaintek.go.id/" target="_blank" rel="noopener noreferrer">Cari di PDDikti ↗</a>`}<button class="btn primary" data-detail-institution="${escapeHtml(i.id)}">Detail perguruan tinggi</button><button class="btn secondary" data-search-campus="${escapeHtml(i.name||"")}">Lihat program studi</button></div></article>`;
  }).join("");
  return `${pageHead("Penjelajah Program Studi","Gunakan pencarian ini untuk menemukan perguruan tinggi maupun program studi berdasarkan nama, bidang, jenjang, atau lokasi. Hasil berasal dari direktori yang tersedia di JALUR dan ditampilkan secara bertahap agar lebih mudah ditelusuri.")}<div class="notice"><strong>Direktori lengkap.</strong> ${formatNum(dbCount)} program studi dan ${formatNum(instCount)} perguruan tinggi. Pencarian diurutkan berdasarkan nama tanpa mengurutkan ulang seluruh hasil setiap kali kamu mengetik.</div>
  <section class="panel glass search-directory"><div class="panel-head"><div><h2>Temukan pilihan pendidikan tinggi</h2><p class="panel-sub">Ketik nama universitas/perguruan tinggi, jurusan, program studi, kota, kode, atau bidang.</p></div><span class="data-tag">${formatNum(dbCount+instCount)} entri</span></div>
@@ -400,6 +400,16 @@ function showProgramDetail(id){
  <p class="source-line">${escapeHtml(p.scoreDisclaimer||"Pastikan memverifikasi informasi penerimaan, biaya, kurikulum, dan akreditasi melalui sumber resmi. JALUR tidak menjamin penerimaan.")}</p>`;
  openModal(escapeHtml(p.name),body,`<button class="btn secondary" id="detailClose">Tutup</button><button class="btn primary" id="detailCompare">${state.compared.includes(id)?"Sudah dibandingkan":"Tambahkan ke perbandingan"}</button>`);
  $("#detailClose").onclick=closeModal;$("#detailCompare").onclick=()=>{closeModal();addCompare(id)}
+}
+function showInstitutionDetail(id){
+ const institution=institutions.find(item=>String(item.id)===String(id));if(!institution)return;
+ const related=programs.filter(program=>String(program.institutionId)===String(institution.id)).sort((a,b)=>alpha(a.name,b.name));
+ const row=(label,value)=>value!==null&&value!==undefined&&value!==""?'<tr><th>'+escapeHtml(label)+'</th><td>'+escapeHtml(String(value))+'</td></tr>':"";
+ const links=[institution.website?'<a href="'+escapeHtml(institution.website)+'" target="_blank" rel="noopener noreferrer">Situs resmi ↗</a>':"",institution.pddikti?'<a href="'+escapeHtml(institution.pddikti)+'" target="_blank" rel="noopener noreferrer">Profil PDDikti ↗</a>':""].filter(Boolean).join(" · ");
+ const programList=related.length?'<div class="institution-detail-programs">'+related.slice(0,60).map(program=>'<article class="institution-program-row"><div><strong>'+escapeHtml(program.name||"Program studi")+'</strong><small>'+escapeHtml([program.level,program.field,program.programAccreditation?"Akreditasi "+program.programAccreditation:""].filter(Boolean).join(" · "))+'</small></div><button type="button" class="btn secondary small" data-detail-program="'+escapeHtml(program.id)+'">Detail</button></article>').join("")+'</div>':'<p class="source-line">Belum ada program studi yang terhubung dengan entri perguruan tinggi ini di dataset.</p>';
+ const body='<p class="institution-detail-location">'+escapeHtml([institution.city,institution.province].filter(Boolean).join(", ")||"Lokasi tidak tercantum")+'</p><div class="table-wrap"><table class="data-table"><tbody>'+row("Bentuk perguruan tinggi",institution.form)+row("Kelompok",institution.group)+row("Status",institution.status)+row("Akreditasi institusi",institution.accreditation)+row("Alamat",institution.address)+row("Tahun referensi",institution.year)+row("Status verifikasi",institution.verification)+'</tbody></table></div><p class="source-line">'+(links||"Tautan resmi tidak tersedia pada dataset.")+'</p><h3>Program studi dalam direktori ('+related.length.toLocaleString("id-ID")+')</h3>'+programList+'<p class="source-line">Data mengikuti direktori JALUR. Verifikasi status, akreditasi, dan informasi penerimaan melalui perguruan tinggi serta PDDikti.</p>';
+ openModal(escapeHtml(institution.name||"Detail perguruan tinggi"),body,'<button class="btn secondary" id="institutionDetailClose">Tutup</button>');
+ $("#institutionDetailClose").onclick=closeModal;
 }
 function addCompare(id){if(state.compared.includes(id)){toast("Program ini sudah ada di perbandingan.","info");return}if(state.compared.length>=4){toast("Perbandingan penuh. Hapus program lain terlebih dahulu.","error");return}state.compared.push(id);saveState();logActivity(`${programById(id).name} ditambahkan ke perbandingan`);render();toast("Program ditambahkan ke perbandingan.")}
 function openProgramPicker(mode){
@@ -495,6 +505,7 @@ document.addEventListener("click",async e=>{
  const mainPick=e.target.closest("[data-set-main]");if(mainPick){const p=programById(mainPick.dataset.setMain);if(!p){toast("Program tidak ditemukan dalam basis data.","error");return}state.mainChoice=p.id;saveState();logActivity(`${p.name} ditetapkan sebagai pilihan utama`);render();toast("Pilihan utama berhasil diperbarui.");return}
  const cmp=e.target.closest("[data-compare]");if(cmp){addCompare(cmp.dataset.compare);return}
  const detail=e.target.closest("[data-detail-program]");if(detail){showProgramDetail(detail.dataset.detailProgram);return}
+ const institutionDetail=e.target.closest("[data-detail-institution]");if(institutionDetail){showInstitutionDetail(institutionDetail.dataset.detailInstitution);return}
  const delCmp=e.target.closest("[data-remove-compare]");if(delCmp){state.compared=state.compared.filter(id=>id!==delCmp.dataset.removeCompare);saveState();render();toast("Program dihapus dari perbandingan.","info");return}
  const delAlt=e.target.closest("[data-remove-alt]");if(delAlt){state.alternatives=state.alternatives.filter(id=>id!==delAlt.dataset.removeAlt);saveState();render();toast("Alternatif dihapus.","info");return}
  const delSub=e.target.closest("[data-delete-subject]");if(delSub){const i=Number(delSub.dataset.deleteSubject),s=state.profile.subjects[i];if(confirm(`Hapus nilai ${s.name}?`)){state.profile.subjects.splice(i,1);saveState();logActivity(`Nilai ${s.name} dihapus`);render();toast("Nilai dihapus.")}return}
@@ -537,6 +548,7 @@ window.JALUR_ANIMATE_PAGE_TRANSITION=()=>{
  window.clearTimeout(window.__JALUR_PAGE_TRANSITION_TIMER);
  window.__JALUR_PAGE_TRANSITION_TIMER=window.setTimeout(()=>root.classList.remove("jalur-page-enter"),720);
 };
+function jalurResetScrollTop(){try{document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo({top:0,left:0,behavior:"auto"});}catch{}}
 window.JALUR_ENTER_GUEST = () => {
  activeRole="guest";
  window.JALUR_GUEST_SELECTED=true;
@@ -547,14 +559,14 @@ window.JALUR_ENTER_GUEST = () => {
  try{localStorage.removeItem("jalur-last-page");}catch{}
  history.replaceState({},"",location.pathname+location.search);
  currentPage="Dashboard";state.currentPage="Dashboard";
- window.JALUR_TRANSITION_TO_APP?.();
- jalurWriteRoute("Dashboard",true);render();
+ jalurResetScrollTop();window.JALUR_TRANSITION_TO_APP?.();
+ jalurWriteRoute("Dashboard",true);render();jalurResetScrollTop();window.requestAnimationFrame?.(()=>jalurResetScrollTop());
  toast("Anda masuk sebagai pengunjung. Data tersimpan secara lokal pada peramban ini.","info");
 };
 function enterApplication(mode="guest",displayName="Pengunjung"){
   activeRole="guest";
   if(displayName){state.profile.nickname=displayName;saveState()}
-  window.JALUR_WELCOME_REQUESTED=false;sessionStorage.setItem("jalur-app-open","1");window.JALUR_TRANSITION_TO_APP?.();currentPage=jalurPageFromHash()||jalurStoredPage()||(JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");state.currentPage=currentPage;jalurWriteRoute(currentPage,true);render();
+  window.JALUR_WELCOME_REQUESTED=false;sessionStorage.setItem("jalur-app-open","1");jalurResetScrollTop();window.JALUR_TRANSITION_TO_APP?.();currentPage=jalurPageFromHash()||jalurStoredPage()||(JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");state.currentPage=currentPage;jalurWriteRoute(currentPage,true);render();jalurResetScrollTop();window.requestAnimationFrame?.(()=>jalurResetScrollTop());
   toast(mode==="account"?`Selamat datang, ${displayName}. Akun ini hanya tersimpan di peramban ini.`:"Anda masuk sebagai pengunjung. Data tersimpan secara lokal pada peramban ini.","info");
 }
 const ACCOUNTS_KEY="jalur-local-accounts-v1";
@@ -780,7 +792,7 @@ if(jalurResumeApp){
  const ambient=document.querySelector(".ambient");
  const welcomeMotion=()=>document.documentElement.classList.contains("jalur-welcome-mode");
  if(ambient&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
-  let touchActive=false;
+  let pointerActive=false,touchActive=false;
   const updateAmbient=event=>{
    if(!welcomeMotion())return;
    if(event.pointerType==="touch"&&!touchActive)return;
@@ -788,17 +800,19 @@ if(jalurResumeApp){
    const y=Math.max(0,Math.min(1,event.clientY/Math.max(1,window.innerHeight)));
    ambient.style.setProperty("--mouse-x",`${(x*100).toFixed(1)}%`);
    ambient.style.setProperty("--mouse-y",`${(y*100).toFixed(1)}%`);
-   ambient.style.setProperty("--ambient-hue",`${Math.round((x-.5)*30)}deg`);
-   ambient.style.setProperty("--ambient-shift-x",`${((x-.5)*22).toFixed(1)}px`);
-   ambient.style.setProperty("--ambient-shift-y",`${((y-.5)*18).toFixed(1)}px`);
+   ambient.style.setProperty("--ambient-hue",`${Math.round((x-.5)*76+(y-.5)*18)}deg`);
+   ambient.style.setProperty("--ambient-shift-x",`${((x-.5)*54).toFixed(1)}px`);
+   ambient.style.setProperty("--ambient-shift-y",`${((y-.5)*42).toFixed(1)}px`);
    ambient.classList.add("pointer-active");
   };
-  ambient.addEventListener("pointerdown",event=>{
-   if(event.pointerType==="touch"&&welcomeMotion()){touchActive=true;updateAmbient(event);}
+  window.addEventListener("pointerdown",event=>{
+   if(!welcomeMotion())return;
+   pointerActive=true;if(event.pointerType==="touch")touchActive=true;updateAmbient(event);
   },{passive:true});
   window.addEventListener("pointermove",updateAmbient,{passive:true});
   const releaseAmbient=event=>{
-   if(event.pointerType==="touch"){touchActive=false;ambient.classList.remove("pointer-active");}
+   if(event.pointerType==="touch")touchActive=false;
+   pointerActive=false;ambient.classList.remove("pointer-active");
   };
   window.addEventListener("pointerup",releaseAmbient,{passive:true});
   window.addEventListener("pointercancel",releaseAmbient,{passive:true});
