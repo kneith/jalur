@@ -159,8 +159,7 @@ function render(){
   $("#moreNav")?.classList.toggle("active",!["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"].includes(currentPage));
   const profileAlert=$("#profileAlert");
   if(profileAlert)profileAlert.style.display=Array.isArray(state.profile?.subjects)&&state.profile.subjects.length?"none":"block";
-  const activeNav=$(".side-nav .nav-item.active");
-  if(activeNav&&activeNav.offsetParent!==null)activeNav.scrollIntoView({block:"nearest"});
+  jalurKeepSidebarItemVisible();
   if(pageNeedsDirectoryData(currentPage)&&!directoryDataReady){
    const requestedPage=currentPage;
    root.innerHTML=`<section class="directory-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat…</span></section>`;
@@ -551,7 +550,23 @@ window.JALUR_ANIMATE_PAGE_TRANSITION=()=>{
  window.clearTimeout(window.__JALUR_PAGE_TRANSITION_TIMER);
  window.__JALUR_PAGE_TRANSITION_TIMER=window.setTimeout(()=>root.classList.remove("jalur-page-enter"),720);
 };
-function jalurResetScrollTop(){try{document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo({top:0,left:0,behavior:"auto"});}catch{}}
+function jalurKeepSidebarItemVisible(){
+ const sidebar=$("#sidebar"),activeNav=$(".side-nav .nav-item.active");
+ if(!sidebar||!activeNav||activeNav.offsetParent===null)return;
+ const sidebarRect=sidebar.getBoundingClientRect(),itemRect=activeNav.getBoundingClientRect();
+ const itemTop=sidebar.scrollTop+itemRect.top-sidebarRect.top;
+ const itemBottom=itemTop+itemRect.height;
+ if(itemTop<sidebar.scrollTop+12)sidebar.scrollTop=Math.max(0,itemTop-12);
+ else if(itemBottom>sidebar.scrollTop+sidebar.clientHeight-12)sidebar.scrollTop=itemBottom-sidebar.clientHeight+12;
+}
+function jalurResetScrollTop(){
+ try{
+  document.documentElement.scrollTop=0;document.body.scrollTop=0;
+  const app=$("#app");if(app)app.scrollTop=0;
+  window.scrollTo({top:0,left:0,behavior:"auto"});
+ }catch{}
+}
+window.JALUR_RESET_SCROLL_TOP=jalurResetScrollTop;
 window.JALUR_ENTER_GUEST = () => {
  activeRole="guest";
  window.JALUR_GUEST_SELECTED=true;
@@ -718,7 +733,7 @@ window.JALUR_GET_WORKSPACE = () => ({profile:state.profile,notes:state.notes,com
 window.JALUR_SET_WORKSPACE = workspace => { if(!workspace||typeof workspace!=="object")return; for(const key of ["profile","notes","compared","mainChoice","alternatives","checked","costPlans","pathwayGroups","settings"])if(Object.prototype.hasOwnProperty.call(workspace,key))state[key]=workspace[key]; saveState(); render(); };
 window.JALUR_SET_ACCOUNT_NAME = name => { const clean=String(name||"").trim(); if(!clean)return; if(!String(state.profile.nickname||"").trim())state.profile.nickname=clean; saveState(); render(); };
 window.JALUR_GET_ACTIVE_PAGE = () => currentPage;
-window.JALUR_SET_ACTIVE_PAGE = page => { if(!JALUR_PAGES.includes(page))return;currentPage=page;state.currentPage=page;jalurWriteRoute(page);saveState();const label=PAGE_LABELS[page]||page;const crumb=$("#pageCrumb");if(crumb)crumb.textContent=label;$$("[data-page],.bottom-item[data-page],.nav-item[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const primaryBottom=["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"];$("#moreNav")?.classList.toggle("active",!primaryBottom.includes(page));const activeNav=$(".side-nav .nav-item.active");if(activeNav&&activeNav.offsetParent!==null)activeNav.scrollIntoView({block:"nearest"}); };
+window.JALUR_SET_ACTIVE_PAGE = page => { if(!JALUR_PAGES.includes(page))return;currentPage=page;state.currentPage=page;jalurWriteRoute(page);saveState();const label=PAGE_LABELS[page]||page;const crumb=$("#pageCrumb");if(crumb)crumb.textContent=label;$$("[data-page],.bottom-item[data-page],.nav-item[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const primaryBottom=["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"];$("#moreNav")?.classList.toggle("active",!primaryBottom.includes(page));jalurKeepSidebarItemVisible(); };
 
 
 // The optional journal program selector hydrates only when a user opens it.
