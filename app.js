@@ -767,7 +767,7 @@ function showHowItWorks(){
   {title:"Susun langkah berikutnya",tag:"LANGKAHMU",icon:"↗",copy:"Simpan refleksi dan pertanyaan yang ingin kamu diskusikan. JALUR membantu menata pertimbangan, bukan mengambil keputusan untukmu.",items:["Rangkum hal yang sudah diketahui","Catat hal yang perlu diverifikasi","Diskusikan dengan orang tepercaya"]}
  ];
  let active=-1;
- const introBody=`<div class="jalur-how-flow jalur-how-intro"><span class="eyebrow">RUANG EKSPLORASI PENDIDIKAN TINGGI</span><article class="jalur-how-stage"><div class="jalur-how-icon" aria-hidden="true">✳</div><h2>Apa itu JALUR?</h2><p>JALUR adalah platform pendamping eksplorasi pendidikan tinggi. JALUR membantu siapa pun yang sedang mempertimbangkan studi lanjut untuk mengenali pilihan universitas dan program studi, memahami informasi penting, serta menyusun pertimbangan dengan lebih terarah.</p><p>Di sini kamu dapat menelusuri direktori perguruan tinggi dan program studi, melihat detail serta sumber informasinya, membandingkan alternatif, dan mencatat hal yang masih perlu dipastikan. JALUR bukan penyelenggara seleksi, tidak memilihkan jurusan, dan tidak menjanjikan kelulusan. Keputusan tetap berada di tanganmu.</p><div class="jalur-how-points"><div><span>01</span><strong>Informasi untuk mengenali pilihan</strong></div><div><span>02</span><strong>Ruang untuk menimbang beberapa alternatif</strong></div><div><span>03</span><strong>Langkah yang dapat kamu susun sendiri</strong></div></div></article><p class="jalur-how-note">Setelah mengenal tujuan JALUR, lanjutkan dengan empat langkah berikut.</p></div>`;
+ const introBody=`<div class="jalur-how-flow jalur-how-intro"><span class="eyebrow">RUANG EKSPLORASI PENDIDIKAN TINGGI</span><article class="jalur-how-stage"><div class="jalur-how-icon" aria-hidden="true">✳</div><h2>Apa itu JALUR?</h2><p><strong>JALUR</strong> merupakan singkatan dari <strong>Journey for Academic Learning, Understanding, and Readiness</strong> — sebuah perjalanan untuk mengenali pilihan pendidikan, memahami informasi akademik, dan mempersiapkan langkah berikutnya dengan lebih terarah. Sebagai platform pendamping eksplorasi pendidikan tinggi, <strong>JALUR</strong> membantu siapa pun yang sedang mempertimbangkan studi lanjut untuk mengenali pilihan universitas dan program studi, memahami informasi penting, serta menyusun pertimbangan secara matang.</p><p>Di sini kamu dapat menelusuri direktori perguruan tinggi dan program studi, melihat detail serta sumber informasinya, membandingkan alternatif, dan mencatat hal yang masih perlu dipastikan. JALUR bukan penyelenggara seleksi, tidak memilihkan jurusan, dan tidak menjanjikan kelulusan. Keputusan tetap berada di tanganmu.</p><div class="jalur-how-points"><div><span>01</span><strong>Informasi untuk mengenali pilihan</strong></div><div><span>02</span><strong>Ruang untuk menimbang beberapa alternatif</strong></div><div><span>03</span><strong>Langkah yang dapat kamu susun sendiri</strong></div></div></article><p class="jalur-how-note">Setelah mengenal tujuan JALUR, lanjutkan dengan empat langkah berikut.</p></div>`;
  const draw=()=>{
   if(active<0){
    openModal("Mengenal JALUR",introBody,'<button type="button" class="btn secondary" id="howBack">Tutup</button><button type="button" class="btn primary" id="howNext">Lihat 4 langkah <span aria-hidden="true">↗</span></button>');
@@ -937,18 +937,25 @@ if(jalurResumeApp){
  const ambient=document.querySelector(".ambient");
  const welcomeMotion=()=>document.documentElement.classList.contains("jalur-welcome-mode");
  if(ambient&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
-  let pointerActive=false,touchActive=false;
+  let pointerActive=false,touchActive=false,ambientFrame=0,pendingPointer=null;
   const updateAmbient=event=>{
    if(!welcomeMotion())return;
    if(event.pointerType==="touch"&&!touchActive)return;
-   const x=Math.max(0,Math.min(1,event.clientX/Math.max(1,window.innerWidth)));
-   const y=Math.max(0,Math.min(1,event.clientY/Math.max(1,window.innerHeight)));
-   ambient.style.setProperty("--mouse-x",`${(x*100).toFixed(1)}%`);
-   ambient.style.setProperty("--mouse-y",`${(y*100).toFixed(1)}%`);
-   ambient.style.setProperty("--ambient-hue",`${Math.round((x-.5)*76+(y-.5)*18)}deg`);
-   ambient.style.setProperty("--ambient-shift-x",`${((x-.5)*54).toFixed(1)}px`);
-   ambient.style.setProperty("--ambient-shift-y",`${((y-.5)*42).toFixed(1)}px`);
-   ambient.classList.add("pointer-active");
+   pendingPointer={x:event.clientX,y:event.clientY};
+   if(ambientFrame)return;
+   ambientFrame=requestAnimationFrame(()=>{
+    ambientFrame=0;
+    if(!pendingPointer||!welcomeMotion())return;
+    const {x:clientX,y:clientY}=pendingPointer;pendingPointer=null;
+    const x=Math.max(0,Math.min(1,clientX/Math.max(1,window.innerWidth)));
+    const y=Math.max(0,Math.min(1,clientY/Math.max(1,window.innerHeight)));
+    ambient.style.setProperty("--mouse-x",`${Math.round(x*100)}%`);
+    ambient.style.setProperty("--mouse-y",`${Math.round(y*100)}%`);
+    ambient.style.setProperty("--ambient-hue",`${Math.round((x-.5)*28+(y-.5)*8)}deg`);
+    ambient.style.setProperty("--ambient-shift-x",`${Math.round((x-.5)*32)}px`);
+    ambient.style.setProperty("--ambient-shift-y",`${Math.round((y-.5)*24)}px`);
+    ambient.classList.add("pointer-active");
+   });
   };
   window.addEventListener("pointerdown",event=>{
    if(!welcomeMotion())return;
@@ -957,7 +964,9 @@ if(jalurResumeApp){
   window.addEventListener("pointermove",updateAmbient,{passive:true});
   const releaseAmbient=event=>{
    if(event.pointerType==="touch")touchActive=false;
-   pointerActive=false;ambient.classList.remove("pointer-active");
+   pointerActive=false;pendingPointer=null;
+   if(ambientFrame){cancelAnimationFrame(ambientFrame);ambientFrame=0;}
+   ambient.classList.remove("pointer-active");
   };
   window.addEventListener("pointerup",releaseAmbient,{passive:true});
   window.addEventListener("pointercancel",releaseAmbient,{passive:true});

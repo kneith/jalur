@@ -2236,3 +2236,52 @@ html.jalur-welcome-mode .ambient.pointer-active::after{opacity:1!important}
 .sidebar-note strong{display:block;color:#6B7FA0;font-size:10px;letter-spacing:.11em;margin-bottom:5px}
 .role-nav-injected{animation:jalurRoleNavIn .24s ease both}
 @keyframes jalurRoleNavIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Desktop: two equal actions side-by-side; preserve phone layout exactly. */
+@media(min-width:701px){
+ .welcome-auth-actions.role-entry-grid>.welcome-secondary-actions{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-auto-flow:column!important;flex:0 0 100%!important;flex-direction:initial!important;
+  align-items:stretch!important;justify-content:stretch!important;width:100%!important;
+  max-width:560px!important;gap:12px!important;margin:0!important
+ }
+ .welcome-auth-actions.role-entry-grid>.welcome-secondary-actions>.btn{
+  display:flex!important;width:100%!important;min-width:0!important;white-space:nowrap
+ }
+}
+/* Keep all visual layers and motion, but avoid repeated expensive filter work. */
+html.jalur-welcome-mode .ambient{contain:paint;isolation:isolate}
+html.jalur-welcome-mode .ambient::after{
+ opacity:.82!important;filter:blur(34px) saturate(1.12) hue-rotate(var(--ambient-hue,0deg))!important;
+ transition:opacity .3s ease!important;will-change:transform
+}
+html.jalur-welcome-mode .ambient-glow{
+ opacity:.48!important;filter:blur(54px) saturate(1.08)!important;
+ transition:opacity .3s ease!important;will-change:transform
+}
+html.jalur-welcome-mode .ambient-liquid{opacity:.22!important;filter:blur(40px) saturate(1.08)!important;will-change:transform,border-radius}
+html.jalur-welcome-mode .ambient-particle{opacity:.38!important;will-change:transform,opacity}
+html.jalur-welcome-mode .ambient.pointer-active .ambient-glow{translate:var(--ambient-shift-x,0px) var(--ambient-shift-y,0px)}
+@media(max-width:700px){
+ html.jalur-welcome-mode .ambient::after{filter:blur(27px) saturate(1.1) hue-rotate(var(--ambient-hue,0deg))!important;opacity:.8!important}
+ html.jalur-welcome-mode .ambient-glow{filter:blur(42px) saturate(1.06)!important;opacity:.42!important}
+ html.jalur-welcome-mode .ambient-liquid{filter:blur(31px) saturate(1.05)!important;opacity:.2!important}
+}
+html.jalur-welcome-mode .ambient{
+ background:
+  radial-gradient(ellipse 60% 58% at 10% 16%,rgba(125,170,228,.36),transparent 72%),
+  radial-gradient(ellipse 54% 52% at 91% 22%,rgba(184,169,228,.29),transparent 73%),
+  radial-gradient(ellipse 64% 60% at 74% 94%,rgba(120,187,219,.29),transparent 73%),
+  radial-gradient(ellipse 48% 44% at 18% 86%,rgba(224,177,198,.19),transparent 74%),
+  linear-gradient(132deg,#EDF4FF 0%,#F3F4FF 50%,#FFF4F8 100%)!important
+}
+html.jalur-welcome-mode .ambient::after{
+ background:
+  radial-gradient(560px circle at var(--mouse-x,50%) var(--mouse-y,45%),rgba(105,155,220,.34),rgba(166,171,225,.22) 34%,rgba(231,178,202,.14) 58%,transparent 78%),
+  radial-gradient(ellipse 42% 34% at 18% 78%,rgba(131,193,218,.24),transparent 76%),
+  radial-gradient(ellipse 38% 36% at 83% 75%,rgba(185,164,226,.2),transparent 78%)!important
+}
+html.jalur-welcome-mode .glow-a{background:radial-gradient(ellipse,rgba(110,162,224,.44),rgba(110,162,224,0) 72%)!important}
+html.jalur-welcome-mode .glow-b{background:radial-gradient(ellipse,rgba(177,160,222,.39),rgba(177,160,222,0) 74%)!important}
+html.jalur-welcome-mode .glow-c{background:radial-gradient(ellipse,rgba(111,186,215,.34),rgba(111,186,215,0) 72%)!important}
+html.jalur-welcome-mode .ambient-particle{background:rgba(104,147,195,.58)!important;box-shadow:0 0 10px rgba(122,164,218,.28)!important}
