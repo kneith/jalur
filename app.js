@@ -997,7 +997,7 @@ document.addEventListener("change",e=>{
  }
 });
 document.addEventListener("click",async e=>{
- if(e.target.closest("#retryAdmissionsData")){window.JALUR_ADMISSIONS_PROMISE=null;Promise.all([loadAdmissionsData(),currentPage==="SNBT Predictor"?loadDirectoryData():Promise.resolve()]).then(()=>render()).catch(err=>toast(err.message,"error"));return;}
+ if(e.target.closest("#retryAdmissionsData")){window.JALUR_ADMISSIONS_PROMISE=null;loadAdmissionsData().then(()=>{if(ADMISSIONS_DATA_PAGES.has(currentPage))render();}).catch(err=>toast(err.message,"error"));return;}
  if(e.target.closest("#snbtLoadMore")){window.snbtLimit=(window.snbtLimit||50)+50;const root=$("#pageRoot");if(root)root.innerHTML=snbtPredictorPage();return;}
  const snbtDetail=e.target.closest("[data-snbt-detail]");if(snbtDetail){const record=window.JALUR_ADMISSIONS?.snbt?.find(r=>r[0]===snbtDetail.dataset.snbtDetail);if(record)openAdmissionProgram(record[2],record[1]).catch(err=>toast(err.message,"error"));return;}
  const snbpDetail=e.target.closest("[data-snbp-detail]");if(snbpDetail){const record=window.JALUR_ADMISSIONS?.snbp?.topProgramsByApplicants?.[Number(snbpDetail.dataset.snbpDetail)];if(record)openAdmissionProgram(record.program,record.institution).catch(err=>toast(err.message,"error"));return;}
