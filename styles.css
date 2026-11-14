@@ -1911,3 +1911,39 @@ input[type="submit"]{
 .jalur-reduce-motion .ambient-glow,
 .jalur-reduce-motion .ambient-liquid,
 .jalur-reduce-motion .ambient-particle{animation:none!important;will-change:auto}
+
+
+/* Interactive ambient field for the login/welcome experience. */
+html.jalur-welcome-mode .ambient::after{
+  filter:blur(52px) hue-rotate(var(--ambient-hue,0deg));
+  background:
+    radial-gradient(430px circle at var(--mouse-x,50%) var(--mouse-y,45%),rgba(113,148,214,.22),rgba(210,236,249,.15) 30%,rgba(184,168,216,.10) 52%,transparent 76%),
+    radial-gradient(ellipse 34% 28% at 18% 78%,rgba(210,236,249,.10),transparent 76%);
+  transition:opacity .42s ease,filter .55s ease;
+}
+html.jalur-welcome-mode .ambient-glow{
+  translate:var(--ambient-shift-x,0px) var(--ambient-shift-y,0px);
+  filter:blur(94px) saturate(.92) hue-rotate(var(--ambient-hue,0deg))!important;
+  transition:filter .55s ease,translate .8s cubic-bezier(.2,.65,.25,1);
+}
+html.jalur-welcome-mode .ambient-liquid{
+  filter:blur(64px) saturate(.72) hue-rotate(var(--ambient-hue,0deg))!important;
+  translate:calc(var(--ambient-shift-x,0px)*-.65) calc(var(--ambient-shift-y,0px)*-.65);
+  transition:filter .6s ease,translate .9s cubic-bezier(.2,.65,.25,1);
+}
+html.jalur-welcome-mode .ambient-orbit{
+  transition:border-color .6s ease,filter .6s ease;
+  border-color:rgba(130,177,231,.14);
+}
+html.jalur-welcome-mode .ambient.pointer-active .ambient-orbit{
+  border-color:rgba(153,177,224,.24);
+  filter:drop-shadow(0 0 16px rgba(130,177,231,.12));
+}
+@media(max-width:700px){
+  html.jalur-welcome-mode .ambient::after{filter:blur(36px) hue-rotate(var(--ambient-hue,0deg))}
+  html.jalur-welcome-mode .ambient-glow{translate:calc(var(--ambient-shift-x,0px)*.55) calc(var(--ambient-shift-y,0px)*.55)}
+  html.jalur-welcome-mode .ambient-liquid{translate:calc(var(--ambient-shift-x,0px)*-.35) calc(var(--ambient-shift-y,0px)*-.35)}
+}
+@media(prefers-reduced-motion:reduce){
+  html.jalur-welcome-mode .ambient-glow,html.jalur-welcome-mode .ambient-liquid{translate:none!important;transition:none!important;filter:none!important}
+}
