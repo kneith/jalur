@@ -1042,7 +1042,7 @@ html.jalur-welcome-mode .orbit-satellite.is-dragging{background:#F4DDE8;color:#A
 }
 .welcome-staff-options .staff-entry{
  border:0;border-radius:10px;background:rgba(255,255,255,.78);padding:10px 9px;
- color:#526985;font:600 12px/1.35 inherit;cursor:pointer;text-align:center
+ color:#526985;font-family:inherit;font-size:12px;font-weight:600;line-height:1.35;cursor:pointer;text-align:center
 }
 .welcome-staff-options .staff-entry:hover{background:#F4DDE8;color:#8C5470}
 .welcome-auth-actions button:focus-visible,.welcome-staff-menu summary:focus-visible{
