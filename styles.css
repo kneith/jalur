@@ -2267,14 +2267,6 @@ html.jalur-welcome-mode .ambient.pointer-active .ambient-glow{translate:var(--am
  html.jalur-welcome-mode .ambient-glow{filter:blur(42px) saturate(1.06)!important;opacity:.42!important}
  html.jalur-welcome-mode .ambient-liquid{filter:blur(31px) saturate(1.05)!important;opacity:.2!important}
 }
-html.jalur-welcome-mode .ambient{
- background:
-  radial-gradient(ellipse 60% 58% at 10% 16%,rgba(125,170,228,.36),transparent 72%),
-  radial-gradient(ellipse 54% 52% at 91% 22%,rgba(184,169,228,.29),transparent 73%),
-  radial-gradient(ellipse 64% 60% at 74% 94%,rgba(120,187,219,.29),transparent 73%),
-  radial-gradient(ellipse 48% 44% at 18% 86%,rgba(224,177,198,.19),transparent 74%),
-  linear-gradient(132deg,#EDF4FF 0%,#F3F4FF 50%,#FFF4F8 100%)!important
-}
 html.jalur-welcome-mode .ambient::after{
  background:
   radial-gradient(560px circle at var(--mouse-x,50%) var(--mouse-y,45%),rgba(105,155,220,.34),rgba(166,171,225,.22) 34%,rgba(231,178,202,.14) 58%,transparent 78%),
