@@ -2277,3 +2277,139 @@ html.jalur-welcome-mode .glow-a{background:radial-gradient(ellipse,rgba(110,162,
 html.jalur-welcome-mode .glow-b{background:radial-gradient(ellipse,rgba(177,160,222,.39),rgba(177,160,222,0) 74%)!important}
 html.jalur-welcome-mode .glow-c{background:radial-gradient(ellipse,rgba(111,186,215,.34),rgba(111,186,215,0) 72%)!important}
 html.jalur-welcome-mode .ambient-particle{background:rgba(104,147,195,.58)!important;box-shadow:0 0 10px rgba(122,164,218,.28)!important}
+
+
+/* Equal welcome actions: identical tracks and identical sizing on desktop and
+   mobile. Labels may wrap, but neither button can grow wider than the other. */
+.welcome-secondary-actions{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-auto-columns:1fr!important;
+  align-items:stretch!important;
+  justify-items:stretch!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+.welcome-secondary-actions>#createAccount,
+.welcome-secondary-actions>#howItWorks{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  min-height:52px!important;
+  box-sizing:border-box!important;
+  justify-self:stretch!important;
+  align-self:stretch!important;
+  flex:none!important;
+  text-align:center!important;
+  white-space:normal!important;
+  line-height:1.35!important;
+}
+
+/* Extra ambient objects add layered, slow motion without changing the page's
+   background colors. All movement uses transform/opacity for smooth rendering. */
+.ambient-mover{
+  position:absolute;
+  z-index:4;
+  display:block;
+  pointer-events:none;
+  transform-origin:center;
+  will-change:transform,opacity;
+}
+.mover-orb{
+  width:clamp(54px,7vw,92px);
+  height:clamp(54px,7vw,92px);
+  left:13%;
+  top:25%;
+  border:1px solid rgba(133,171,216,.18);
+  border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,rgba(204,225,250,.18),rgba(179,196,230,.055) 46%,transparent 72%);
+  box-shadow:inset 0 0 18px rgba(197,217,244,.06),0 0 30px rgba(143,177,220,.055);
+  animation:jalurAmbientOrbDrift 31s ease-in-out infinite alternate;
+}
+.mover-orb::after{
+  content:"";
+  position:absolute;
+  width:8px;height:8px;
+  left:16%;top:23%;
+  border-radius:50%;
+  background:rgba(207,225,248,.48);
+  box-shadow:0 0 15px rgba(165,197,235,.32);
+}
+.mover-ring{
+  width:58px;height:58px;
+  right:17%;top:64%;
+  border:1px solid rgba(171,177,221,.22);
+  border-radius:50%;
+  box-shadow:0 0 22px rgba(164,173,222,.06);
+  animation:jalurAmbientRingTravel 42s linear infinite;
+}
+.mover-ring::before{
+  content:"";
+  position:absolute;
+  width:7px;height:7px;
+  left:50%;top:-4px;
+  border-radius:50%;
+  background:rgba(209,219,245,.66);
+  box-shadow:0 0 12px rgba(177,195,237,.4);
+}
+.mover-diamond{
+  width:17px;height:17px;
+  left:63%;top:19%;
+  border:1px solid rgba(190,176,220,.3);
+  border-radius:5px;
+  background:rgba(213,204,238,.1);
+  box-shadow:0 0 17px rgba(180,166,221,.1);
+  animation:jalurAmbientDiamondTravel 25s ease-in-out infinite;
+}
+.mover-streak{
+  width:clamp(60px,10vw,126px);
+  height:1px;
+  right:8%;top:38%;
+  background:linear-gradient(90deg,transparent,rgba(185,204,236,.36),transparent);
+  opacity:.48;
+  animation:jalurAmbientStreakSlide 27s ease-in-out infinite alternate;
+}
+.mover-drift-dot{
+  width:6px;height:6px;
+  left:37%;top:75%;
+  border-radius:50%;
+  background:rgba(198,216,242,.62);
+  box-shadow:0 0 15px rgba(167,197,236,.34);
+  animation:jalurAmbientDotBob 11s ease-in-out infinite;
+}
+@keyframes jalurAmbientOrbDrift{
+  0%{transform:translate3d(-8px,14px,0) scale(.94)}
+  50%{transform:translate3d(24px,-20px,0) scale(1.04)}
+  100%{transform:translate3d(52px,10px,0) scale(.98)}
+}
+@keyframes jalurAmbientRingTravel{
+  0%{transform:translate3d(0,12px,0) rotate(0deg)}
+  50%{transform:translate3d(-16px,-24px,0) rotate(180deg)}
+  100%{transform:translate3d(0,12px,0) rotate(360deg)}
+}
+@keyframes jalurAmbientDiamondTravel{
+  0%,100%{transform:translate3d(0,0,0) rotate(0deg)}
+  30%{transform:translate3d(22px,-18px,0) rotate(90deg)}
+  65%{transform:translate3d(-12px,22px,0) rotate(210deg)}
+}
+@keyframes jalurAmbientStreakSlide{
+  0%{transform:translate3d(-18px,8px,0);opacity:.2}
+  100%{transform:translate3d(24px,-12px,0);opacity:.58}
+}
+@keyframes jalurAmbientDotBob{
+  0%,100%{transform:translate3d(0,0,0);opacity:.36}
+  50%{transform:translate3d(10px,-28px,0);opacity:.8}
+}
+@media(max-width:700px){
+  .mover-orb{left:5%;top:21%;width:48px;height:48px}
+  .mover-ring{right:7%;top:68%;width:42px;height:42px}
+  .mover-diamond{left:70%;top:16%;width:13px;height:13px}
+  .mover-streak{right:5%;top:43%;width:56px}
+  .mover-drift-dot{left:30%;top:79%}
+}
+@media(prefers-reduced-motion:reduce){
+  .ambient-mover{animation:none!important;will-change:auto}
+}
