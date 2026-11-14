@@ -15,11 +15,18 @@
     html.jalur-intro-pending .jalur-intro-screen{display:grid;pointer-events:auto}
     .jalur-intro-screen::before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(132deg,#fbfaff 0%,#fff 48%,#f7f4ff 100%);animation:jalurIntroBackground 8.7s cubic-bezier(.65,0,.25,1) forwards}
     .jalur-intro-screen::after{content:"";position:absolute;inset:-18%;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 18% 14%,rgba(191,174,235,.22),transparent 43%),radial-gradient(ellipse at 82% 78%,rgba(172,190,226,.2),transparent 48%),radial-gradient(ellipse at 52% 48%,rgba(130,159,197,.12),transparent 58%);filter:blur(8px);animation:jalurIntroGlow 8.7s cubic-bezier(.4,0,.2,1) forwards}
-    .jalur-intro-content{width:min(96vw,800px);display:flex;flex-direction:column;align-items:center;gap:5px;padding:22px 12px;text-align:center;will-change:opacity,transform;animation:jalurIntroMarkExit 1.65s cubic-bezier(.4,0,.2,1) 7.05s forwards}
-    .jalur-intro-wordmark{display:block;width:min(94vw,760px);height:auto;overflow:visible;filter:drop-shadow(0 5px 12px rgba(116,133,180,.08))}
-    .jalur-intro-wordmark .intro-reveal{width:0;animation:jalurIntroWrite 4.7s cubic-bezier(.48,.02,.22,1) .25s both}
-    .jalur-intro-tagline{margin:0;color:#77718f;font-family:"DM Sans",Manrope,system-ui,sans-serif;font-size:clamp(13px,2.8vw,16px);font-weight:500;letter-spacing:.005em;opacity:0;transform:translateY(5px);animation:jalurIntroTagline 1.3s cubic-bezier(.22,.72,.2,1) 4.55s forwards}
-    @keyframes jalurIntroWrite{0%{width:0}8%{width:34px}30%{width:205px}62%{width:470px}84%{width:650px}100%{width:760px}}
+    .jalur-intro-content{width:min(96vw,940px);display:flex;flex-direction:column;align-items:center;gap:5px;padding:22px 12px;text-align:center;will-change:opacity,transform;animation:jalurIntroMarkExit 1.65s cubic-bezier(.4,0,.2,1) 7.15s forwards}
+    .jalur-intro-wordmark{display:block;width:min(94vw,900px);height:auto;overflow:visible;filter:drop-shadow(0 5px 12px rgba(116,133,180,.06))}
+    .jalur-intro-wordmark .intro-stroke{stroke-dasharray:1;stroke-dashoffset:1;animation:jalurIntroStroke 1.35s cubic-bezier(.45,.04,.2,1) forwards}
+    .jalur-intro-wordmark .intro-j{animation-delay:.2s}
+    .jalur-intro-wordmark .intro-a{animation-delay:1.35s}
+    .jalur-intro-wordmark .intro-l{animation-delay:2.45s}
+    .jalur-intro-wordmark .intro-u{animation-delay:3.65s}
+    .jalur-intro-wordmark .intro-r{animation-delay:4.75s}
+    .jalur-intro-wordmark .intro-dot{opacity:0;transform-box:fill-box;transform-origin:center;animation:jalurIntroDot .5s cubic-bezier(.2,.8,.2,1) 1.05s forwards}
+    .jalur-intro-tagline{margin:0;color:#77718f;font-family:"DM Sans",Manrope,system-ui,sans-serif;font-size:clamp(13px,2.8vw,16px);font-weight:500;letter-spacing:.005em;opacity:0;transform:translateY(5px);animation:jalurIntroTagline 1.3s cubic-bezier(.22,.72,.2,1) 5.55s forwards}
+    @keyframes jalurIntroStroke{to{stroke-dashoffset:0}}
+    @keyframes jalurIntroDot{0%{opacity:0;transform:scale(.65)}75%{opacity:1;transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
     @keyframes jalurIntroTagline{0%{opacity:0;transform:translateY(5px)}70%{opacity:1;transform:translateY(-1px)}100%{opacity:1;transform:translateY(0)}}
     @keyframes jalurIntroMarkExit{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-5px) scale(1.012)}}
     @keyframes jalurIntroBackground{0%,76%{background-color:#fbfaff;opacity:1}91%{background-color:#0b1219;opacity:.82}100%{background-color:#0b1219;opacity:0}}
@@ -29,12 +36,13 @@
       .jalur-intro-screen::before{animation:jalurIntroReducedBg .8s ease forwards}
       .jalur-intro-screen::after{animation:none;opacity:.45}
       .jalur-intro-content{animation:jalurIntroReducedExit .5s ease .2s forwards}
-      .jalur-intro-wordmark .intro-reveal{animation:none;width:760px}
+      .jalur-intro-wordmark .intro-stroke{animation:none;stroke-dashoffset:0}
+      .jalur-intro-wordmark .intro-dot{animation:none;opacity:1;transform:none}
       .jalur-intro-tagline{animation:none;opacity:1;transform:none}
       @keyframes jalurIntroReducedBg{to{background-color:#0b1219;opacity:0}}
       @keyframes jalurIntroReducedExit{to{opacity:0}}
     }
-  </style>
+  </style>e>
   <script>
     (() => {
       try {
@@ -55,18 +63,22 @@
 <body>
   <div id="jalur-intro" class="jalur-intro-screen" aria-hidden="true">
     <div class="jalur-intro-content">
-      <svg class="jalur-intro-wordmark" viewBox="0 0 760 300" role="img" aria-label="jalur" xmlns="http://www.w3.org/2000/svg">
+      <svg class="jalur-intro-wordmark" viewBox="0 0 900 360" role="img" aria-label="jalur" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="jalurIntroGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#829FC5"/>
-            <stop offset="58%" stop-color="#A5A5CA"/>
-            <stop offset="100%" stop-color="#D69EB7"/>
+            <stop offset="0%" stop-color="#83A6CF"/>
+            <stop offset="55%" stop-color="#A9A2CF"/>
+            <stop offset="100%" stop-color="#E3A0B8"/>
           </linearGradient>
-          <clipPath id="jalurIntroWriteClip" clipPathUnits="userSpaceOnUse">
-            <rect class="intro-reveal" x="0" y="0" width="0" height="300" rx="36"/>
-          </clipPath>
         </defs>
-        <path d="M 12,196 L 16,203 L 28,204 L 60,192 L 111,163 L 149,132 L 152,172 L 118,194 L 97,214 L 77,248 L 77,270 L 84,282 L 101,292 L 116,292 L 132,286 L 151,268 L 167,236 L 176,181 L 198,166 L 203,168 L 206,187 L 223,199 L 245,198 L 277,175 L 283,177 L 290,191 L 309,197 L 323,197 L 336,191 L 324,190 L 324,178 L 300,178 L 296,150 L 301,130 L 293,110 L 264,105 L 243,110 L 178,154 L 173,106 L 163,97 L 153,97 L 103,141 L 68,163 L 21,182 L 14,188 Z M 149,200 L 146,224 L 132,254 L 119,266 L 107,268 L 101,261 L 101,254 L 111,233 L 129,214 Z M 314,184 L 321,182 L 323,186 L 317,189 Z M 262,179 L 262,183 Z M 282,175 L 283,172 L 287,174 Z M 293,167 L 294,173 Z M 269,154 L 273,156 Z M 273,124 L 277,134 L 266,156 L 244,178 L 229,178 L 224,172 L 224,163 L 237,138 L 259,124 Z M 244,125 L 247,126 Z M 294,122 L 294,127 Z M 234,123 L 240,124 Z M 151,49 L 142,56 L 140,69 L 150,80 L 164,80 L 174,70 L 174,59 L 163,49 Z M 329,188 L 342,187 L 343,180 L 345,184 L 358,180 L 374,196 L 385,200 L 411,200 L 434,188 L 446,177 L 459,196 L 483,201 L 500,194 L 517,178 L 523,190 L 534,198 L 555,200 L 569,194 L 583,181 L 609,136 L 628,136 L 634,140 L 620,168 L 626,194 L 641,205 L 670,208 L 696,200 L 737,171 L 740,159 L 735,153 L 727,152 L 678,182 L 652,183 L 645,171 L 660,142 L 659,127 L 646,115 L 613,111 L 602,94 L 589,93 L 582,96 L 575,107 L 575,115 L 585,129 L 569,160 L 553,176 L 546,177 L 540,172 L 538,151 L 543,122 L 538,115 L 530,113 L 522,117 L 511,143 L 492,171 L 481,178 L 474,177 L 467,164 L 474,116 L 467,109 L 453,113 L 441,145 L 420,172 L 403,180 L 376,175 L 372,162 L 381,155 L 407,116 L 427,75 L 436,44 L 436,30 L 430,27 L 430,18 L 421,10 L 405,9 L 391,15 L 379,26 L 358,61 L 342,113 L 342,146 L 347,149 L 348,159 L 341,168 L 329,174 Z M 372,181 L 377,183 L 374,185 Z M 330,180 L 333,180 Z M 360,175 L 361,172 L 369,174 Z M 341,171 L 344,172 Z M 353,160 L 357,165 L 353,170 L 355,174 L 351,175 L 346,171 Z M 356,129 L 359,129 Z M 358,109 L 358,116 Z M 352,100 L 351,109 Z M 354,88 L 359,91 L 355,93 Z M 370,57 L 373,59 Z M 374,51 L 373,57 Z M 410,30 L 415,39 L 409,63 L 383,116 L 364,137 L 361,122 L 366,90 L 383,53 L 400,32 Z M 420,29 L 419,36 Z M 392,29 L 400,30 Z" fill="url(#jalurIntroGradient)" fill-rule="evenodd" clip-path="url(#jalurIntroWriteClip)"/>
+        <g fill="none" stroke="url(#jalurIntroGradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="29">
+          <path class="intro-stroke intro-j" pathLength="1" d="M 48,216 C 83,205 120,181 153,151 C 164,141 174,130 181,120 C 185,116 189,119 189,128 C 189,166 183,215 168,259 C 157,290 137,309 115,309 C 96,309 83,296 87,278 C 92,257 119,230 148,208 C 160,199 174,190 188,181"/>
+          <path class="intro-stroke intro-a" pathLength="1" d="M 202,191 C 218,165 248,149 270,154 C 290,159 291,184 279,205 C 267,227 245,239 228,231 C 210,223 211,198 229,178 C 249,155 283,150 307,164 C 325,175 328,203 346,211 C 361,218 377,208 391,192"/>
+          <path class="intro-stroke intro-l" pathLength="1" d="M 379,195 C 365,169 368,127 381,83 C 393,42 413,17 434,20 C 454,23 450,62 432,108 C 415,151 392,184 374,196 C 391,214 416,220 438,208 C 453,200 466,184 477,167"/>
+          <path class="intro-stroke intro-u" pathLength="1" d="M 475,169 C 466,194 465,218 482,226 C 500,235 522,215 540,188 C 531,211 533,233 552,237 C 573,241 595,215 612,188 C 605,211 609,232 628,237 C 650,244 674,220 694,199"/>
+          <path class="intro-stroke intro-r" pathLength="1" d="M 680,202 C 694,179 708,157 724,151 C 738,146 745,157 737,172 C 728,188 717,204 725,216 C 738,237 772,232 813,201 C 825,192 835,184 846,175"/>
+        </g>
+        <circle class="intro-dot" cx="188" cy="76" r="15" fill="url(#jalurIntroGradient)"/>
       </svg>
       <p class="jalur-intro-tagline">Temukan arah, pahami pilihanmu.</p>
     </div>
