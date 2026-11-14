@@ -1788,3 +1788,32 @@ input[type="submit"]{
   border:0!important;
   box-shadow:none!important;
 }
+
+
+/* JALUR motion refinement: calm, consistent easing for route and auth transitions. */
+@keyframes jalurWelcomeExitSoft{0%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}100%{opacity:0;transform:translate3d(0,-9px,0) scale(.996);filter:blur(2px)}}
+@keyframes jalurAppEnter{0%{opacity:0;transform:translate3d(0,13px,0) scale(.994);filter:blur(3px)}100%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}}
+@keyframes jalurPageEnter{0%{opacity:0;transform:translate3d(0,9px,0);filter:blur(2px)}100%{opacity:1;transform:translate3d(0,0,0);filter:blur(0)}}
+@keyframes jalurModalBackdropIn{from{opacity:0;backdrop-filter:blur(0)}to{opacity:1;backdrop-filter:blur(5px)}}
+@keyframes jalurModalBackdropOut{from{opacity:1}to{opacity:0}}
+@keyframes jalurModalPanelIn{0%{opacity:0;transform:translate3d(0,15px,0) scale(.985);filter:blur(2px)}100%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}}
+@keyframes jalurModalPanelOut{to{opacity:0;transform:translate3d(0,8px,0) scale(.99)}}
+.jalur-welcome-exit{animation:jalurWelcomeExitSoft .58s cubic-bezier(.42,0,.2,1) both}
+.app-shell.jalur-app-enter{animation:jalurAppEnter .78s cubic-bezier(.2,.72,.2,1) both}
+#pageRoot.jalur-page-enter>*{animation:jalurPageEnter .52s cubic-bezier(.2,.72,.2,1) both}
+#pageRoot.jalur-page-enter>*:nth-child(2){animation-delay:35ms}
+#pageRoot.jalur-page-enter>*:nth-child(3){animation-delay:70ms}
+#pageRoot.jalur-page-enter>*:nth-child(4){animation-delay:105ms}
+.modal-backdrop:not(.jalur-modal-closing){animation:jalurModalBackdropIn .44s ease both}
+.modal-backdrop:not(.jalur-modal-closing)>.modal{animation:jalurModalPanelIn .48s cubic-bezier(.2,.72,.2,1) both}
+.modal-backdrop.jalur-modal-closing{animation:jalurModalBackdropOut .34s ease both}
+.modal-backdrop.jalur-modal-closing>.modal{animation:jalurModalPanelOut .34s ease both}
+.btn,.icon-btn,.nav-item,.bottom-item,.profile-chip,.home-return,.source-card,.program-card,.panel,.quick-action,.staff-entry{
+ transition-duration:.26s!important;
+ transition-timing-function:cubic-bezier(.2,.72,.2,1)!important;
+}
+.ambient{transition:background-color .8s ease,opacity .8s ease}
+@media(prefers-reduced-motion:reduce){
+ .jalur-welcome-exit,.app-shell.jalur-app-enter,#pageRoot.jalur-page-enter>*,.modal-backdrop,.modal-backdrop>.modal{animation:none!important}
+ .ambient{transition:none!important}
+}
