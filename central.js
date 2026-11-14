@@ -209,6 +209,7 @@ function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;c
     const studentTools=["Academic Profile","Study Tracer Alumni","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal"];
     if(page==="Dashboard")return ({student:"server-home",school_admin:"server-school",teacher:"server-grades",counselor:"server-bk",wellbeing_moderator:"server-vent",platform_admin:"server-platform"})[role]??null;
     if(page==="Study Program Explorer")return undefined;
+    if(["Study Tracer Alumni","SNBT Predictor","SNBP Data"].includes(page))return ["student","school_admin","teacher","counselor"].includes(role)?undefined:null;
     if(page==="School Portal")return role==="school_admin"?"server-school":null;
     if(page==="BK Portal")return role==="counselor"?"server-bk":null;
     if(page==="BK Consultation")return role==="student"?"appointment":null;
