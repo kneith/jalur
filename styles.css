@@ -1776,3 +1776,15 @@ input[type="submit"]{
   outline-offset:-2px;
   border-radius:0 0 4px 4px;
 }
+
+
+/* Main content is not a bordered panel. Do not draw a focus frame around
+   the entire page region after route changes or refreshes. Interactive
+   controls retain their own visible keyboard focus styles. */
+#main.page-content,
+#main.page-content:focus,
+#main.page-content:focus-visible{
+  outline:0!important;
+  border:0!important;
+  box-shadow:none!important;
+}
