@@ -12,10 +12,12 @@ _pool = None
 if settings.database_url:
     _pool = ConnectionPool(
         settings.database_url,
-        min_size=1,
-        max_size=4,
+        # Serverless instances scale independently; start without idle
+        # connections and cap each warm instance to limit aggregate DB usage.
+        min_size=0,
+        max_size=2,
         timeout=8,
-        max_idle=30,
+        max_idle=15,
         kwargs={"row_factory": dict_row},
         open=True,
     )
