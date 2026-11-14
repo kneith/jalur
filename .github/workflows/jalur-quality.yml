@@ -86,7 +86,7 @@ jobs:
           assert 'platform_admin:"server-platform"' in central
           assert "if(!nav||!user)return;" in central  # Public guest navigation remains in the app layer.
           assert 'if(page==="Academic Profile")return role==="student"?undefined:role==="teacher"?"grades":null;' in central
-          assert 'if(["Study Tracer Alumni","SNBT Predictor","SNBP Data"].includes(page))return ["student","school_admin","teacher","counselor"].includes(role)?undefined:null;' in central
+          assert 'if(["Study Tracer Alumni","SNBT Predictor","SNBP Data"].includes(page))return undefined;' in central
           assert "credentials:'include'" in central and "X-CSRF-Token" in central
           assert "https://jalur-api.vercel.app" in index
           admissions = json.loads(gzip.decompress(base64.b64decode(Path("data/admissions/admissions-data.b64").read_bytes())))
@@ -104,6 +104,13 @@ jobs:
           assert "function applyAlumniFilters(resetPage=true)" in app
           assert "const snbtEvidence=" in app and "const snbpEvidence=" in app
           assert 'class="filter-grid"' not in app and 'class="stats-grid"' not in app and 'class="link-list"' not in app
-          assert "20261115-admissions-audit-v3" in index
+          assert "20261115-runtime-fix-v4" in index
+          assert "20261115-layout-stability-v1" in index
+          assert "async function showProgramDetail(id)" in app
+          assert 'id="snbpSearch"' in app
+          assert "const weightedFor=" in app
+          assert "admissionNameScore" in app
+          assert "updateAmbient" not in app
+          assert 'class="ambient" aria-hidden="true" hidden' in index
           print("Structured forms, roles, admissions data integrity, static assets, and API security checks passed.")
           PY
