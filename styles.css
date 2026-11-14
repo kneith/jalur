@@ -2515,3 +2515,6 @@ html.jalur-welcome-mode .mover-pulse{
     letter-spacing:-.01em;
   }
 }
+
+/* Temporarily disable the mismatched ambient motion layer. */
+.ambient{display:none!important;animation:none!important;}
