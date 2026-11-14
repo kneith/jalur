@@ -954,8 +954,9 @@ def update_bk_appointment_status(appointment_id: uuid.UUID, payload: BKAppointme
 
 
 @app.post("/api/anonymous-ventings", status_code=201)
-def create_anonymous_venting(payload: AnonymousVentingInput):
-    # Intentionally public and unlinked: no user/session/IP identifier is stored.
+def create_anonymous_venting(payload: AnonymousVentingInput, request: Request):
+    # Require a signed-in student, but deliberately do not persist the student identity.
+    _require_roles(request, "student")
     text_value = payload.text.strip()
     if len(text_value) < 3:
         raise HTTPException(422, "Isi curhat minimal 3 karakter.")
