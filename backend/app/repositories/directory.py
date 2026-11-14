@@ -29,8 +29,17 @@ class JSONDirectoryRepository(DirectoryRepository):
     def __init__(self, source_path: str):
         self.__source_path = Path(source_path)
         self.__institutions, self.__programs = self.__load()
-        self.__institution_index = [(row, self.__text(row)) for row in self.__institutions]
-        self.__program_index = [(row, self.__text(row)) for row in self.__programs]
+        self.__search_index = [
+            ("institution", row, self.__text(row)) for row in self.__institutions
+        ] + [
+            ("program", row, self.__text(row)) for row in self.__programs
+        ]
+        # Sort once during repository startup, not for every keystroke/search request.
+        self.__search_index.sort(key=lambda item: (
+            str(item[1].get("name") or "").casefold(),
+            str(item[1].get("campus") or item[1].get("city") or "").casefold(),
+            str(item[1].get("id") or "")
+        ))
 
     @property
     def counts(self) -> dict:
@@ -72,25 +81,20 @@ class JSONDirectoryRepository(DirectoryRepository):
         return True
 
     def search(self, query, kind, limit, offset, filters, strategy):
-        candidates = []
-        if kind in ("all", "institution"):
-            candidates.extend(("institution", row, hay) for row, hay in self.__institution_index)
-        if kind in ("all", "program"):
-            candidates.extend(("program", row, hay) for row, hay in self.__program_index)
-        found = []
-        for item_type, row, hay in candidates:
-            if not strategy.matches(query, hay) or not self.__passes(row, filters): continue
-            found.append((item_type, row))
-        found.sort(key=lambda item: (
-            str(item[1].get("name") or "").casefold(),
-            str(item[1].get("campus") or item[1].get("city") or "").casefold(),
-            str(item[1].get("id") or "")
-        ))
-        total = len(found)
+        # Iterate in the pre-sorted order and retain only the requested page.
+        # This avoids allocating and sorting every matching row on each keystroke.
         items = []
-        for item_type, row in found[offset:offset+limit]:
-            item = {"type": item_type, "id": row.get("id"), "name": row.get("name"), "data": row}
-            if item_type == "program":
-                item.update({"institution_name": row.get("campus"), "level": row.get("level"), "field": row.get("field")})
-            items.append(item)
+        total = 0
+        page_end = offset + limit
+        for item_type, row, hay in self.__search_index:
+            if kind != "all" and item_type != kind:
+                continue
+            if not strategy.matches(query, hay) or not self.__passes(row, filters):
+                continue
+            if offset <= total < page_end:
+                item = {"type": item_type, "id": row.get("id"), "name": row.get("name"), "data": row}
+                if item_type == "program":
+                    item.update({"institution_name": row.get("campus"), "level": row.get("level"), "field": row.get("field")})
+                items.append(item)
+            total += 1
         return items, total

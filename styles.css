@@ -1947,3 +1947,76 @@ html.jalur-welcome-mode .ambient.pointer-active .ambient-orbit{
 @media(prefers-reduced-motion:reduce){
   html.jalur-welcome-mode .ambient-glow,html.jalur-welcome-mode .ambient-liquid{translate:none!important;transition:none!important;filter:none!important}
 }
+
+
+/* JALUR 2026 performance and layering fix. Keep the ambient field above the
+   document canvas and behind all content so it is actually visible. */
+html{background:#F5F8FF}
+body{background:transparent!important}
+.ambient{
+  z-index:0!important;pointer-events:none!important;opacity:1!important;
+  isolation:isolate;
+}
+.ambient::before,.ambient::after,.ambient-glow,.ambient-liquid,
+.ambient-orbit,.ambient-particle,.ambient-star,.plant-shape{pointer-events:none!important}
+.ambient::after{opacity:.76!important;filter:blur(58px);mix-blend-mode:normal!important}
+.ambient-glow{opacity:.32!important;filter:blur(86px)!important}
+.welcome-screen,.app-shell{position:relative;z-index:1}
+@media(max-width:700px){
+  .ambient::after{opacity:.64!important;filter:blur(42px)!important}
+  .ambient-glow{opacity:.25!important}
+}
+
+/* Interactive JALUR introduction. */
+.jalur-how-flow{display:grid;gap:15px;color:#263B55}
+.jalur-how-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.jalur-how-progress-step{
+  display:grid;justify-items:center;gap:6px;min-width:0;padding:8px 4px;
+  border:1px solid rgba(113,139,177,.18);border-radius:12px;
+  background:rgba(237,244,255,.55);color:#6D809A;cursor:pointer
+}
+.jalur-how-progress-step span{
+  display:grid;place-items:center;width:28px;height:28px;border-radius:50%;
+  background:#E7EEF9;color:#526B8B;font-size:11px;font-weight:800
+}
+.jalur-how-progress-step small{font-size:8px;letter-spacing:.08em;font-weight:800}
+.jalur-how-progress-step.active{background:#EAF2FF;border-color:#A9CBF5;color:#315F91}
+.jalur-how-progress-step.active span{background:#A9CBF5;color:#263F5D}
+.jalur-how-progress-step.done span{background:#DDF1E8;color:#397A61}
+.jalur-how-stage{
+  position:relative;overflow:hidden;padding:22px;border:1px solid rgba(143,171,207,.28);
+  border-radius:21px;background:linear-gradient(135deg,#F7FAFF 0%,#F2F5FF 55%,#FFF7FA 100%);
+}
+.jalur-how-icon{
+  display:grid;place-items:center;width:52px;height:52px;margin-bottom:15px;
+  border-radius:17px;background:linear-gradient(135deg,#DCEAFF,#F2DDE9 58%,#E8E0FA);
+  color:#5477A4;font-size:25px;box-shadow:0 8px 24px rgba(105,139,190,.12)
+}
+.jalur-how-stage h2{margin:8px 0 10px;font-size:clamp(21px,3vw,26px);color:#263B55}
+.jalur-how-stage>p{margin:0;color:#50647C;font-size:13px;line-height:1.7}
+.jalur-how-points{display:grid;gap:8px;margin-top:17px}
+.jalur-how-points>div{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid rgba(113,139,177,.16);border-radius:12px;background:rgba(255,255,255,.74)}
+.jalur-how-points span,.jalur-account-step>span{
+  display:grid;place-items:center;flex:0 0 27px;width:27px;height:27px;border-radius:9px;
+  background:#E6EFFB;color:#5578A4;font-size:10px;font-weight:800
+}
+.jalur-how-points strong{font-size:12px;color:#3D536E;font-weight:650}
+.jalur-how-note{margin:0;color:#71839A;font-size:10px;line-height:1.55}
+#modalRoot .modal{color:#263B55}
+#modalRoot .modal h2,#modalRoot .modal h3{color:#263B55}
+#modalRoot .modal p{color:#50647C}
+.jalur-account-guide{display:grid;gap:12px}
+.jalur-account-step{display:flex;gap:11px;align-items:flex-start;padding:13px;border:1px solid rgba(113,139,177,.18);border-radius:14px;background:#F7FAFF}
+.jalur-account-step strong{display:block;color:#334B68;font-size:13px}
+.jalur-account-step p{margin:3px 0 0;font-size:11px;line-height:1.55}
+.jalur-account-actions{display:flex;gap:9px;flex-wrap:wrap}
+.jalur-account-actions .btn{flex:1}
+#directoryResults{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:13px}
+#directoryResults .program-card{min-width:0}
+@media(max-width:700px){
+  .jalur-how-stage{padding:17px}
+  .jalur-how-progress-step small{font-size:7px}
+  .jalur-how-progress-step{padding:7px 2px}
+  #directoryResults{grid-template-columns:minmax(0,1fr)}
+  .jalur-account-actions{display:grid}
+}
