@@ -464,17 +464,18 @@ function jalurTransitionToApp(){
  void appShell.offsetWidth;
  welcome.classList.add("jalur-welcome-exit");
  appShell.classList.add("jalur-app-enter");
- let finished=false;
+ let finished=false,timer;
+ const onEnd=event=>{if(event.target===appShell&&event.animationName==="jalurAppEnter")finish();};
  const finish=()=>{
   if(finished)return;finished=true;
+  window.clearTimeout(timer);
+  appShell.removeEventListener("animationend",onEnd);
   welcome.classList.add("hidden");
   welcome.classList.remove("jalur-welcome-exit");
   appShell.classList.remove("jalur-app-enter");
  };
- appShell.addEventListener("animationend",event=>{
-  if(event.target===appShell&&event.animationName==="jalurAppEnter")finish();
- });
- window.setTimeout(finish,900);
+ appShell.addEventListener("animationend",onEnd);
+ timer=window.setTimeout(finish,900);
 }
 window.JALUR_TRANSITION_TO_APP=jalurTransitionToApp;
 window.JALUR_ANIMATE_PAGE_TRANSITION=()=>{
