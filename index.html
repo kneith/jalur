@@ -8,8 +8,78 @@
   <meta name="description" content="JALUR | Pendamping eksplorasi pendidikan tinggi yang membantu siswa memahami dan membandingkan berbagai pilihan.">
   <title>JALUR | Pendamping Eksplorasi Pendidikan Tinggi</title>
   <link rel="stylesheet" href="/styles.css?v=20261114-contrast1">
+  <style id="jalur-intro-style">
+    html.jalur-intro-pending,html.jalur-intro-pending body{overflow:hidden!important}
+    html.jalur-intro-pending #welcome{visibility:hidden}
+    .jalur-intro-screen{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;overflow:hidden;background:transparent;isolation:isolate;pointer-events:auto}
+    .jalur-intro-screen::before{content:"";position:absolute;inset:0;z-index:-2;background:#fff;animation:jalurIntroBackground 6.5s cubic-bezier(.7,0,.2,1) forwards}
+    .jalur-intro-screen::after{content:"";position:absolute;inset:-12%;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 47%,rgba(130,159,197,.16),transparent 54%),radial-gradient(ellipse at 58% 58%,rgba(169,162,200,.10),transparent 66%);animation:jalurIntroGlow 6.5s ease forwards}
+    .jalur-intro-content{width:min(86vw,520px);display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px;text-align:center;animation:jalurIntroMarkExit 1s ease 5.3s forwards}
+    .jalur-intro-wordmark{display:block;width:min(78vw,390px);height:auto;overflow:visible}
+    .jalur-intro-wordmark path{fill:none;stroke:url(#jalurIntroGradient);stroke-width:9;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:260;stroke-dashoffset:260;animation:jalurIntroDraw 1.12s cubic-bezier(.45,0,.25,1) forwards}
+    .jalur-intro-wordmark .intro-j{animation-delay:.58s}
+    .jalur-intro-wordmark .intro-a{animation-delay:1.12s}
+    .jalur-intro-wordmark .intro-l{animation-delay:1.72s}
+    .jalur-intro-wordmark .intro-u{animation-delay:2.22s}
+    .jalur-intro-wordmark .intro-r{animation-delay:2.72s}
+    .jalur-intro-wordmark .intro-dot{stroke:none;fill:#829FC5;opacity:0;animation:jalurIntroDot .22s ease .48s forwards}
+    .jalur-intro-tagline{margin:0;color:#65748d;font-family:Manrope,"DM Sans",system-ui,sans-serif;font-size:clamp(12px,2.7vw,15px);font-weight:500;letter-spacing:.015em;opacity:0;transform:translateY(5px);animation:jalurIntroTagline .65s ease 3.82s forwards}
+    @keyframes jalurIntroDraw{to{stroke-dashoffset:0}}
+    @keyframes jalurIntroDot{to{opacity:1}}
+    @keyframes jalurIntroTagline{to{opacity:1;transform:translateY(0)}}
+    @keyframes jalurIntroMarkExit{to{opacity:0;transform:scale(.985)}}
+    @keyframes jalurIntroBackground{0%,81.5%{background-color:#fff}94%{background-color:#0b1219}100%{background-color:#0b1219;opacity:0}}
+    @keyframes jalurIntroGlow{0%,78%{opacity:1}94%,100%{opacity:0}}
+    @media(max-width:480px){.jalur-intro-content{gap:9px}.jalur-intro-wordmark{width:min(82vw,350px)}}
+    @media(prefers-reduced-motion:reduce){
+      .jalur-intro-screen::before{animation:jalurIntroReducedBg .65s ease forwards}
+      .jalur-intro-screen::after{animation:none;opacity:.45}
+      .jalur-intro-content{animation:jalurIntroReducedExit .45s ease .15s forwards}
+      .jalur-intro-wordmark path{animation:none;stroke-dasharray:none;stroke-dashoffset:0}
+      .jalur-intro-wordmark .intro-dot{animation:none;opacity:1}
+      .jalur-intro-tagline{animation:none;opacity:1;transform:none}
+      @keyframes jalurIntroReducedBg{to{background-color:#0b1219;opacity:0}}
+      @keyframes jalurIntroReducedExit{to{opacity:0}}
+    }
+  </style>
+  <script>
+    (() => {
+      try {
+        if (sessionStorage.getItem("jalur-intro-seen") === "1") return;
+        sessionStorage.setItem("jalur-intro-seen", "1");
+        document.documentElement.classList.add("jalur-intro-pending");
+        window.__JALUR_INTRO_PENDING = true;
+        window.__JALUR_INTRO_FAILSAFE = window.setTimeout(() => {
+          document.documentElement.classList.remove("jalur-intro-pending");
+          document.getElementById("jalur-intro")?.remove();
+        }, 9000);
+      } catch (_) {
+        // Storage unavailable: show the normal welcome page rather than blocking access.
+      }
+    })();
+  </script>
 </head>
 <body>
+  <div id="jalur-intro" class="jalur-intro-screen" aria-hidden="true">
+    <div class="jalur-intro-content">
+      <svg class="jalur-intro-wordmark" viewBox="0 0 350 145" role="img" aria-label="jalur">
+        <defs>
+          <linearGradient id="jalurIntroGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#829FC5"/>
+            <stop offset="60%" stop-color="#A5A5CA"/>
+            <stop offset="100%" stop-color="#CBAABF"/>
+          </linearGradient>
+        </defs>
+        <circle class="intro-dot" cx="62" cy="23" r="5"/>
+        <path class="intro-j" d="M62 38 C62 57 60 84 56 102 C53 116 43 122 32 116 C26 113 24 107 27 101"/>
+        <path class="intro-a" d="M126 56 C117 46 102 46 91 54 C77 64 75 86 87 96 C100 107 117 96 122 82 C126 70 126 56 126 48 C125 68 124 88 131 97 C137 104 147 100 154 92"/>
+        <path class="intro-l" d="M169 27 C166 49 163 76 164 91 C165 103 173 105 181 96"/>
+        <path class="intro-u" d="M195 57 C192 73 189 91 197 98 C209 108 225 91 232 62 C229 78 227 94 235 99 C243 104 252 96 259 87"/>
+        <path class="intro-r" d="M274 58 C271 72 267 89 267 99 C271 83 279 63 293 57 C301 53 310 57 313 65"/>
+      </svg>
+      <p class="jalur-intro-tagline">Temukan arah, pahami pilihanmu.</p>
+    </div>
+  </div>
   <a class="skip-link" href="#main">Lewati ke konten utama</a>
 
   <div class="ambient" aria-hidden="true">
@@ -232,5 +302,22 @@
 
   <!-- Integrasi backend harus dimuat setelah konfigurasi API -->
   <script defer src="/central.js?v=20261114-role-routing1"></script>
+
+  <script>
+    (() => {
+      if (!window.__JALUR_INTRO_PENDING) return;
+      const root = document.documentElement;
+      const overlay = document.getElementById("jalur-intro");
+      if (!overlay) { root.classList.remove("jalur-intro-pending"); return; }
+      window.clearTimeout(window.__JALUR_INTRO_FAILSAFE);
+      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      const finish = () => {
+        root.classList.remove("jalur-intro-pending");
+        overlay.remove();
+        window.__JALUR_INTRO_PENDING = false;
+      };
+      window.setTimeout(finish, reduced ? 750 : 6600);
+    })();
+  </script>
 </body>
 </html>
