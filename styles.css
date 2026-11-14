@@ -1817,3 +1817,97 @@ input[type="submit"]{
  .jalur-welcome-exit,.app-shell.jalur-app-enter,#pageRoot.jalur-page-enter>*,.modal-backdrop,.modal-backdrop>.modal{animation:none!important}
  .ambient{transition:none!important}
 }
+
+
+/* JALUR ambient refresh: slow blue-led light fields, soft motion, no busy ornaments. */
+.ambient{
+  background:
+    radial-gradient(ellipse 58% 52% at 8% 16%,rgba(151,190,239,.25),transparent 72%),
+    radial-gradient(ellipse 54% 50% at 91% 22%,rgba(190,181,235,.19),transparent 72%),
+    radial-gradient(ellipse 60% 54% at 76% 91%,rgba(160,199,235,.2),transparent 74%),
+    radial-gradient(ellipse 48% 44% at 12% 88%,rgba(204,190,232,.13),transparent 72%),
+    linear-gradient(132deg,#F5F8FF 0%,#F8F9FF 52%,#FDF8FC 100%)!important;
+}
+.ambient::before{
+  background:
+    radial-gradient(ellipse at 50% 48%,rgba(255,255,255,.14),transparent 68%),
+    linear-gradient(115deg,rgba(255,255,255,.04),rgba(255,255,255,.1))!important;
+}
+.ambient::after{
+  content:"";position:absolute;inset:-24%;z-index:1;pointer-events:none;
+  opacity:.62;mix-blend-mode:normal;filter:blur(52px);
+  background:
+    radial-gradient(ellipse 36% 29% at 19% 30%,rgba(130,177,231,.19),transparent 76%),
+    radial-gradient(ellipse 32% 34% at 78% 36%,rgba(174,164,225,.16),transparent 78%),
+    radial-gradient(ellipse 38% 30% at 59% 82%,rgba(142,190,226,.17),transparent 78%);
+  animation:jalurSoftAurora 46s cubic-bezier(.42,0,.2,1) infinite alternate;
+  will-change:transform;
+}
+.ambient-glow{
+  filter:blur(82px)!important;mix-blend-mode:multiply!important;
+  opacity:.28!important;will-change:transform;
+  animation:jalurSoftGlow 38s cubic-bezier(.42,0,.2,1) infinite alternate!important;
+}
+.glow-a{
+  background:radial-gradient(ellipse at 48% 48%,rgba(126,177,232,.34),rgba(126,177,232,0) 72%)!important;
+  animation-delay:-13s!important;
+}
+.glow-b{
+  background:radial-gradient(ellipse at 48% 48%,rgba(169,166,224,.3),rgba(169,166,224,0) 74%)!important;
+  animation-delay:-27s!important;
+}
+.glow-c{
+  background:radial-gradient(ellipse at 48% 48%,rgba(148,197,226,.25),rgba(148,197,226,0) 72%)!important;
+  opacity:.2!important;animation-delay:-19s!important;
+}
+.ambient-liquid{
+  filter:blur(64px)!important;opacity:.12!important;mix-blend-mode:multiply!important;
+  background:
+    radial-gradient(ellipse at 38% 44%,rgba(139,181,230,.32),transparent 62%),
+    radial-gradient(ellipse at 72% 58%,rgba(183,174,226,.22),transparent 68%)!important;
+  animation:jalurSoftLiquid 42s ease-in-out infinite alternate!important,
+            jalurSoftMorph 32s ease-in-out infinite alternate!important;
+}
+.liquid-b{opacity:.09!important;animation-delay:-17s,-11s!important}
+.ambient-particle{
+  width:3px!important;height:3px!important;opacity:.32!important;
+  background:rgba(111,151,202,.72)!important;
+  box-shadow:0 0 10px rgba(139,174,220,.28)!important;
+  animation:jalurSoftParticle 28s ease-in-out infinite!important;
+}
+.particle-2,.particle-4,.particle-6,.particle-8{animation-delay:-12s!important}
+.particle-3,.particle-5,.particle-7{animation-delay:-20s!important}
+@keyframes jalurSoftAurora{
+  0%{transform:translate3d(-1.5%,1%,0) scale(.98)}
+  50%{transform:translate3d(1.2%,-1.2%,0) scale(1.035)}
+  100%{transform:translate3d(-.6%,1.4%,0) scale(1.015)}
+}
+@keyframes jalurSoftGlow{
+  0%{transform:translate3d(-1.2%,.5%,0) scale(.97)}
+  100%{transform:translate3d(1.8%,-1.6%,0) scale(1.045)}
+}
+@keyframes jalurSoftLiquid{
+  0%{transform:translate3d(-1.5%,1%,0) rotate(-3deg) scale(.98)}
+  100%{transform:translate3d(1.8%,-1.4%,0) rotate(3deg) scale(1.04)}
+}
+@keyframes jalurSoftMorph{
+  0%{border-radius:46% 54% 62% 38%/48% 42% 58% 52%}
+  100%{border-radius:54% 46% 42% 58%/40% 56% 44% 60%}
+}
+@keyframes jalurSoftParticle{
+  0%,100%{transform:translate3d(0,0,0);opacity:.22}
+  50%{transform:translate3d(7px,-11px,0);opacity:.42}
+}
+@media(max-width:700px){
+  .ambient::after{filter:blur(36px);opacity:.46}
+  .ambient-glow{filter:blur(68px)!important;opacity:.2!important}
+  .ambient-liquid{opacity:.08!important}
+  .ambient-particle{opacity:.22!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .ambient::after,.ambient-glow,.ambient-liquid,.ambient-particle{animation:none!important;will-change:auto}
+}
+.jalur-reduce-motion .ambient::after,
+.jalur-reduce-motion .ambient-glow,
+.jalur-reduce-motion .ambient-liquid,
+.jalur-reduce-motion .ambient-particle{animation:none!important;will-change:auto}
