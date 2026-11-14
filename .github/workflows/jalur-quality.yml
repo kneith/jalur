@@ -52,6 +52,7 @@ jobs:
       - name: Verify structured-choice pages and preserved workflows
         run: |
           python - <<'PY'
+          import base64, gzip, json
           from pathlib import Path
 
           app = Path("app.js").read_text(encoding="utf-8")
@@ -80,12 +81,29 @@ jobs:
           assert "login('platform')" in central
           assert "wellbeing_moderator" in central and "platform_admin" in central
           assert "function roleRoute(page,role)" in central
-          assert "role==='wellbeing_moderator'?'server-vent':'vent'" in central
-          assert "role==='student'?'appointment':schoolStaff?'server-bk':null" in central
-          assert "role==='platform_admin')return 'server-platform'" in central
-          assert "guestMode&&['BK Consultation','Anonymous Venting'].includes(page)" in central
-          assert "['teacher','school_admin'].includes(role))return 'grades'" in central
+          assert 'if(page==="Anonymous Venting")return role==="student"?"vent":role==="wellbeing_moderator"?"server-vent":null;' in central
+          assert 'if(page==="BK Consultation")return role==="student"?"appointment":null;' in central
+          assert 'platform_admin:"server-platform"' in central
+          assert "if(!nav||!user)return;" in central  # Public guest navigation remains in the app layer.
+          assert 'if(page==="Academic Profile")return role==="student"?undefined:role==="teacher"?"grades":null;' in central
+          assert 'if(["Study Tracer Alumni","SNBT Predictor","SNBP Data"].includes(page))return ["student","school_admin","teacher","counselor"].includes(role)?undefined:null;' in central
           assert "credentials:'include'" in central and "X-CSRF-Token" in central
           assert "https://jalur-api.vercel.app" in index
-          print("Structured forms, guest BK/curhat, role routing, and API security wiring checks passed.")
+          admissions = json.loads(gzip.decompress(base64.b64decode(Path("data/admissions/admissions-data.b64").read_bytes())))
+          assert len(admissions["alumni"]) == 252
+          assert len(admissions["snbt"]) == 4643
+          assert len({row[0] for row in admissions["snbt"]}) == 4643
+          assert {row[3] for row in admissions["snbt"]} == {"S1", "D-III", "D-IV"}
+          assert len(admissions["snbp"]["topProgramsByApplicants"]) == 20
+          assert len(admissions["snbp"]["mirrorUrls"]) == 43
+          vercel = json.loads(Path("vercel.json").read_text(encoding="utf-8"))
+          assert any(item.get("src") == "data/admissions/admissions-data.b64" for item in vercel["builds"])
+          assert any(item.get("source") == "/data/admissions/admissions-data.b64" for item in vercel.get("headers", []))
+          assert '"Study Tracer Alumni":admissionsAlumniPage' in app
+          assert '"SNBT Predictor":snbtPredictorPage' in app and '"SNBP Data":snbpDataPage' in app
+          assert "function applyAlumniFilters(resetPage=true)" in app
+          assert "const snbtEvidence=" in app and "const snbpEvidence=" in app
+          assert 'class="filter-grid"' not in app and 'class="stats-grid"' not in app and 'class="link-list"' not in app
+          assert "20261115-admissions-audit-v3" in index
+          print("Structured forms, roles, admissions data integrity, static assets, and API security checks passed.")
           PY

@@ -26,6 +26,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "data/admissions/admissions-data.b64",
+      "use": "@vercel/static"
+    },
+    {
       "src": "assets/**",
       "use": "@vercel/static"
     }
@@ -92,6 +96,19 @@
     {
       "source": "/backend/data/database.js",
       "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    },
+    {
+      "source": "/data/admissions/admissions-data.b64",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
         {
           "key": "Cache-Control",
           "value": "public, max-age=86400"
