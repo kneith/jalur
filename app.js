@@ -59,7 +59,8 @@ const JALUR_ROLE_PAGE_ICONS = {
  "Alternative Pathway Planner":"⑂","Campus Life Preview":"⌂","Education Cost Planner":"Rp",
  "Decision Blind Spot Detector":"◉","Decision Summary":"▤","BK Consultation":"◷"
 };
-function jalurAllowedPages(role="guest"){return JALUR_ROLE_MENUS[role]||JALUR_ROLE_MENUS.guest;}
+const JALUR_PUBLIC_DATA_PAGES=["Study Tracer Alumni","SNBT Predictor","SNBP Data"];
+function jalurAllowedPages(role="guest"){return [...new Set([...(JALUR_ROLE_MENUS[role]||JALUR_ROLE_MENUS.guest),...JALUR_PUBLIC_DATA_PAGES])];}
 function jalurPageLabel(page,role="guest"){
  if(page==="Anonymous Venting"&&role==="wellbeing_moderator")return "Moderasi Curhat";
  if(page==="Academic Profile"&&role==="teacher")return "Data Rapor";
@@ -302,17 +303,9 @@ function render(){
  }catch(error){
   console.error("JALUR page render failed:",{page:currentPage,error});
   const failedPage=currentPage;
-  if(failedPage!=="Dashboard"){
-   currentPage="Dashboard";state.currentPage="Dashboard";
-   try{
-    const crumb=$("#pageCrumb");if(crumb)crumb.textContent=PAGE_LABELS.Dashboard||"Dashboard";
-    root.innerHTML=dashboardPage();
-    toast("Halaman sebelumnya gagal dimuat. JALUR mengembalikanmu ke Beranda; data tersimpan tetap dipertahankan.","error");
-    return;
-   }catch(recoveryError){console.error("JALUR dashboard recovery failed:",recoveryError);}
-  }
   const detail=escapeHtml(error?.message||"Kesalahan tidak diketahui");
-  root.innerHTML=`<section class="panel glass app-error-state" role="alert"><span class="eyebrow">Pemulihan halaman JALUR</span><h2>Halaman belum dapat ditampilkan</h2><p>JALUR mengalami kendala saat menampilkan halaman. Data tersimpan tidak dihapus. Coba pulihkan halaman atau kembali ke halaman awal.</p><p class="source-line">Rincian teknis: ${detail}</p><div class="form-actions"><button class="btn primary" id="retryPageRender" type="button">Coba pulihkan halaman</button><button class="btn secondary" data-return-welcome>Halaman awal</button></div></section>`;
+  const crumb=$("#pageCrumb");if(crumb)crumb.textContent=PAGE_LABELS[failedPage]||failedPage;
+  root.innerHTML=`<section class="panel glass app-error-state" role="alert"><span class="eyebrow">Pemulihan halaman JALUR</span><h2>${escapeHtml(PAGE_LABELS[failedPage]||failedPage)} belum dapat ditampilkan</h2><p>Halaman tetap dipertahankan agar kendalanya dapat diperiksa. Data tersimpan tidak dihapus. Coba pulihkan halaman.</p><p class="source-line">Rincian teknis: ${detail}</p><div class="form-actions"><button class="btn primary" id="retryPageRender" type="button">Coba pulihkan halaman</button><button class="btn secondary" data-page="Dashboard">Kembali ke Beranda</button></div></section>`;
  }
 }
 function pageHead(title,desc,action=""){return `<div class="page-head"><div><span class="eyebrow">JALUR / PENDAMPING KEPUTUSAN</span><h1>${PAGE_LABELS[title]||title}</h1><p>${desc}</p></div>${action?`<div class="page-actions">${action}</div>`:""}</div>`}
@@ -560,7 +553,7 @@ function snbpDataPage(){
  const mainUrl=d.mirrorUrls[0];const mirrors=d.mirrorUrls.slice(1).map(u=>`<a class="btn secondary small" href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer">${escapeHtml(new URL(u).hostname)}</a>`).join("");
  return `${pageHead("Data dan Statistik SNBP 2026","Ringkasan lengkap tabel dan angka utama pada Paparan Hasil SNBP 2026 Panitia SNPMB, dipaparkan 31 Maret 2026. Halaman ini bersifat informatif, bukan prediksi kelulusan.")}<div class="stat-grid">${admissionStatCard("Pendaftar SNBP 2026",admissionFormatNum(806242),"Nasional")}${admissionStatCard("Daya tampung SNBP",admissionFormatNum(189017),"Seluruh jenis PTN")}${admissionStatCard("Diterima PTN akademik",admissionFormatNum(155543),"2026")}${admissionStatCard("Diterima PTN vokasi",admissionFormatNum(23438),"2026")}</div><section class="panel glass section-gap"><h2>Ketentuan kuota jalur</h2>${quota}<p class="source-line">Persentase sesuai slide kuota SNPMB 2026; seleksi Mandiri mengikuti ketentuan PTN.</p></section><section class="panel glass section-gap"><h2>Daya tampung berdasarkan jenis PTN</h2>${capacities}<h2 class="section-gap">Daya tampung berdasarkan jenjang</h2>${levels}</section><section class="panel glass section-gap"><h2>Data partisipasi 2024–2026</h2>${participation}<h2 class="section-gap">Pendaftar berdasarkan jenis sekolah</h2>${school}<h2 class="section-gap">Pendaftar PTN akademik dan vokasi</h2>${byInst}</section><section class="panel glass section-gap"><h2>Hasil seleksi SNBP 2026</h2>${result}<h2 class="section-gap">Jumlah siswa diterima 2024–2026</h2>${admitted}</section><section class="panel glass section-gap"><h2>10 PTN akademik dan vokasi dengan peminat terbanyak</h2>${admissionTable(["No.","Jenis","Perguruan tinggi","Pendaftar"],uniRows)}<h2 class="section-gap">10 PTN dengan penerima KIP Kuliah terbanyak</h2>${admissionTable(["No.","Jenis","Perguruan tinggi","Diterima KIP"],kipRows)}</section><section class="panel glass section-gap"><h2>Program studi dengan pendaftar terbanyak</h2><p class="panel-sub">Cari nama program, perguruan tinggi, atau kategori. Nama pada presentasi dapat berupa singkatan, fakultas, atau unit sehingga hasil direktori dicocokkan bertahap.</p><div class="field full"><label for="snbpSearch">Cari program studi / perguruan tinggi</label><input id="snbpSearch" type="search" value="${escapeHtml(window.snpbSearch||"")}" placeholder="Mis. Kedokteran, UGM, PTN Akademik"></div><p class="panel-sub">Menampilkan ${filteredPrograms.length} dari ${d.topProgramsByApplicants.length} baris.</p>${admissionTable(["No.","Jenis","Program / unit","Perguruan tinggi","Pendaftar","Diterima","Direktori"],programRows)}</section><section class="panel glass section-gap"><h2>Portal pengumuman utama</h2><p class="panel-sub">Gunakan portal utama SNPMB terlebih dahulu untuk memeriksa hasil seleksi.</p><p><a class="btn primary" href="${escapeHtml(mainUrl)}" target="_blank" rel="noopener noreferrer">Buka portal pengumuman SNBP 2026 ↗</a></p><h3 class="section-gap">42 tautan mirror perguruan tinggi</h3><div class="program-tags">${mirrors}</div></section><p class="source-line">Sumber utama: Paparan Hasil SNBP 2026, Panitia SNPMB, 31 Maret 2026. Halaman 2–17 memuat data kuantitatif; halaman 18–21 adalah contoh tampilan pengumuman dan halaman 22 adalah kredit gambar. Angka berasal dari presentasi; angka agregat tidak dapat digunakan sebagai skor ambang atau peluang kelulusan individual.</p>`;
 }
-async function admissionNameScore(a,b){
+function admissionNameScore(a,b){
  const x=normalizeSearch(a),y=normalizeSearch(b);if(!x||!y)return 0;if(x===y)return 1;if(x.includes(y)||y.includes(x))return .94;
  const stop=new Set(["program","studi","sarjana","terapan","universitas","negeri","institut","ptn","akademik","vokasi","fakultas","sekolah"]);
  const aa=new Set(x.split(" ").filter(t=>t.length>1&&!stop.has(t))),bb=new Set(y.split(" ").filter(t=>t.length>1&&!stop.has(t)));
