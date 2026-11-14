@@ -52,15 +52,20 @@
         <p>Kenali beragam program studi, pelajari hal-hal yang perlu dipertimbangkan, dan bandingkan beberapa alternatif berdasarkan kebutuhanmu. JALUR menyediakan informasi dan ruang refleksi agar kamu dapat memahami alasan di balik setiap pilihan. Keputusan akhirnya tetap berada di tanganmu.</p>
 
         <div class="welcome-actions welcome-auth-actions role-entry-grid">
-          <button class="btn primary large" id="enterGuest">
-            Siswa / Pengunjung <span aria-hidden="true">↗</span>
-          </button>
-          <button class="btn secondary large" id="enterSchool">Portal Pengelola Sekolah</button>
-          <button class="btn secondary large" id="enterBK">Portal Guru BK</button>
-          <button class="btn secondary large" id="enterTeacher">Portal Guru Mata Pelajaran</button>
-          <button class="text-btn learn-link compact-entry" id="createAccount">Buat akun siswa</button>
-          <button class="text-btn learn-link compact-entry" id="signIn">Masuk ke akun siswa</button>
-          <button class="text-btn learn-link compact-entry" id="howItWorks">Mengenal JALUR</button>
+          <button class="btn primary large" id="signIn">Masuk ke akun siswa</button>
+          <div class="welcome-secondary-actions">
+            <button class="btn secondary large" id="createAccount">Buat akun siswa</button>
+            <button class="btn secondary large" id="howItWorks">Mengenal JALUR</button>
+          </div>
+          <button class="welcome-guest-link" id="enterGuest">Jelajahi sebagai pengunjung</button>
+          <details class="welcome-staff-menu">
+            <summary>Untuk staf sekolah <span aria-hidden="true">⌄</span></summary>
+            <div class="welcome-staff-options">
+              <button class="staff-entry" id="enterSchool">Pengelola Sekolah</button>
+              <button class="staff-entry" id="enterBK">Guru BK</button>
+              <button class="staff-entry" id="enterTeacher">Guru Mata Pelajaran</button>
+            </div>
+          </details>
         </div>
 
         <div class="privacy-note">
