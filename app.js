@@ -690,15 +690,33 @@ if(jalurResumeApp){
  document.addEventListener("focusin",e=>{const p=e.target.closest?.(".grade-chart-point");if(p)showGradeDetail(p)});
  document.addEventListener("click",e=>{const p=e.target.closest?.(".grade-chart-point");if(p)showGradeDetail(p);else document.querySelectorAll(".grade-chart-tooltip:not([hidden])").forEach(t=>t.hidden=true)});
  document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".grade-chart-tooltip:not([hidden])").forEach(t=>t.hidden=true)});
- // Pointer lighting is restricted to the welcome screen and real mouse input.
+ // Responsive ambient interaction: cursor movement and touch-drag gently shift
+ // the light field and its blue/lavender/pearl color balance on the welcome/login screen.
  const ambient=document.querySelector(".ambient");
- if(ambient&&window.matchMedia("(hover: hover) and (pointer: fine)").matches&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
-  window.addEventListener("pointermove",event=>{
-   if(event.pointerType!=="mouse"||!document.documentElement.classList.contains("jalur-welcome-mode"))return;
-   ambient.style.setProperty("--mouse-x",`${Math.round(event.clientX/window.innerWidth*100)}%`);
-   ambient.style.setProperty("--mouse-y",`${Math.round(event.clientY/window.innerHeight*100)}%`);
+ const welcomeMotion=()=>document.documentElement.classList.contains("jalur-welcome-mode");
+ if(ambient&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+  let touchActive=false;
+  const updateAmbient=event=>{
+   if(!welcomeMotion())return;
+   if(event.pointerType==="touch"&&!touchActive)return;
+   const x=Math.max(0,Math.min(1,event.clientX/Math.max(1,window.innerWidth)));
+   const y=Math.max(0,Math.min(1,event.clientY/Math.max(1,window.innerHeight)));
+   ambient.style.setProperty("--mouse-x",`${(x*100).toFixed(1)}%`);
+   ambient.style.setProperty("--mouse-y",`${(y*100).toFixed(1)}%`);
+   ambient.style.setProperty("--ambient-hue",`${Math.round((x-.5)*30)}deg`);
+   ambient.style.setProperty("--ambient-shift-x",`${((x-.5)*22).toFixed(1)}px`);
+   ambient.style.setProperty("--ambient-shift-y",`${((y-.5)*18).toFixed(1)}px`);
    ambient.classList.add("pointer-active");
+  };
+  ambient.addEventListener("pointerdown",event=>{
+   if(event.pointerType==="touch"&&welcomeMotion()){touchActive=true;updateAmbient(event);}
   },{passive:true});
+  window.addEventListener("pointermove",updateAmbient,{passive:true});
+  const releaseAmbient=event=>{
+   if(event.pointerType==="touch"){touchActive=false;ambient.classList.remove("pointer-active");}
+  };
+  window.addEventListener("pointerup",releaseAmbient,{passive:true});
+  window.addEventListener("pointercancel",releaseAmbient,{passive:true});
   document.addEventListener("pointerleave",()=>ambient.classList.remove("pointer-active"));
  }
 })();
