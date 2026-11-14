@@ -1618,3 +1618,92 @@ button:focus-visible,a:focus-visible,[role=button]:focus-visible{
     transition:none!important;transform:none!important;
   }
 }
+
+
+/* Global border integrity pass: every interactive control and card gets a complete, visible outline. */
+:root{
+  --jalur-border-default:rgba(103,130,164,.34);
+  --jalur-border-soft:rgba(103,130,164,.25);
+  --jalur-border-strong:rgba(104,145,198,.62);
+  --jalur-border-focus:rgba(76,125,188,.78);
+}
+/* Buttons and button-like controls: never leave a transparent or missing edge. */
+button,
+.btn,
+[role="button"],
+a.btn,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+.mobile-drawer button,
+.staff-entry,
+.welcome-staff-menu summary,
+.welcome-guest-link,
+.quick-action,
+.nav-item,
+.bottom-item,
+.icon-btn,
+.profile-chip,
+.modal-close,
+.text-btn{
+  border-style:solid!important;
+  border-width:1px!important;
+  border-color:var(--jalur-border-default)!important;
+  background-clip:padding-box;
+}
+.btn.primary,.welcome-actions .btn.primary,.welcome-auth-actions>#signIn,
+button.primary,[type="submit"]{
+  border-color:#7FA8D9!important;
+}
+.btn.secondary,.welcome-actions .btn.secondary,.welcome-secondary-actions>.btn{
+  border-color:rgba(111,145,188,.48)!important;
+}
+button:disabled,.btn:disabled,[aria-disabled="true"]{
+  border-color:rgba(115,133,155,.30)!important;
+}
+button:focus-visible,.btn:focus-visible,[role="button"]:focus-visible,
+a.btn:focus-visible{
+  border-color:var(--jalur-border-focus)!important;
+}
+/* Card and surface inventory: include legacy and dynamically-rendered card variants. */
+:where(
+  .card,[class*="-card"],[class$="Card"],
+  .panel,.glass,.summary-block,.compare-slot,.picker-selection,
+  .question-preview,.empty-state,.table-wrap,.modal,.mobile-drawer,
+  .welcome-visual,.visual-center,.path-node,.daily-quote,
+  .dashboard-reflection,.dashboard-welcome,.check-item,
+  .stat-card,.program-card,.source-card,.profile-card,
+  .quick-action,.notice,.demo-banner,.welcome-staff-options
+){
+  border-style:solid!important;
+  border-width:1px!important;
+  border-color:var(--jalur-border-soft)!important;
+  background-clip:padding-box;
+}
+/* Nested card surfaces and interactive tiles need their own perimeter, not only the parent outline. */
+.program-card,.source-card,.stat-card,.profile-card,.quick-action,
+.compare-program,.compare-slot,.check-item,.picker-selection,
+.question-preview,.empty-state,.table-wrap,.welcome-visual,
+.visual-center,.path-node,.daily-quote,.dashboard-reflection,
+.dashboard-welcome,.mobile-drawer button:not(#closeDrawer),
+.welcome-staff-options .staff-entry{
+  border-color:rgba(103,130,164,.27)!important;
+}
+/* Palette-aware edge accents remain restrained and consistent on every side. */
+.program-card:nth-child(3n+1),.source-card:nth-child(3n+1){
+  border-color:rgba(112,153,205,.34)!important;
+}
+.program-card:nth-child(3n+2),.source-card:nth-child(3n+2){
+  border-color:rgba(155,133,190,.32)!important;
+}
+.program-card:nth-child(3n),.source-card:nth-child(3n){
+  border-color:rgba(111,163,139,.32)!important;
+}
+.quick-action:hover,.program-card:hover,.source-card:hover,.stat-card:hover{
+  border-color:rgba(104,145,198,.48)!important;
+}
+@media(prefers-contrast:more){
+  :where(button,.btn,[role="button"],.card,[class*="-card"],.panel,.glass){
+    border-color:rgba(54,78,108,.62)!important;
+  }
+}
