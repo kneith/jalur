@@ -158,7 +158,7 @@ function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;c
   $('#enterTeacher')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('teacher')},true);
   const moderator=document.createElement('button');moderator.type='button';moderator.className='staff-entry';moderator.textContent='Moderator Curhat';moderator.addEventListener('click',()=>login('moderator'));$('.welcome-staff-options')?.append(moderator);
   const platformLogin=document.createElement('button');platformLogin.type='button';platformLogin.className='staff-entry';platformLogin.textContent='Admin Platform';platformLogin.addEventListener('click',()=>login('platform'));$('.welcome-staff-options')?.append(platformLogin);
-  $('#enterGuest')?.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();user=null;csrfToken='';window.JALUR_GUEST_SELECTED=true;sessionStorage.setItem('jalur-guest-mode','1');window.JALUR_ENTER_GUEST?.();},true);
+  $('#enterGuest')?.addEventListener('click',e=>{if(typeof window.JALUR_ENTER_GUEST!=='function')return;e.preventDefault();e.stopImmediatePropagation();user=null;csrfToken='';window.JALUR_GUEST_SELECTED=true;sessionStorage.setItem('jalur-guest-mode','1');window.JALUR_ENTER_GUEST();},true);
   // Existing student local account controls are intentionally not used for server authentication.
   $('#createAccount')?.addEventListener('click',e=>{e.stopImmediatePropagation();modal('Akun siswa','<p>Akun siswa terhubung dengan sekolah dan dibuat oleh pengelola sekolah. Hubungi sekolah untuk memperoleh akun. Pendaftaran mandiri belum diaktifkan.</p>')},true);
   $('#signIn')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('student')},true);
