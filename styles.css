@@ -2020,3 +2020,60 @@ body{background:transparent!important}
   #directoryResults{grid-template-columns:minmax(0,1fr)}
   .jalur-account-actions{display:grid}
 }
+
+
+/* Guaranteed visible welcome ambience: light, blue-led movement on desktop and touch devices. */
+html.jalur-welcome-mode,
+html.jalur-welcome-mode body{background:#F5F8FF!important}
+html.jalur-welcome-mode .ambient{
+  position:fixed!important;inset:0!important;z-index:0!important;display:block!important;
+  opacity:1!important;visibility:visible!important;overflow:hidden!important;
+  background:
+    radial-gradient(ellipse 58% 54% at 12% 18%,rgba(111,166,232,.34),transparent 72%),
+    radial-gradient(ellipse 52% 48% at 88% 24%,rgba(169,158,226,.27),transparent 74%),
+    radial-gradient(ellipse 62% 58% at 76% 92%,rgba(119,185,225,.3),transparent 74%),
+    linear-gradient(132deg,#F0F6FF 0%,#F6F7FF 52%,#FFF5FA 100%)!important;
+}
+html.jalur-welcome-mode .ambient::before{
+  content:"";position:absolute;inset:0;z-index:0;display:block!important;
+  background:linear-gradient(120deg,rgba(255,255,255,.08),rgba(255,255,255,.18))!important;
+}
+html.jalur-welcome-mode .ambient::after{
+  content:"";position:absolute;inset:-22%;z-index:1;display:block!important;
+  opacity:.9!important;filter:blur(54px)!important;mix-blend-mode:normal!important;
+  background:
+    radial-gradient(ellipse 38% 32% at 18% 32%,rgba(105,166,235,.34),transparent 76%),
+    radial-gradient(ellipse 34% 36% at 80% 38%,rgba(171,157,224,.28),transparent 78%),
+    radial-gradient(ellipse 40% 32% at 58% 82%,rgba(125,190,228,.3),transparent 78%)!important;
+  animation:jalurWelcomeAurora 28s ease-in-out infinite alternate!important;
+}
+html.jalur-welcome-mode .ambient-glow{
+  display:block!important;opacity:.52!important;filter:blur(76px)!important;
+  animation:jalurSoftGlow 34s ease-in-out infinite alternate!important;
+}
+html.jalur-welcome-mode .ambient-liquid{
+  display:block!important;opacity:.2!important;filter:blur(58px)!important;
+  animation:jalurSoftLiquid 38s ease-in-out infinite alternate,jalurSoftMorph 30s ease-in-out infinite alternate!important;
+}
+html.jalur-welcome-mode .ambient-particle{
+  display:block!important;opacity:.38!important;animation:jalurSoftParticle 24s ease-in-out infinite!important;
+}
+html.jalur-welcome-mode .welcome-screen{position:relative;z-index:2}
+@keyframes jalurWelcomeAurora{
+  0%{transform:translate3d(-2%,1%,0) scale(.98)}
+  50%{transform:translate3d(1.5%,-1.5%,0) scale(1.04)}
+  100%{transform:translate3d(-.5%,1.8%,0) scale(1.015)}
+}
+@media(max-width:700px){
+  html.jalur-welcome-mode .ambient::after{inset:-30%;opacity:.86!important;filter:blur(34px)!important}
+  html.jalur-welcome-mode .ambient-glow{opacity:.42!important;filter:blur(56px)!important}
+  html.jalur-welcome-mode .ambient-liquid{opacity:.16!important;filter:blur(36px)!important}
+  html.jalur-welcome-mode .ambient-particle{opacity:.28!important}
+  html.jalur-welcome-mode .welcome-screen{z-index:2}
+}
+@media(prefers-reduced-motion:reduce){
+  html.jalur-welcome-mode .ambient::after,
+  html.jalur-welcome-mode .ambient-glow,
+  html.jalur-welcome-mode .ambient-liquid,
+  html.jalur-welcome-mode .ambient-particle{animation:none!important;will-change:auto}
+}
