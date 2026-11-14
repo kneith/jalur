@@ -180,8 +180,19 @@ function render(){
   root.classList.add("page-enter");
   $("#main")?.focus({preventScroll:true});
  }catch(error){
-  console.error("JALUR page render failed:",error);
-  root.innerHTML=`<section class="panel glass app-error-state" role="alert"><span class="eyebrow">Pemulihan halaman JALUR</span><h2>Halaman belum dapat ditampilkan</h2><p>Data sesi lama mungkin belum sesuai dengan versi aplikasi ini. Muat ulang halaman ini untuk mencoba pemulihan otomatis. Data yang tersimpan tidak dihapus.</p><div class="form-actions"><button class="btn primary" id="retryPageRender">Coba lagi</button><button class="btn secondary" data-return-welcome>Halaman awal</button></div></section>`;
+  console.error("JALUR page render failed:",{page:currentPage,error});
+  const failedPage=currentPage;
+  if(failedPage!=="Dashboard"){
+   currentPage="Dashboard";state.currentPage="Dashboard";
+   try{
+    const crumb=$("#pageCrumb");if(crumb)crumb.textContent=PAGE_LABELS.Dashboard||"Dashboard";
+    root.innerHTML=dashboardPage();
+    toast("Halaman sebelumnya gagal dimuat. JALUR mengembalikanmu ke Beranda; data tersimpan tetap dipertahankan.","error");
+    return;
+   }catch(recoveryError){console.error("JALUR dashboard recovery failed:",recoveryError);}
+  }
+  const detail=escapeHtml(error?.message||"Kesalahan tidak diketahui");
+  root.innerHTML=`<section class="panel glass app-error-state" role="alert"><span class="eyebrow">Pemulihan halaman JALUR</span><h2>Halaman belum dapat ditampilkan</h2><p>JALUR mengalami kendala saat menampilkan halaman. Data tersimpan tidak dihapus. Coba pulihkan halaman atau kembali ke halaman awal.</p><p class="source-line">Rincian teknis: ${detail}</p><div class="form-actions"><button class="btn primary" id="retryPageRender" type="button">Coba pulihkan halaman</button><button class="btn secondary" data-return-welcome>Halaman awal</button></div></section>`;
  }
 }
 function pageHead(title,desc,action=""){return `<div class="page-head"><div><span class="eyebrow">JALUR / PENDAMPING KEPUTUSAN</span><h1>${PAGE_LABELS[title]||title}</h1><p>${desc}</p></div>${action?`<div class="page-actions">${action}</div>`:""}</div>`}
@@ -270,6 +281,7 @@ function dashboardPage(){
  const pct=Math.min(100,Math.round(state.profile.subjects.length/6*100)),checked=state.checked.length;
  const nickname=String(state.profile.nickname||"").trim(),greeting="Halo, "+escapeHtml(nickname||"Pengguna")+".";
  const quote=dailyQuoteForToday(),grade=state.profile.grade?"Kelas "+escapeHtml(state.profile.grade):"Profil belum dilengkapi";
+ const quotePanel=quote?'<section class="daily-quote panel glass" aria-label="Kutipan motivasi harian"><div class="daily-quote-label"><span aria-hidden="true">✦</span><span>JEDA INSPIRASI HARI INI</span><time>'+escapeHtml(quote.date)+'</time></div><blockquote>“'+escapeHtml(quote.text)+'”</blockquote><p class="quote-attribution">Kutipan dari '+escapeHtml(quote.author)+'</p></section>':'';
  const next=[];
  if(!state.profile.subjects.length)next.push(["♙","Kenali profil akademikmu","Catatan nilai dapat membantu kamu memahami pengalaman belajar, tetapi tidak dapat menentukan program studi yang harus kamu pilih.","Academic Profile"]);
  if(!state.compared.length)next.push(["⌕","Jelajahi program studi","Pelajari kurikulum, kegiatan perkuliahan, dan persyaratan agar kamu memiliki gambaran yang lebih utuh sebelum membandingkan program studi.","Study Program Explorer"]);
@@ -472,6 +484,7 @@ function navigate(page){if(page==="School Portal"&&activeRole!=="school"){toast(
 window.navigate = navigate;
 
 document.addEventListener("click",async e=>{
+ if(e.target.closest("#retryPageRender")){render();return;}
  const delConsult=e.target.closest("[data-delete-consult]");if(delConsult){const d=portalData();d.consultations.splice(Number(delConsult.dataset.deleteConsult),1);savePortalData(d);render();return;}
  const delVent=e.target.closest("[data-delete-vent]");if(delVent){const d=portalData();d.vents.splice(Number(delVent.dataset.deleteVent),1);savePortalData(d);render();return;}
  const delSchool=e.target.closest("[data-delete-school]");if(delSchool){const d=portalData(),[key,idx]=delSchool.dataset.deleteSchool.split(":");d[key].splice(Number(idx),1);savePortalData(d);render();return;}
@@ -608,9 +621,13 @@ function showHowItWorks(){
   const body=`<div class="jalur-how-flow"><div class="jalur-how-progress">${progress}</div><article class="jalur-how-stage"><div class="jalur-how-icon" aria-hidden="true">${step.icon}</div><span class="eyebrow">LANGKAH ${active+1} DARI ${steps.length}, ${step.tag}</span><h2>${step.title}</h2><p>${step.copy}</p><div class="jalur-how-points">${step.items.map((item,index)=>`<div><span>${String(index+1).padStart(2,"0")}</span><strong>${item}</strong></div>`).join("")}</div></article><p class="jalur-how-note">JALUR tidak menentukan pilihan terbaik atau memprediksi hasil penerimaan. Kendali keputusan tetap ada padamu.</p></div>`;
   const footer=`<button type="button" class="btn secondary" id="howBack" ${active===0?"disabled":""}>${active===0?"Tutup":"Sebelumnya"}</button><button type="button" class="btn primary" id="howNext">${active===steps.length-1?"Mulai sebagai pengunjung":"Lanjutkan"} <span aria-hidden="true">↗</span></button>`;
   openModal("Mengenal JALUR",body,footer);
-  $("[data-how-step]").forEach(button=>button.addEventListener("click",()=>{active=Number(button.dataset.howStep);draw();}));
-  $("#howBack").onclick=()=>{if(active===0){closeModal();return;}active--;draw();};
-  $("#howNext").onclick=()=>{if(active<steps.length-1){active++;draw();return;}closeModal();window.JALUR_ENTER_GUEST?.();};
+ };
+ const modalRoot=$("#modalRoot");
+ modalRoot.onclick=event=>{
+  const stepButton=event.target.closest("[data-how-step]");
+  if(stepButton){active=Number(stepButton.dataset.howStep);if(Number.isInteger(active)&&active>=0&&active<steps.length)draw();return;}
+  if(event.target.closest("#howBack")){if(active===0){closeModal();return;}active--;draw();return;}
+  if(event.target.closest("#howNext")){if(active<steps.length-1){active++;draw();return;}closeModal();window.JALUR_ENTER_GUEST?.();}
  };
  draw();
 }
