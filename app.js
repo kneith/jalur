@@ -430,7 +430,7 @@ function bkPortalPage(){const d=portalData();return `${pageHead("BK Portal","Bag
 
 function openDrawer(){ $("#drawerBackdrop").classList.remove("hidden");$("#drawerBackdrop").innerHTML=`<div class="mobile-drawer" role="dialog" aria-label="Menu lainnya"><h3>Menu lainnya <button class="text-btn" id="closeDrawer" style="float:right">Tutup ×</button></h3>${["Academic Profile","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","BK Consultation","Anonymous Venting","Study Tracer Alumni","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources"].map(p=>`<button class="${p===currentPage?"active":""}" data-drawer-page="${p}">${PAGE_LABELS[p]||p}</button>`).join("")}</div>`;$("#closeDrawer").onclick=closeDrawer;$$("[data-drawer-page]").forEach(b=>b.onclick=()=>{closeDrawer();navigate(b.dataset.drawerPage)});$("#drawerBackdrop").onclick=e=>{if(e.target.id==="drawerBackdrop")closeDrawer()}}
 function closeDrawer(){$("#drawerBackdrop").classList.add("hidden");$("#drawerBackdrop").innerHTML=""}
-function navigate(page){if(page==="School Portal"&&activeRole!=="school"){toast("Portal pengelola hanya tersedia melalui jalur masuk sekolah.","error");return}if(page==="BK Portal"&&activeRole!=="bk"){toast("Portal BK hanya tersedia melalui jalur masuk guru BK.","error");return}currentPage=page;state.currentPage=page;if(!jalurSuppressHistory)jalurWriteRoute(page);saveState();render();window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
+function navigate(page){if(page==="School Portal"&&activeRole!=="school"){toast("Portal pengelola hanya tersedia melalui jalur masuk sekolah.","error");return}if(page==="BK Portal"&&activeRole!=="bk"){toast("Portal BK hanya tersedia melalui jalur masuk guru BK.","error");return}currentPage=page;state.currentPage=page;if(!jalurSuppressHistory)jalurWriteRoute(page);saveState();window.JALUR_ANIMATE_PAGE_TRANSITION?.();render();window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
 window.navigate = navigate;
 
 document.addEventListener("click",async e=>{
@@ -450,6 +450,41 @@ document.addEventListener("click",async e=>{
  const editSub=e.target.closest("[data-edit-subject]");if(editSub){subjectForm(Number(editSub.dataset.editSubject));return}
  const alumniBtn=e.target.closest("[data-alumni-detail]");if(alumniBtn){const a=alumni[Number(alumniBtn.dataset.alumniDetail)];openModal(a.name,`<p><strong>${a.program}</strong>, ${a.campus}</p><p>${a.insight}</p><h3>Contoh perjalanan</h3><ol><li>Selama di SMA, siswa mulai mengenali minat dan mata pelajaran yang disukai.</li><li>Ketika mempertimbangkan program studi, siswa mencari informasi mengenai kurikulum dan persyaratan.</li><li>Setelah memasuki perguruan tinggi, mahasiswa memperoleh pengalaman melalui berbagai kegiatan pembelajaran.</li><li>Dalam perjalanannya, setiap orang dapat terus belajar dan meninjau kembali pilihan yang telah dibuat.</li></ol><p class="source-line">Seluruh cerita ini Data Simulasi, bukan kisah nyata.</p>`,`<button class="btn primary" id="closeAlumni">Tutup</button>`);$("#closeAlumni").onclick=closeModal;return}
 });
+function jalurTransitionToApp(){
+ const root=document.documentElement;
+ const welcome=$("#welcome"),appShell=$("#app");
+ const intro=$("#jalur-intro");
+ if(intro)intro.remove();
+ root.classList.remove("jalur-intro-pending","jalur-intro-revealing","jalur-welcome-mode");
+ if(!welcome||!appShell){welcome?.classList.add("hidden");appShell?.classList.remove("hidden");return;}
+ welcome.classList.remove("hidden","jalur-welcome-exit");
+ appShell.classList.remove("hidden","jalur-app-enter");
+ const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+ if(reduced){welcome.classList.add("hidden");return;}
+ void appShell.offsetWidth;
+ welcome.classList.add("jalur-welcome-exit");
+ appShell.classList.add("jalur-app-enter");
+ let finished=false;
+ const finish=()=>{
+  if(finished)return;finished=true;
+  welcome.classList.add("hidden");
+  welcome.classList.remove("jalur-welcome-exit");
+  appShell.classList.remove("jalur-app-enter");
+ };
+ appShell.addEventListener("animationend",event=>{
+  if(event.target===appShell&&event.animationName==="jalurAppEnter")finish();
+ });
+ window.setTimeout(finish,900);
+}
+window.JALUR_TRANSITION_TO_APP=jalurTransitionToApp;
+window.JALUR_ANIMATE_PAGE_TRANSITION=()=>{
+ const root=$("#pageRoot");if(!root||window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches)return;
+ root.classList.remove("jalur-page-enter");
+ void root.offsetWidth;
+ root.classList.add("jalur-page-enter");
+ window.clearTimeout(window.__JALUR_PAGE_TRANSITION_TIMER);
+ window.__JALUR_PAGE_TRANSITION_TIMER=window.setTimeout(()=>root.classList.remove("jalur-page-enter"),720);
+};
 window.JALUR_ENTER_GUEST = () => {
  activeRole="guest";
  window.JALUR_GUEST_SELECTED=true;
@@ -460,15 +495,14 @@ window.JALUR_ENTER_GUEST = () => {
  try{localStorage.removeItem("jalur-last-page");}catch{}
  history.replaceState({},"",location.pathname+location.search);
  currentPage="Dashboard";state.currentPage="Dashboard";
- document.documentElement.classList.remove("jalur-welcome-mode");
- $("#welcome")?.classList.add("hidden");$("#app")?.classList.remove("hidden");
+ window.JALUR_TRANSITION_TO_APP?.();
  jalurWriteRoute("Dashboard",true);render();
  toast("Anda masuk sebagai pengunjung. Data tersimpan secara lokal pada peramban ini.","info");
 };
 function enterApplication(mode="guest",displayName="Pengunjung"){
   activeRole="guest";
   if(displayName){state.profile.nickname=displayName;saveState()}
-  window.JALUR_WELCOME_REQUESTED=false;sessionStorage.setItem("jalur-app-open","1");document.documentElement.classList.remove("jalur-welcome-mode");$("#welcome").classList.add("hidden");$("#app").classList.remove("hidden");currentPage=jalurPageFromHash()||jalurStoredPage()||(JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");state.currentPage=currentPage;jalurWriteRoute(currentPage,true);render();
+  window.JALUR_WELCOME_REQUESTED=false;sessionStorage.setItem("jalur-app-open","1");window.JALUR_TRANSITION_TO_APP?.();currentPage=jalurPageFromHash()||jalurStoredPage()||(JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");state.currentPage=currentPage;jalurWriteRoute(currentPage,true);render();
   toast(mode==="account"?`Selamat datang, ${displayName}. Akun ini hanya tersimpan di peramban ini.`:"Anda masuk sebagai pengunjung. Data tersimpan secara lokal pada peramban ini.","info");
 }
 const ACCOUNTS_KEY="jalur-local-accounts-v1";
