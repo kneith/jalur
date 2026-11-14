@@ -2077,3 +2077,129 @@ html.jalur-welcome-mode .welcome-screen{position:relative;z-index:2}
   html.jalur-welcome-mode .ambient-liquid,
   html.jalur-welcome-mode .ambient-particle{animation:none!important;will-change:auto}
 }
+
+
+/* Desktop welcome actions: keep the two secondary actions on one shared row.
+   The existing compact two-button row on phones is intentionally preserved. */
+@media(min-width:701px){
+  .welcome-auth-actions>.welcome-secondary-actions{
+    grid-column:1/-1!important;
+    width:100%;
+    max-width:470px;
+    align-self:stretch;
+  }
+}
+@media(max-width:700px){
+  .welcome-auth-actions>.welcome-secondary-actions{grid-column:auto!important}
+}
+
+/* Richer directory results: clearer hierarchy, visible metadata and direct
+   access to the complete program / institution detail views. */
+.search-result-program{
+  position:relative;
+  padding:20px!important;
+  gap:11px!important;
+  border:1px solid rgba(111,145,190,.24)!important;
+  background:linear-gradient(148deg,rgba(255,255,255,.98),rgba(244,248,255,.96) 62%,rgba(249,245,255,.94))!important;
+  box-shadow:0 12px 28px rgba(57,84,123,.075),inset 0 1px 0 rgba(255,255,255,.95)!important;
+}
+.search-result-program::before{
+  content:"";position:absolute;inset:0 auto 0 0;width:4px;border-radius:20px 0 0 20px;
+  background:linear-gradient(180deg,#75A9E6,#A9A0D8 58%,#8FC5D4);
+}
+.search-result-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.search-result-heading .program-kicker{color:#547BAA;font-weight:800;letter-spacing:.1em}
+.result-level{
+  flex:0 0 auto;padding:5px 9px;border-radius:999px;
+  background:#E8F0FC;color:#456B99;font-size:10px;font-weight:750;
+}
+.search-result-program h3{margin:0!important;color:#263B55!important;font-size:18px!important;line-height:1.35}
+.search-result-program .campus{margin:0;color:#62758E;font-size:12px;line-height:1.55;min-height:0}
+.search-result-program .program-tags{margin:0}
+.result-meta-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;
+  padding:11px;border:1px solid rgba(118,149,190,.16);border-radius:13px;
+  background:rgba(233,241,252,.55);
+}
+.result-meta-grid>div{display:grid;gap:3px;min-width:0}
+.result-meta-grid small{color:#71839A;font-size:9px;font-weight:650}
+.result-meta-grid strong{color:#405C7C;font-size:11px;overflow-wrap:anywhere}
+.search-result-program .source-line{margin:0;color:#7A899C;font-size:10px}
+.search-result-program .card-bottom{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:7px;padding-top:5px}
+.search-result-program .card-bottom .btn{min-height:40px;padding:8px 9px;font-size:10px}
+.search-result-program .card-bottom [data-detail-program]{background:linear-gradient(135deg,#477DB7,#6F8FC1)!important;color:#fff!important;border-color:#6C91C3!important}
+.institution-detail-location{color:#607690;font-size:13px}
+.institution-detail-programs{display:grid;gap:8px;margin-top:12px}
+.institution-program-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:11px 12px;border:1px solid rgba(118,149,190,.18);border-radius:13px;
+  background:linear-gradient(120deg,#F7FAFF,#FBF8FF);
+}
+.institution-program-row>div{display:grid;gap:4px;min-width:0}
+.institution-program-row strong{color:#334D6B;font-size:12px}
+.institution-program-row small{color:#73849A;font-size:10px;line-height:1.4}
+.institution-program-row .btn{flex:0 0 auto}
+
+/* Make the welcome ambience visibly distinct from the pale page canvas.
+   Pointer/touch movement changes both the hue and the position of the light. */
+html.jalur-welcome-mode,
+html.jalur-welcome-mode body{background:#F0F5FF!important}
+html.jalur-welcome-mode .ambient{
+  background:
+    radial-gradient(ellipse 60% 58% at 10% 16%,rgba(104,157,229,.48),transparent 72%),
+    radial-gradient(ellipse 54% 52% at 91% 22%,rgba(166,147,224,.38),transparent 73%),
+    radial-gradient(ellipse 64% 60% at 74% 94%,rgba(93,177,218,.38),transparent 73%),
+    radial-gradient(ellipse 48% 44% at 18% 86%,rgba(222,157,190,.25),transparent 74%),
+    linear-gradient(132deg,#EAF2FF 0%,#F0F2FF 50%,#FFF0F7 100%)!important;
+}
+html.jalur-welcome-mode .ambient::after{
+  inset:-26%!important;
+  opacity:.98!important;
+  filter:blur(43px) saturate(1.32) hue-rotate(var(--ambient-hue,0deg))!important;
+  background:
+    radial-gradient(560px circle at var(--mouse-x,50%) var(--mouse-y,45%),rgba(77,139,220,.48),rgba(149,157,224,.30) 34%,rgba(225,157,194,.19) 58%,transparent 78%),
+    radial-gradient(ellipse 42% 34% at 18% 78%,rgba(104,185,218,.34),transparent 76%),
+    radial-gradient(ellipse 38% 36% at 83% 75%,rgba(175,145,224,.28),transparent 78%)!important;
+  transition:filter .32s ease,opacity .32s ease;
+  animation:jalurWelcomeAurora 22s ease-in-out infinite alternate!important;
+}
+html.jalur-welcome-mode .ambient-glow{
+  opacity:.66!important;
+  filter:blur(72px) saturate(1.18) hue-rotate(var(--ambient-hue,0deg))!important;
+  transition:filter .35s ease,translate .45s cubic-bezier(.2,.65,.25,1);
+}
+html.jalur-welcome-mode .glow-a{
+  background:radial-gradient(ellipse,rgba(83,145,226,.60),rgba(83,145,226,0) 72%)!important;
+}
+html.jalur-welcome-mode .glow-b{
+  background:radial-gradient(ellipse,rgba(153,137,218,.52),rgba(153,137,218,0) 74%)!important;
+}
+html.jalur-welcome-mode .glow-c{
+  background:radial-gradient(ellipse,rgba(88,178,213,.46),rgba(88,178,213,0) 72%)!important;
+  opacity:.48!important;
+}
+html.jalur-welcome-mode .ambient-liquid{
+  opacity:.3!important;
+  filter:blur(52px) saturate(1.18) hue-rotate(var(--ambient-hue,0deg))!important;
+  transition:filter .38s ease,translate .5s cubic-bezier(.2,.65,.25,1);
+}
+html.jalur-welcome-mode .ambient-particle{
+  opacity:.48!important;
+  background:rgba(75,126,190,.78)!important;
+  box-shadow:0 0 12px rgba(98,151,218,.42)!important;
+}
+html.jalur-welcome-mode .ambient.pointer-active::after{opacity:1!important}
+@media(max-width:700px){
+  html.jalur-welcome-mode .ambient::after{
+    inset:-34%!important;opacity:.96!important;filter:blur(31px) saturate(1.34) hue-rotate(var(--ambient-hue,0deg))!important;
+  }
+  html.jalur-welcome-mode .ambient-glow{opacity:.58!important;filter:blur(52px) saturate(1.16) hue-rotate(var(--ambient-hue,0deg))!important}
+  html.jalur-welcome-mode .ambient-liquid{opacity:.24!important;filter:blur(34px) saturate(1.12) hue-rotate(var(--ambient-hue,0deg))!important}
+  html.jalur-welcome-mode .ambient-particle{opacity:.34!important}
+  .search-result-program{padding:17px!important}
+  .search-result-program .card-bottom{grid-template-columns:1fr 1fr}
+  .search-result-program .card-bottom [data-detail-program]{grid-column:1/-1}
+}
+@media(prefers-reduced-motion:reduce){
+  html.jalur-welcome-mode .ambient::after{animation:none!important}
+}
