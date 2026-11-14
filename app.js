@@ -574,9 +574,25 @@ function admissionNameScore(a,b){
  if(!aa.size||!bb.size)return 0;let n=0;for(const t of aa)if(bb.has(t))n++;return n/Math.max(aa.size,bb.size);
 }
 async function openAdmissionProgram(programName,institutionName){
- await loadDirectoryData();
- const candidates=programs.map(p=>{const ns=admissionNameScore(p.name,programName),cs=admissionNameScore(p.campus,institutionName);const campusOk=!normalizeSearch(institutionName)||normalizeSearch(p.campus).includes(normalizeSearch(institutionName))||normalizeSearch(institutionName).includes(normalizeSearch(p.campus))||cs>=.55;return {p,ns,cs,score:ns*.78+cs*.22,campusOk};}).filter(x=>x.ns>=.78&&x.campusOk).sort((a,b)=>b.score-a.score||alpha(a.p.name,b.p.name));
- const best=candidates[0];if(best&&(!candidates[1]||best.score-candidates[1].score>=.08||best.ns===1)){await showProgramDetail(best.p.id);return;}
+ let candidates=[];
+ const request=window.JALUR_API?.request;
+ if(typeof request==="function"){
+  try{
+   const data=await request(`/directory/search?q=${encodeURIComponent(programName)}&type=program&limit=50&offset=0`);
+   candidates=(data.items||[]).map(item=>({...((item.data)||{}),id:item.id,name:item.name||item.data?.name||"Program studi",campus:item.institution_name||item.data?.campus||"",level:item.level||item.data?.level||"",field:item.field||item.data?.field||""}));
+  }catch(error){console.warn("JALUR directory API search unavailable; using local directory fallback.",error);}
+ }
+ if(!candidates.length){
+  await loadDirectoryData();
+  candidates=programs;
+ }
+ const ranked=candidates.map(p=>{const ns=admissionNameScore(p.name,programName),cs=admissionNameScore(p.campus,institutionName);const campusOk=!normalizeSearch(institutionName)||normalizeSearch(p.campus).includes(normalizeSearch(institutionName))||normalizeSearch(institutionName).includes(normalizeSearch(p.campus))||cs>=.55;return {p,ns,cs,score:ns*.78+cs*.22,campusOk};}).filter(x=>x.ns>=.78&&x.campusOk).sort((a,b)=>b.score-a.score||alpha(a.p.name,b.p.name));
+ const best=ranked[0];
+ if(best&&(!ranked[1]||best.score-ranked[1].score>=.08||best.ns===1)){
+  if(!programs.some(p=>String(p.id)===String(best.p.id)))programs.push(best.p);
+  await showProgramDetail(best.p.id);
+  return;
+ }
  window.explorerQuery=programName;window.explorerScope="Program studi";window.explorerLimit=60;navigate("Study Program Explorer");
  const root=$("#pageRoot");if(root){const note=document.createElement("div");note.className="notice section-gap";note.textContent="Pencarian nama program dari sumber seleksi dibuka di direktori. Kampus pada sumber: "+(institutionName||"tidak tercantum")+". Periksa hasilnya sebelum memilih program yang tepat.";root.prepend(note);}
 }
