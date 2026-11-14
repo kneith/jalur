@@ -79,5 +79,13 @@ jobs:
           assert "login('moderator')" in central
           assert "login('platform')" in central
           assert "wellbeing_moderator" in central and "platform_admin" in central
-          print("Structured-choice, BK/curhat navigation, and staff-role checks passed.")
+          assert "function roleRoute(page,role)" in central
+          assert "role==='wellbeing_moderator'?'server-vent':'vent'" in central
+          assert "role==='student'?'appointment':schoolStaff?'server-bk':null" in central
+          assert "role==='platform_admin')return 'server-platform'" in central
+          assert "guestMode&&['BK Consultation','Anonymous Venting'].includes(page)" in central
+          assert "['teacher','school_admin'].includes(role))return 'grades'" in central
+          assert "credentials:'include'" in central and "X-CSRF-Token" in central
+          assert "https://jalur-api.vercel.app" in index
+          print("Structured forms, guest BK/curhat, role routing, and API security wiring checks passed.")
           PY
