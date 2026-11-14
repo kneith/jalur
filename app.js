@@ -10,6 +10,107 @@ const initialState = {
 let state = loadState();
 let activeRole = "guest";
 const JALUR_PAGES = ["Dashboard","Academic Profile","Study Program Explorer","Study Tracer Alumni","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","BK Consultation","Anonymous Venting","School Portal","BK Portal"];
+
+const JALUR_ROLE_MENUS = {
+ guest:["Dashboard","Study Program Explorer","Academic Profile","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","Study Tracer Alumni","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources"],
+ student:["Dashboard","Study Program Explorer","Academic Profile","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","BK Consultation","Anonymous Venting","Study Tracer Alumni","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources"],
+ school_admin:["Dashboard","School Portal","Study Program Explorer","Settings","Help / About","User Guide","Official Sources"],
+ teacher:["Dashboard","Academic Profile","Study Program Explorer","Settings","Help / About","User Guide"],
+ counselor:["Dashboard","BK Portal","Study Program Explorer","Settings","Help / About","User Guide","Official Sources"],
+ wellbeing_moderator:["Dashboard","Anonymous Venting","Settings","Help / About","User Guide"],
+ platform_admin:["Dashboard","Settings","Help / About","User Guide"]
+};
+const JALUR_ROLE_BOTTOM = {
+ guest:["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"],
+ student:["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"],
+ school_admin:["Dashboard","School Portal","Study Program Explorer"],
+ teacher:["Dashboard","Academic Profile","Study Program Explorer"],
+ counselor:["Dashboard","BK Portal","Study Program Explorer"],
+ wellbeing_moderator:["Dashboard","Anonymous Venting"],
+ platform_admin:["Dashboard","Settings"]
+};
+const JALUR_ROLE_LABELS = {
+ guest:"Mode Pengunjung",student:"Ruang Siswa",school_admin:"Pengelola Sekolah",
+ teacher:"Guru Mata Pelajaran",counselor:"Guru BK",
+ wellbeing_moderator:"Moderator Curhat",platform_admin:"Admin Platform"
+};
+const JALUR_ROLE_NOTES = {
+ guest:"MODE PENGUNJUNG|Jelajahi informasi dan susun pertimbangan. Layanan BK tersedia setelah masuk sebagai siswa.",
+ student:"RUANG SISWA|Menu eksplorasi dan layanan pribadi yang terhubung dengan akun siswa.",
+ school_admin:"PENGELOLAAN SEKOLAH|Akun, kelas, penugasan guru, data rapor, dan informasi sekolah.",
+ teacher:"RUANG GURU|Data rapor dan tugas pengajaran sesuai penugasan sekolah.",
+ counselor:"LAYANAN BIMBINGAN|Tinjau dan tindak lanjuti permintaan konsultasi siswa.",
+ wellbeing_moderator:"MODERASI KESEJAHTERAAN|Tinjau curhat anonim tanpa mengakses identitas pengirim.",
+ platform_admin:"ADMINISTRASI PLATFORM|Pengelolaan platform dan hak akses."
+};
+const JALUR_ROLE_PAGE_ICONS = {
+ "Dashboard":"▦","School Portal":"▤","BK Portal":"◷","Academic Profile":"▥",
+ "Study Program Explorer":"⌕","Anonymous Venting":"♡","Settings":"⚙",
+ "Help / About":"?","User Guide":"▧","Official Sources":"⌘",
+ "Study Tracer Alumni":"⌁","Decision Journal":"✎","Decision Comparison":"⇄",
+ "Plan B Builder":"⑂","Program Study Reality Check":"◎","Similarity Explorer":"⇄",
+ "Alternative Pathway Planner":"⑂","Campus Life Preview":"⌂","Education Cost Planner":"Rp",
+ "Decision Blind Spot Detector":"◉","Decision Summary":"▤","BK Consultation":"◷"
+};
+function jalurAllowedPages(role="guest"){return JALUR_ROLE_MENUS[role]||JALUR_ROLE_MENUS.guest;}
+function jalurPageLabel(page,role="guest"){
+ if(page==="Anonymous Venting"&&role==="wellbeing_moderator")return "Moderasi Curhat";
+ if(page==="Academic Profile"&&role==="teacher")return "Data Rapor";
+ return PAGE_LABELS[page]||page;
+}
+function jalurApplyRoleNavigation(role="guest",user=null){
+ const allowed=new Set(jalurAllowedPages(role));
+ const sidebar=$("#sidebar"),nav=sidebar?.querySelector(".side-nav");
+ if(nav){
+  for(const page of allowed){
+   const exists=[...sidebar.querySelectorAll("[data-page]")].some(button=>button.dataset.page===page);
+   if(!exists){
+    const button=document.createElement("button");button.type="button";button.className="nav-item role-nav-injected";button.dataset.page=page;
+    const icon=document.createElement("span");icon.className="nav-icon";icon.textContent=JALUR_ROLE_PAGE_ICONS[page]||"◦";
+    const label=document.createElement("span");label.textContent=jalurPageLabel(page,role);
+    button.append(icon,label);nav.append(button);
+   }
+  }
+ }
+ if(sidebar){
+  sidebar.querySelectorAll(".nav-item[data-page]").forEach(button=>{
+   const visible=allowed.has(button.dataset.page);
+   button.style.display=visible?"flex":"none";button.setAttribute("aria-hidden",visible?"false":"true");
+   const label=[...button.children].find(child=>child.tagName==="SPAN"&&!child.classList.contains("nav-icon"));
+   if(label)label.textContent=jalurPageLabel(button.dataset.page,role);
+   button.title=jalurPageLabel(button.dataset.page,role);
+  });
+  const note=sidebar.querySelector(".sidebar-note");
+  if(note){
+   const [heading,description]=String(JALUR_ROLE_NOTES[role]||JALUR_ROLE_NOTES.guest).split("|");
+   note.textContent="";
+   const title=document.createElement("strong");title.textContent=heading;
+   const copy=document.createElement("span");copy.textContent=description;
+   note.append(title,document.createElement("br"),copy);
+  }
+ }
+ const primary=JALUR_ROLE_BOTTOM[role]||JALUR_ROLE_BOTTOM.guest;
+ const bottomButtons=[...document.querySelectorAll(".bottom-nav .bottom-item[data-page]")];
+ bottomButtons.forEach((button,index)=>{
+  const page=primary[index];
+  if(!page){button.style.display="none";button.setAttribute("aria-hidden","true");return;}
+  button.style.display="flex";button.setAttribute("aria-hidden","false");button.dataset.page=page;
+  const icon=button.querySelector("span");if(icon)icon.textContent=JALUR_ROLE_PAGE_ICONS[page]||"◦";
+  const label=button.querySelector("small");if(label)label.textContent=jalurPageLabel(page,role);
+  button.title=jalurPageLabel(page,role);
+ });
+ const more=$("#moreNav");
+ if(more){more.style.display="flex";more.classList.toggle("active",!primary.includes(currentPage));}
+ const badge=$(".guest-badge");if(badge)badge.textContent=JALUR_ROLE_LABELS[role]||JALUR_ROLE_LABELS.guest;
+ const chip=$(".profile-chip");
+ if(chip){
+  const spans=chip.querySelectorAll("span"),name=user?.full_name||user?.email||"Guest";
+  if(spans[0])spans[0].textContent=String(name).trim().slice(0,1).toUpperCase()||"G";
+  if(spans[1])spans[1].textContent=name;
+ }
+ document.documentElement.dataset.jalurRole=role;
+}
+window.JALUR_APPLY_ROLE_NAV=jalurApplyRoleNavigation;
 function jalurPageFromHash(){try{const raw=location.hash.startsWith("#page=")?decodeURIComponent(location.hash.slice(6)):"";return JALUR_PAGES.includes(raw)?raw:null}catch{return null}}
 function jalurStoredPage(){try{const saved=localStorage.getItem("jalur-last-page");return JALUR_PAGES.includes(saved)?saved:null}catch{return null}}
 let currentPage = jalurPageFromHash() || jalurStoredPage() || (JALUR_PAGES.includes(state.currentPage)?state.currentPage:"Dashboard");
@@ -152,6 +253,13 @@ const PAGE_LABELS={"Dashboard":"Beranda","Academic Profile":"Profil Akademik","S
 function render(){
  const root=$("#pageRoot");
  if(!root)return;
+ const role=window.JALUR_API?.getUser?.()?.role||"guest";
+ jalurApplyRoleNavigation(role,window.JALUR_API?.getUser?.()||null);
+ if(window.JALUR_API&&["BK Consultation","Anonymous Venting"].includes(currentPage)&&role!=="student"){
+  currentPage="Dashboard";state.currentPage="Dashboard";
+  if(!jalurSuppressHistory)jalurWriteRoute("Dashboard",true);
+  toast("Konsultasi BK dan Curhat Anonim hanya tersedia untuk siswa yang sudah masuk dengan akun siswa.","error");
+ }
  try{
   const crumb=$("#pageCrumb");
   if(crumb)crumb.textContent=PAGE_LABELS[currentPage]||currentPage;
@@ -490,9 +598,23 @@ function schoolPortalPage(){const d=portalData();const fields=[['students','Sisw
 function schoolList(d,key){const labels={students:"Siswa",teachers:"Guru",classes:"Kelas",subjects:"Mata pelajaran",alumni:"Alumni",grades:"Nilai rapor"};const arr=d[key]||[];return `<h3>${labels[key]||key} (${arr.length})</h3>${arr.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>Nama / identitas</th><th>Keterangan</th><th>Nilai</th><th>Aksi</th></tr></thead><tbody>${arr.map((x,i)=>`<tr><td>${safeText(x.name)}</td><td>${safeText(x.detail||"·")}</td><td>${x.value??"·"}</td><td><button class="text-btn" data-delete-school="${key}:${i}">Hapus</button></td></tr>`).join("")}</tbody></table></div>`:`<p>Belum ada data ${labels[key]||key.toLowerCase()}.</p>`}`}
 function bkPortalPage(){const d=portalData();return `${pageHead("BK Portal","Bagian ini menampilkan permintaan konsultasi dan catatan yang tersimpan pada peramban di perangkat ini. Data dari perangkat lain belum dapat diterima melalui portal ini.",`<button class="btn secondary small" data-return-welcome>Kembali ke halaman pembuka</button>`)}<div class="notice"><strong>Perlu dipahami</strong> Daftar ini belum berfungsi sebagai kotak masuk daring. Guru BK belum dapat menerima data dari perangkat siswa lain karena kanal pengiriman dan pengelolaan data melalui server belum tersedia.</div><section class="panel glass"><h2>Permintaan konsultasi (${d.consultations.length})</h2>${d.consultations.length?d.consultations.slice().reverse().map((c,i)=>`<article class="program-card glass"><span class="program-kicker">${safeText(c.date)}, ${safeText(c.time)}</span><h3>${safeText(c.name)}, ${safeText(c.topic)}</h3><p>${safeText(c.className)}, ${safeText(c.mode)}</p><p>${safeText(c.note||"Tanpa catatan tambahan")}</p><label for="bkstatus-${i}">Status</label><select id="bkstatus-${i}" data-consult-status="${d.consultations.length-1-i}"><option ${c.status==="Menunggu konfirmasi"?"selected":""}>Menunggu konfirmasi</option><option ${c.status==="Dikonfirmasi"?"selected":""}>Dikonfirmasi</option><option ${c.status==="Dijadwalkan ulang"?"selected":""}>Dijadwalkan ulang</option><option ${c.status==="Selesai"?"selected":""}>Selesai</option><option ${c.status==="Dibatalkan"?"selected":""}>Dibatalkan</option></select></article>`).join(""):`<p>Belum ada permintaan konsultasi di browser ini.</p>`}</section><section class="panel glass section-gap"><h2>Curhat anonim tersimpan lokal (${d.vents.length})</h2><p class="source-line">Hanya untuk menguji alur pada perangkat yang sama. Jangan gunakan untuk memantau siswa atau menangani krisis.</p>${d.vents.length?d.vents.slice().reverse().map(v=>`<article class="program-card glass"><span class="program-kicker">${safeText(v.date)}, ${safeText(v.mood)}</span><h3>${safeText(v.category)}</h3><p style="white-space:pre-wrap">${safeText(v.text)}</p></article>`).join(""):`<p>Belum ada catatan lokal.</p>`}</section>`}
 
-function openDrawer(){ $("#drawerBackdrop").classList.remove("hidden");$("#drawerBackdrop").innerHTML=`<div class="mobile-drawer" role="dialog" aria-label="Menu lainnya"><h3>Menu lainnya <button class="text-btn" id="closeDrawer" style="float:right">Tutup ×</button></h3>${["Academic Profile","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","BK Consultation","Anonymous Venting","Study Tracer Alumni","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources"].map(p=>`<button class="${p===currentPage?"active":""}" data-drawer-page="${p}">${PAGE_LABELS[p]||p}</button>`).join("")}</div>`;$("#closeDrawer").onclick=closeDrawer;$$("[data-drawer-page]").forEach(b=>b.onclick=()=>{closeDrawer();navigate(b.dataset.drawerPage)});$("#drawerBackdrop").onclick=e=>{if(e.target.id==="drawerBackdrop")closeDrawer()}}
+function openDrawer(){
+ const role=window.JALUR_API?.getUser?.()?.role||"guest";
+ const allowed=jalurAllowedPages(role),primary=JALUR_ROLE_BOTTOM[role]||JALUR_ROLE_BOTTOM.guest;
+ const pages=allowed.filter(page=>page!=="Dashboard"&&!primary.includes(page));
+ $("#drawerBackdrop").classList.remove("hidden");
+ $("#drawerBackdrop").innerHTML=`<div class="mobile-drawer" role="dialog" aria-label="Menu lainnya"><h3>Menu lainnya <button class="text-btn" id="closeDrawer" style="float:right">Tutup ×</button></h3>${pages.length?pages.map(page=>`<button class="${page===currentPage?"active":""}" data-drawer-page="${page}">${jalurPageLabel(page,role)}</button>`).join(""):'<p class="source-line">Tidak ada menu tambahan untuk peran ini.</p>'}</div>`;
+ $("#closeDrawer").onclick=closeDrawer;
+ $("[data-drawer-page]").forEach(button=>button.onclick=()=>{closeDrawer();navigate(button.dataset.drawerPage)});
+ $("#drawerBackdrop").onclick=event=>{if(event.target.id==="drawerBackdrop")closeDrawer()};
+}
 function closeDrawer(){$("#drawerBackdrop").classList.add("hidden");$("#drawerBackdrop").innerHTML=""}
-function navigate(page){if(page==="School Portal"&&activeRole!=="school"){toast("Portal pengelola hanya tersedia melalui jalur masuk sekolah.","error");return}if(page==="BK Portal"&&activeRole!=="bk"){toast("Portal BK hanya tersedia melalui jalur masuk guru BK.","error");return}currentPage=page;state.currentPage=page;if(!jalurSuppressHistory)jalurWriteRoute(page);saveState();window.JALUR_ANIMATE_PAGE_TRANSITION?.();render();window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
+function navigate(page){
+ const role=window.JALUR_API?.getUser?.()?.role||"guest";
+ if(!jalurAllowedPages(role).includes(page)){toast("Menu ini tidak tersedia untuk peran akun yang sedang digunakan.","error");return;}
+ if(["BK Consultation","Anonymous Venting"].includes(page)&&role!=="student"){toast("Fitur ini hanya tersedia untuk akun siswa yang sudah masuk.","error");return;}
+ currentPage=page;state.currentPage=page;if(!jalurSuppressHistory)jalurWriteRoute(page);saveState();window.JALUR_ANIMATE_PAGE_TRANSITION?.();render();window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+}
 window.navigate = navigate;
 
 document.addEventListener("click",async e=>{
@@ -644,20 +766,25 @@ function showHowItWorks(){
   {title:"Bandingkan dengan alasan yang jelas",tag:"PERTIMBANGKAN",icon:"⇄",copy:"Lihat persamaan, perbedaan, konsekuensi, dan informasi yang masih perlu kamu pastikan sebelum memilih.",items:["Bandingkan hingga empat program","Tulis alasan dan hal yang masih diragukan","Siapkan alternatif yang masuk akal"]},
   {title:"Susun langkah berikutnya",tag:"LANGKAHMU",icon:"↗",copy:"Simpan refleksi dan pertanyaan yang ingin kamu diskusikan. JALUR membantu menata pertimbangan, bukan mengambil keputusan untukmu.",items:["Rangkum hal yang sudah diketahui","Catat hal yang perlu diverifikasi","Diskusikan dengan orang tepercaya"]}
  ];
- let active=0;
+ let active=-1;
+ const introBody=`<div class="jalur-how-flow jalur-how-intro"><span class="eyebrow">RUANG EKSPLORASI PENDIDIKAN TINGGI</span><article class="jalur-how-stage"><div class="jalur-how-icon" aria-hidden="true">✳</div><h2>Apa itu JALUR?</h2><p>JALUR adalah platform pendamping eksplorasi pendidikan tinggi. JALUR membantu siapa pun yang sedang mempertimbangkan studi lanjut untuk mengenali pilihan universitas dan program studi, memahami informasi penting, serta menyusun pertimbangan dengan lebih terarah.</p><p>Di sini kamu dapat menelusuri direktori perguruan tinggi dan program studi, melihat detail serta sumber informasinya, membandingkan alternatif, dan mencatat hal yang masih perlu dipastikan. JALUR bukan penyelenggara seleksi, tidak memilihkan jurusan, dan tidak menjanjikan kelulusan. Keputusan tetap berada di tanganmu.</p><div class="jalur-how-points"><div><span>01</span><strong>Informasi untuk mengenali pilihan</strong></div><div><span>02</span><strong>Ruang untuk menimbang beberapa alternatif</strong></div><div><span>03</span><strong>Langkah yang dapat kamu susun sendiri</strong></div></div></article><p class="jalur-how-note">Setelah mengenal tujuan JALUR, lanjutkan dengan empat langkah berikut.</p></div>`;
  const draw=()=>{
+  if(active<0){
+   openModal("Mengenal JALUR",introBody,'<button type="button" class="btn secondary" id="howBack">Tutup</button><button type="button" class="btn primary" id="howNext">Lihat 4 langkah <span aria-hidden="true">↗</span></button>');
+   return;
+  }
   const step=steps[active];
   const progress=steps.map((item,index)=>`<button type="button" class="jalur-how-progress-step ${index===active?"active":index<active?"done":""}" data-how-step="${index}" aria-label="Langkah ${index+1}: ${item.title}" aria-current="${index===active?"step":"false"}"><span>${index<active?"✓":String(index+1).padStart(2,"0")}</span><small>${item.tag}</small></button>`).join("");
   const body=`<div class="jalur-how-flow"><div class="jalur-how-progress">${progress}</div><article class="jalur-how-stage"><div class="jalur-how-icon" aria-hidden="true">${step.icon}</div><span class="eyebrow">LANGKAH ${active+1} DARI ${steps.length}, ${step.tag}</span><h2>${step.title}</h2><p>${step.copy}</p><div class="jalur-how-points">${step.items.map((item,index)=>`<div><span>${String(index+1).padStart(2,"0")}</span><strong>${item}</strong></div>`).join("")}</div></article><p class="jalur-how-note">JALUR tidak menentukan pilihan terbaik atau memprediksi hasil penerimaan. Kendali keputusan tetap ada padamu.</p></div>`;
-  const footer=`<button type="button" class="btn secondary" id="howBack" ${active===0?"disabled":""}>${active===0?"Tutup":"Sebelumnya"}</button><button type="button" class="btn primary" id="howNext">${active===steps.length-1?"Mulai sebagai pengunjung":"Lanjutkan"} <span aria-hidden="true">↗</span></button>`;
+  const footer=`<button type="button" class="btn secondary" id="howBack">Sebelumnya</button><button type="button" class="btn primary" id="howNext">${active===steps.length-1?"Mulai sebagai pengunjung":"Lanjutkan"} <span aria-hidden="true">↗</span></button>`;
   openModal("Mengenal JALUR",body,footer);
  };
  const modalRoot=$("#modalRoot");
  modalRoot.onclick=event=>{
   const stepButton=event.target.closest("[data-how-step]");
   if(stepButton){active=Number(stepButton.dataset.howStep);if(Number.isInteger(active)&&active>=0&&active<steps.length)draw();return;}
-  if(event.target.closest("#howBack")){if(active===0){closeModal();return;}active--;draw();return;}
-  if(event.target.closest("#howNext")){if(active<steps.length-1){active++;draw();return;}closeModal();window.JALUR_ENTER_GUEST?.();}
+  if(event.target.closest("#howBack")){if(active<0){closeModal();return;}active--;draw();return;}
+  if(event.target.closest("#howNext")){if(active<0){active=0;draw();return;}if(active<steps.length-1){active++;draw();return;}closeModal();window.JALUR_ENTER_GUEST?.();}
  };
  draw();
 }
@@ -665,8 +792,8 @@ $("#howItWorks").onclick=showHowItWorks;
 $("#mobileMenu").onclick=openDrawer;$("#moreNav").onclick=openDrawer;$("#helpQuick").onclick=()=>navigate("Help / About");
 document.addEventListener("submit",async e=>{
  if(e.target.id==="schoolGateForm"||e.target.id==="bkGateForm"){e.preventDefault();const role=e.target.id==="schoolGateForm"?"school":"bk";const code=(role==="school"?$("#schoolCode").value:$("#bkCode").value).trim();const key="jalur-local-role-gates";let gates={};try{gates=JSON.parse(localStorage.getItem(key)||"{}")}catch{};if(!gates[role]){gates[role]=code;localStorage.setItem(key,JSON.stringify(gates));}else if(gates[role]!==code){toast("Kode uji lokal tidak cocok dengan kode yang dibuat pada browser ini.","error");return;}closeModal();activeRole=role;$("#welcome").classList.add("hidden");$("#app").classList.remove("hidden");navigate(role==="school"?"School Portal":"BK Portal");toast("Portal uji lokal dibuka. Ini bukan autentikasi produksi.","info");return;}
- if(e.target.id==="consultForm"){e.preventDefault();const d=portalData();const date=$("#consultDate").value,time=$("#consultTime").value,name=$("#consultName").value.trim();if(d.consultations.some(c=>c.date===date&&c.time===time&&c.name===name&&c.status!=="Dibatalkan")){toast("Permintaan dengan tanggal, waktu, dan nama tersebut sudah ada.","error");return;}d.consultations.push({name,className:$("#consultClass").value.trim(),date,time,mode:$("#consultMode").value,topic:$("#consultTopic").value,note:$("#consultContext").value,status:"Menunggu konfirmasi",createdAt:new Date().toISOString()});savePortalData(d);render();toast("Permintaan disimpan pada browser ini. Guru BK belum menerima notifikasi.","info");return;}
- if(e.target.id==="ventForm"){e.preventDefault();const d=portalData(),topics=readChoices("ventTopics");if(!topics.length){toast("Pilih minimal satu topik agar catatan terstruktur bermakna.","error");return;}d.vents.push({mood:$("#ventMood").value,category:$("#ventCategory").value,text:"Topik yang ingin dicatat: "+topics.join("; ")+".",support:$("#ventSupport").checked,date:new Date().toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})});savePortalData(d);render();toast("Catatan terstruktur disimpan lokal di perangkat ini.","info");return;}
+ if(e.target.id==="consultForm"){e.preventDefault();if(window.JALUR_API?.getUser?.()?.role!=="student"){toast("Konsultasi BK hanya tersedia setelah masuk dengan akun siswa.","error");return;}const d=portalData();const date=$("#consultDate").value,time=$("#consultTime").value,name=$("#consultName").value.trim();if(d.consultations.some(c=>c.date===date&&c.time===time&&c.name===name&&c.status!=="Dibatalkan")){toast("Permintaan dengan tanggal, waktu, dan nama tersebut sudah ada.","error");return;}d.consultations.push({name,className:$("#consultClass").value.trim(),date,time,mode:$("#consultMode").value,topic:$("#consultTopic").value,note:$("#consultContext").value,status:"Menunggu konfirmasi",createdAt:new Date().toISOString()});savePortalData(d);render();toast("Permintaan disimpan pada browser ini. Guru BK belum menerima notifikasi.","info");return;}
+ if(e.target.id==="ventForm"){e.preventDefault();if(window.JALUR_API?.getUser?.()?.role!=="student"){toast("Curhat Anonim hanya tersedia setelah masuk dengan akun siswa.","error");return;}const d=portalData(),topics=readChoices("ventTopics");if(!topics.length){toast("Pilih minimal satu topik agar catatan terstruktur bermakna.","error");return;}d.vents.push({mood:$("#ventMood").value,category:$("#ventCategory").value,text:"Topik yang ingin dicatat: "+topics.join("; ")+".",support:$("#ventSupport").checked,date:new Date().toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})});savePortalData(d);render();toast("Catatan terstruktur disimpan lokal di perangkat ini.","info");return;}
  if(e.target.id==="schoolRecordForm"){e.preventDefault();const d=portalData(),key=$("#schoolDataType").value,name=$("#schoolRecordName").value.trim(),detail=$("#schoolRecordDetail").value.trim(),value=$("#schoolRecordValue").value;d[key].push({name,detail,value:key==="grades"&&value!==""?Number(value):null,createdAt:new Date().toISOString()});savePortalData(d);render();toast("Data ditambahkan pada browser ini.","info");return;}
  if(e.target.id==="alumniNoteForm"){e.preventDefault();const program=$("#alumniProgram").value.trim(),source=$("#alumniSource").value,findings=readChoices("alumniFindings");if(!findings.length){toast("Pilih minimal satu temuan wawancara.","error");return}state.journal.push({type:"Temuan pengalaman",program:program||"Catatan pengalaman",text:`Informasi ini berasal dari ${source}. Hal-hal yang telah dikonfirmasi meliputi ${findings.join(", ")}. `,date:new Date().toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})});saveState();logActivity("Temuan pengalaman disimpan ke jurnal");navigate("Decision Journal");toast("Temuan terstruktur disimpan ke Jurnal Keputusan.");return}
  if(e.target.id==="journalForm"){e.preventDefault();const picks=readChoices("journalPrompts"),written=$("#journalText")?.innerText.trim()||"";if(!picks.length&&!written){toast("Tulis refleksi atau pilih minimal satu aspek.","error");$("#journalText")?.focus();return;}const text=[written,picks.length?"Aspek yang ingin kamu refleksikan "+picks.join("; ")+".":""].filter(Boolean).join("\n\n");const entry={type:$("#journalType").value,program:programById($("#journalProgram").value)?.name||"",text,date:new Date().toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})};try{const remote=window.JALUR_API?.getUser?.();if(remote){await window.JALUR_API.request("/journal",{method:"POST",body:{type:entry.type,program:entry.program,text:entry.text}});const saved=await window.JALUR_API.request("/journal");state.journal=saved.items||[];}else{state.journal.push(entry);}saveState();logActivity("Jurnal keputusan diperbarui");render();toast("Refleksi terstruktur disimpan.");}catch(err){toast(err.message||"Refleksi gagal disimpan.","error");}}

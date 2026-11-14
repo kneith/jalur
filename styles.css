@@ -2217,3 +2217,22 @@ html.jalur-welcome-mode .ambient.pointer-active::after{opacity:1!important}
   .search-result-program .card-bottom{grid-template-columns:1fr}
   .search-result-program .card-bottom [data-detail-program]{grid-column:auto}
 }
+
+/* JALUR role-specific navigation and welcome actions */
+#sidebar .nav-item[aria-hidden="true"],.bottom-nav .bottom-item[aria-hidden="true"]{display:none!important}
+@media(min-width:701px){
+ .welcome-auth-actions.role-entry-grid{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+  width:min(100%,560px);max-width:560px;gap:12px
+ }
+ .welcome-auth-actions.role-entry-grid>.welcome-secondary-actions{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  width:100%;gap:10px
+ }
+ .welcome-auth-actions.role-entry-grid>#signIn{width:100%;max-width:none}
+ .welcome-auth-actions.role-entry-grid>.welcome-guest-link{align-self:center}
+ .welcome-auth-actions.role-entry-grid>.welcome-staff-menu{align-self:stretch}
+}
+.sidebar-note strong{display:block;color:#6B7FA0;font-size:10px;letter-spacing:.11em;margin-bottom:5px}
+.role-nav-injected{animation:jalurRoleNavIn .24s ease both}
+@keyframes jalurRoleNavIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}

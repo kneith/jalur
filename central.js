@@ -40,6 +40,7 @@
     window.JALUR_RESET_SCROLL_TOP?.();window.JALUR_TRANSITION_TO_APP?.();
     const badge=$('.guest-badge');if(badge)badge.textContent=roleNames[user.role]||user.role;
     const chip=$('.profile-chip');if(chip)chip.innerHTML=`<span class="avatar-mini">${esc((user.full_name||'U').slice(0,1).toUpperCase())}</span><span>${esc(user.full_name||user.email)}</span><span>⌄</span>`;
+    window.JALUR_APPLY_ROLE_NAV?.(user.role,user);
     const destination=user.role==='student'?'server-home':user.role==='school_admin'?'server-school':user.role==='teacher'?'server-grades':user.role==='counselor'?'server-bk':user.role==='wellbeing_moderator'?'server-vent':user.role==='platform_admin'?'server-platform':'server-school';
     Promise.resolve(serverPage(destination)).catch(err=>notice(err.message||'Halaman akun gagal dimuat.')).finally(()=>{
       window.JALUR_RESET_SCROLL_TOP?.();
@@ -48,7 +49,14 @@
   }
   function pageHead(title,sub){return `<div class="page-head"><div><span class="eyebrow">JALUR dan PORTAL TERPUSAT</span><h1>${esc(title)}</h1><p>${esc(sub)}</p></div><button class="btn secondary small" id="centralLogout">Keluar</button></div>`}
   function formField(label,id,placeholder,type='text',required=true){return `<div class="field"><label for="${id}">${esc(label)}</label><input id="${id}" type="${type}" placeholder="${esc(placeholder)}" ${required?'required':''}></div>`}
-  async function serverPage(page){const root=$('#pageRoot');if(!root)return;window.JALUR_ANIMATE_PAGE_TRANSITION?.();const activePage=({'appointment':'BK Consultation','server-bk':'BK Portal','server-school':'School Portal','server-grades':'Academic Profile','grades':'Academic Profile','server-home':'Dashboard','server-vent':'Anonymous Venting','vent':'Anonymous Venting','directory':'Study Program Explorer','server-platform':'Settings'})[page];if(activePage)window.JALUR_SET_ACTIVE_PAGE?.(activePage);root.innerHTML=`<section class="server-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat…</span></section>`;try{
+  async function serverPage(page){
+    const root=$('#pageRoot');if(!root)return;
+    const permissions={"server-home":["student"],"appointment":["student"],"vent":["student"],"server-school":["school_admin"],"school-classes":["school_admin"],"school-alumni":["school_admin"],"server-grades":["teacher"],"grades":["student","teacher","school_admin"],"server-bk":["counselor"],"server-vent":["wellbeing_moderator"],"server-platform":["platform_admin"]};
+    const permitted=permissions[page];
+    if(permitted&&!permitted.includes(user?.role)){notice("Halaman ini tidak tersedia untuk peran akun yang sedang digunakan.");return;}
+    if(page!=="directory"&&!user){notice("Silakan masuk dengan akun yang sesuai untuk membuka halaman ini.");return;}
+    if(page==="directory"){window.navigate?.("Study Program Explorer");return;}
+    window.JALUR_ANIMATE_PAGE_TRANSITION?.();const activePage=({'appointment':'BK Consultation','server-bk':'BK Portal','server-school':'School Portal','server-grades':'Academic Profile','grades':'Academic Profile','server-home':'Dashboard','server-vent':'Anonymous Venting','vent':'Anonymous Venting','directory':'Study Program Explorer','server-platform':'Settings'})[page];if(activePage)window.JALUR_SET_ACTIVE_PAGE?.(activePage);root.innerHTML=`<section class="server-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat…</span></section>`;try{
     if(page==='directory'){root.innerHTML=`${pageHead('Direktori Pendidikan','Pencarian server berdasarkan universitas, jurusan, atau program studi. Hasil alfabetis dan dimuat bertahap.')}<section class="panel glass"><form id="directoryForm" class="form-grid"><div class="field"><label for="directoryType">Cari berdasarkan</label><select id="directoryType"><option value="all">Semua</option><option value="institution">Perguruan tinggi</option><option value="program">Program studi / jurusan</option></select></div><div class="field"><label for="directoryQuery">Kata kunci</label><input id="directoryQuery" placeholder="Ketik nama universitas atau prodi…" autocomplete="off"></div></form><p id="directoryMeta" class="source-line">Masukkan sedikitnya dua karakter agar pencarian dapat menampilkan hasil yang sesuai.</p><div id="directoryResults"></div><button class="btn secondary" id="directoryMore" hidden>Muat hasil berikutnya</button></section>`;wireDirectory();return;}
     if(page==='server-platform'){
       root.innerHTML=`${pageHead('Administrasi Platform','Kelola akun lintas sekolah dan akses Moderator Curhat.')}<section class="panel glass"><h2>Buat akun Moderator Curhat</h2><p class="source-line">Akun moderator memiliki akses global ke pesan curhat anonim. Berikan akses hanya kepada petugas yang ditunjuk dan sampaikan kata sandi sementara melalui kanal terpisah.</p><form id="centralCreateModerator" class="form-grid">${formField('Nama lengkap','moderatorFullName','Nama lengkap')}${formField('Email','moderatorEmail','moderator@jalur.id','email')}${formField('Kata sandi sementara (minimal 14 karakter)','moderatorPassword','Kata sandi kuat','password')}<div class="field full"><button class="btn primary">Buat akun Moderator Curhat</button></div></form></section>`;
@@ -140,17 +148,18 @@
   function gradeTrend(items){const groups=new Map();for(const g of items){const key=g.academic_year+'|'+g.semester;const x=groups.get(key)||{year:g.academic_year,semester:g.semester,sum:0,count:0};x.sum+=Number(g.score);x.count++;groups.set(key,x)}const rows=[...groups.values()].map(x=>({...x,avg:x.sum/x.count,yearN:Number((String(x.year).match(/\\d{4}/)||[])[0])||0,semN:Number((String(x.semester).match(/\\d+/)||[])[0])||0})).sort((a,b)=>a.yearN-b.yearN||a.semN-b.semN);if(!rows.length)return '<p class="source-line">Belum ada nilai untuk dibuatkan grafik.</p>';const w=700,h=220,L=42,R=18,T=18,B=45,X=i=>rows.length===1?w/2:L+i*(w-L-R)/(rows.length-1),Y=v=>T+(100-v)*(h-T-B)/100,pts=rows.map((r,i)=>[X(i),Y(r.avg)]),path=pts.map((p,i)=>(i?'L':'M')+p[0]+','+p[1]).join(' '),grid=[0,25,50,75,100].map(v=>'<line x1="'+L+'" y1="'+Y(v)+'" x2="'+(w-R)+'" y2="'+Y(v)+'" class="grade-chart-grid"/><text x="'+(L-9)+'" y="'+(Y(v)+4)+'" text-anchor="end" class="grade-chart-axis">'+v+'</text>').join(''),dots=pts.map((p,i)=>{const detail=rows[i].semester+" "+rows[i].year+" · Rata-rata "+rows[i].avg.toFixed(1)+" · "+rows[i].count+" catatan nilai";return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="6" tabindex="0" role="button" aria-label="'+esc(detail)+'" data-grade-tooltip="'+esc(detail)+'" class="grade-chart-point"><title>'+esc(detail)+'</title></circle>'}).join(''),labels=rows.map((r,i)=>'<text x="'+X(i)+'" y="'+(h-17)+'" text-anchor="middle" class="grade-chart-label">'+esc(r.semester+' dan '+r.year)+'</text>').join(' '),delta=rows[rows.length-1].avg-rows[0].avg,caption=rows.length<2?'Perlu minimal dua semester untuk menghitung tren.':Math.abs(delta)<.05?'Rata-rata stabil.':(delta>0?'Meningkat ':'Menurun ')+Math.abs(delta).toFixed(1)+' poin dari periode pertama.';return '<section class="panel glass section-gap"><div class="panel-head"><div><h2>Grafik perkembangan nilai</h2><p class="panel-sub">Rata-rata berdasarkan rapor tersimpan.</p></div><span class="data-tag">Data server</span></div><div class="grade-chart-wrap"><svg class="grade-trend-svg" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Tren nilai per semester">'+grid+(rows.length>1?'<path d="'+path+'" class="grade-chart-line"/>':'')+dots+labels+'</svg><div class="grade-chart-tooltip" role="status" aria-live="polite" hidden></div></div><p class="source-line">'+esc(caption)+'</p><button class="btn secondary small" id="printGrades">Cetak / simpan PDF</button></section>';}
 function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;const query=$('#directoryQuery'),type=$('#directoryType'),results=$('#directoryResults'),meta=$('#directoryMeta'),more=$('#directoryMore');async function run(append=false){const q=query.value.trim(),selectedType=type.value;if(q.length<2){requestSeq++;activeController?.abort();results.innerHTML='';meta.textContent='Masukkan sedikitnya dua karakter agar pencarian dapat menampilkan hasil yang sesuai.';more.hidden=true;return;}if(!append){offset=0;results.innerHTML='<p>Mencari…</p>';more.hidden=true;}const seq=++requestSeq;activeController?.abort();activeController=new AbortController();const controller=activeController;try{const d=await api(`/directory/search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(selectedType)}&limit=25&offset=${offset}`,{signal:controller.signal});if(seq!==requestSeq||q!==query.value.trim()||selectedType!==type.value)return;const rows=d.items||[];meta.textContent=`${Number(d.total||0).toLocaleString('id-ID')} hasil dan urutan alfabetis A–Z`;results.insertAdjacentHTML(append?'beforeend':'afterbegin',rows.map(x=>`<article class="program-card glass"><span class="program-kicker">${esc(x.type==='institution'?'Perguruan tinggi':'Program studi')}${x.level?' dan '+esc(x.level):''}</span><h3>${esc(x.name)}</h3><p>${esc(x.institution_name||x.data?.province||x.data?.lokasi||'')}</p></article>`).join('')||(!append?'<p>Tidak ada hasil yang cocok.</p>':''));offset+=rows.length;more.hidden=offset>=Number(d.total||0)||!rows.length;}catch(err){if(err.name==='AbortError')return;if(seq===requestSeq){meta.textContent=err.message;more.hidden=true;}}}query.addEventListener('input',()=>{clearTimeout(timer);activeController?.abort();timer=setTimeout(()=>run(false),180)});type.addEventListener('change',()=>{clearTimeout(timer);run(false)});more.onclick=()=>run(true);}
   function roleRoute(page,role){
-    const schoolStaff=['counselor','school_admin'].includes(role);
-    if(page==='Dashboard')return role==='student'?'server-home':role==='school_admin'?'server-school':role==='teacher'?'server-grades':role==='counselor'?'server-bk':role==='wellbeing_moderator'?'server-vent':role==='platform_admin'?'server-platform':'directory';
-    if(page==='Study Program Explorer')return 'directory';
-    if(page==='School Portal')return role==='school_admin'?'server-school':null;
-    if(page==='BK Portal')return schoolStaff?'server-bk':null;
-    if(page==='BK Consultation')return role==='student'?'appointment':schoolStaff?'server-bk':null;
-    if(page==='Anonymous Venting')return role==='wellbeing_moderator'?'server-vent':'vent';
-    if(page==='Grades')return ['student','teacher','school_admin'].includes(role)?'grades':null;
-    if(page==='Academic Profile'&&['teacher','school_admin'].includes(role))return 'grades';
-    if(page==='Settings'&&role==='platform_admin')return 'server-platform';
-    return undefined;
+    const studentTools=["Academic Profile","Study Tracer Alumni","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal"];
+    if(page==="Dashboard")return ({student:"server-home",school_admin:"server-school",teacher:"server-grades",counselor:"server-bk",wellbeing_moderator:"server-vent",platform_admin:"server-platform"})[role]??null;
+    if(page==="Study Program Explorer")return undefined;
+    if(page==="School Portal")return role==="school_admin"?"server-school":null;
+    if(page==="BK Portal")return role==="counselor"?"server-bk":null;
+    if(page==="BK Consultation")return role==="student"?"appointment":null;
+    if(page==="Anonymous Venting")return role==="student"?"vent":role==="wellbeing_moderator"?"server-vent":null;
+    if(page==="Academic Profile")return role==="student"?undefined:role==="teacher"?"grades":null;
+    if(studentTools.includes(page))return role==="student"||role==="guest"?undefined:null;
+    if(page==="Settings")return role==="platform_admin"?"server-platform":undefined;
+    if(["Help / About","User Guide","Official Sources"].includes(page))return undefined;
+    return null;
   }
   document.addEventListener('click',e=>{
     const p=e.target.closest('[data-server-page]');
@@ -164,13 +173,13 @@ function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;c
     serverPage(destination);
   },true);
   document.addEventListener('click',async e=>{const edit=e.target.closest('[data-grade-edit]');if(edit){editingGradeId=edit.dataset.gradeEdit;serverPage('grades');return;}if(e.target.closest('#cancelGradeEdit')){editingGradeId=null;serverPage('grades');return;}const del=e.target.closest('[data-grade-delete]');if(del){if(!confirm('Hapus nilai ini?'))return;try{await api('/grades/'+encodeURIComponent(del.dataset.gradeDelete),{method:'DELETE'});notice('Nilai dihapus.');serverPage('grades')}catch(err){notice(err.message)}return;}if(e.target.closest('#printGrades'))window.print();});
-  document.addEventListener('click',e=>{if(e.target.closest('#centralLogout')){api('/auth/logout',{method:'POST'}).catch(()=>{}).finally(()=>{sessionStorage.removeItem('jalur-app-open');sessionStorage.removeItem('jalur-guest-mode');history.replaceState({},'',location.pathname+location.search);user=null;csrfToken='';$('#app')?.classList.add('hidden');$('#welcome')?.classList.remove('hidden');notice('Kamu sudah keluar.');});}});
+  document.addEventListener('click',e=>{if(e.target.closest('#centralLogout')){api('/auth/logout',{method:'POST'}).catch(()=>{}).finally(()=>{sessionStorage.removeItem('jalur-app-open');sessionStorage.removeItem('jalur-guest-mode');history.replaceState({},'',location.pathname+location.search);user=null;csrfToken='';window.JALUR_APPLY_ROLE_NAV?.('guest',null);$('#app')?.classList.add('hidden');$('#welcome')?.classList.remove('hidden');notice('Kamu sudah keluar.');});}});
   $('#enterSchool')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('school')},true);
   $('#enterBK')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('bk')},true);
   $('#enterTeacher')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('teacher')},true);
   const moderator=document.createElement('button');moderator.type='button';moderator.className='staff-entry';moderator.textContent='Moderator Curhat';moderator.addEventListener('click',()=>login('moderator'));$('.welcome-staff-options')?.append(moderator);
   const platformLogin=document.createElement('button');platformLogin.type='button';platformLogin.className='staff-entry';platformLogin.textContent='Admin Platform';platformLogin.addEventListener('click',()=>login('platform'));$('.welcome-staff-options')?.append(platformLogin);
-  $('#enterGuest')?.addEventListener('click',e=>{if(typeof window.JALUR_ENTER_GUEST!=='function')return;e.preventDefault();e.stopImmediatePropagation();user=null;csrfToken='';window.JALUR_GUEST_SELECTED=true;sessionStorage.setItem('jalur-guest-mode','1');window.JALUR_ENTER_GUEST();},true);
+  $('#enterGuest')?.addEventListener('click',e=>{if(typeof window.JALUR_ENTER_GUEST!=='function')return;e.preventDefault();e.stopImmediatePropagation();user=null;csrfToken='';window.JALUR_GUEST_SELECTED=true;window.JALUR_APPLY_ROLE_NAV?.('guest',null);sessionStorage.setItem('jalur-guest-mode','1');window.JALUR_ENTER_GUEST();},true);
   // Existing student local account controls are intentionally not used for server authentication.
   $('#createAccount')?.addEventListener('click',e=>{
      e.stopImmediatePropagation();
@@ -187,22 +196,23 @@ function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;c
   window.navigate=function(page){
     if(user){
       window.JALUR_SET_ACTIVE_PAGE?.(page);
-      if(page==='Decision Journal'){
-        window.JALUR_SET_ACTIVE_PAGE?.(page);
-        api('/journal').then(d=>window.JALUR_SET_JOURNAL?.(d.items||[])).catch(err=>notice(err.message));
-        return oldNav?.(page);
-      }
       const destination=roleRoute(page,user.role);
       if(destination!==undefined){
         if(destination===null){notice('Akun ini tidak memiliki akses ke halaman tersebut.');return;}
         return serverPage(destination);
       }
+      if(page==='Decision Journal'){
+        window.JALUR_SET_ACTIVE_PAGE?.(page);
+        api('/journal').then(d=>window.JALUR_SET_JOURNAL?.(d.items||[])).catch(err=>notice(err.message));
+        return oldNav?.(page);
+      }
     }else{
-      const guestMode=sessionStorage.getItem('jalur-guest-mode')==='1'||window.JALUR_GUEST_SELECTED;
-      if(guestMode&&page==='Study Program Explorer')return serverPage('directory');
-      if(guestMode&&['BK Consultation','Anonymous Venting'].includes(page))return oldNav?.(page);
-      if(['School Portal','BK Portal','BK Consultation','Anonymous Venting','Grades'].includes(page)){
-        modal('Login diperlukan','<p>Fitur portal ini hanya dapat digunakan setelah masuk dengan akun dan peran yang sesuai.</p>');
+      if(["BK Consultation","Anonymous Venting"].includes(page)){
+        modal("Masuk dengan akun siswa","<p>Konsultasi BK dan Curhat Anonim merupakan layanan khusus siswa. Silakan masuk menggunakan akun siswa yang telah dibuat oleh pengelola sekolah.</p>");
+        return;
+      }
+      if(["School Portal","BK Portal","Grades"].includes(page)){
+        modal("Login diperlukan","<p>Portal dan data sekolah hanya dapat digunakan melalui akun dengan peran yang sesuai.</p>");
         return;
       }
     }
