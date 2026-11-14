@@ -2203,3 +2203,17 @@ html.jalur-welcome-mode .ambient.pointer-active::after{opacity:1!important}
 @media(prefers-reduced-motion:reduce){
   html.jalur-welcome-mode .ambient::after{animation:none!important}
 }
+
+/* Advanced directory controls: balanced rows on desktop, compact two-column
+   controls on narrow screens without changing the phone welcome layout. */
+.search-filters{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:9px!important}
+.search-filters>*{min-width:0}
+.search-filters #resetExplorer{align-self:stretch}
+@media(max-width:760px){
+  .search-filters{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .search-filters #resetExplorer{grid-column:1/-1}
+}
+@media(max-width:380px){
+  .search-result-program .card-bottom{grid-template-columns:1fr}
+  .search-result-program .card-bottom [data-detail-program]{grid-column:auto}
+}
