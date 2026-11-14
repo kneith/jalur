@@ -17,8 +17,8 @@ const JALUR_ROLE_MENUS = {
  school_admin:["Dashboard","School Portal","Study Program Explorer","SNBP Data","SNBT Predictor","Study Tracer Alumni","Settings","Help / About","User Guide","Official Sources"],
  teacher:["Dashboard","Study Program Explorer","SNBP Data","SNBT Predictor","Academic Profile","Study Tracer Alumni","Settings","Help / About","User Guide"],
  counselor:["Dashboard","BK Portal","Study Program Explorer","SNBP Data","SNBT Predictor","Study Tracer Alumni","Settings","Help / About","User Guide","Official Sources"],
- wellbeing_moderator:["Dashboard","Anonymous Venting","Settings","Help / About","User Guide"],
- platform_admin:["Dashboard","Settings","Help / About","User Guide"]
+ wellbeing_moderator:["Dashboard","SNBP Data","SNBT Predictor","Study Tracer Alumni","Anonymous Venting","Settings","Help / About","User Guide"],
+ platform_admin:["Dashboard","SNBP Data","SNBT Predictor","Study Tracer Alumni","Settings","Help / About","User Guide"]
 };
 for (const role of ["guest","student","school_admin","teacher","counselor"]) {
   const menu=JALUR_ROLE_MENUS[role]||[];
@@ -533,7 +533,7 @@ function snbtPredictorPage(){
  const subtestKeys=[...new Set(programs.flatMap(p=>Object.keys(p.weights||{})))];
  const subtestLabels={PU:"Penalaran Umum",PPU:"Pengetahuan dan Pemahaman Umum",PBM:"Pemahaman Bacaan dan Menulis",PK:"Pengetahuan Kuantitatif",LBI:"Literasi Bahasa Indonesia",LBE:"Literasi Bahasa Inggris",PM:"Penalaran Matematika"};
  const subScores=window.snbtSubtestScores||{};
- const weightedFor=record=>{const p=programs.find(x=>(x.code&&String(x.code)===String(record[0]))||(normalizeSearch(x.name)===normalizeSearch(record[2])&&normalizeSearch(x.campus)===normalizeSearch(record[1])));if(!p?.weights)return null;let sum=0,total=0,used=0;for(const [key,w0] of Object.entries(p.weights)){const short=key.replace(/_weight_pct$/,"");const raw=subScores[short]??subScores[short.toUpperCase()];const scoreValue=Number(raw),weight=Number(w0);if(raw!==undefined&&raw!==""&&Number.isFinite(scoreValue)&&Number.isFinite(weight)&&weight>0){sum+=scoreValue*weight;total+=weight;used++;}}return total?{score:sum/total,used}:null;};
+ const weightedFor=record=>{const p=programs.find(x=>x.code&&String(x.code)===String(record[0]))||programs.map(x=>({p:x,ns:admissionNameScore(x.name,record[2]),cs:admissionNameScore(x.campus,record[1])})).filter(x=>x.ns>=.82&&(x.cs>=.45||x.cs===0)).sort((a,b)=>(b.ns*.8+b.cs*.2)-(a.ns*.8+a.cs*.2))[0]?.p;if(!p?.weights)return null;let sum=0,total=0,used=0;for(const [key,w0] of Object.entries(p.weights)){const short=key.replace(/_weight_pct$/,"");const raw=subScores[short]??subScores[short.toUpperCase()];const scoreValue=Number(raw),weight=Number(w0);if(raw!==undefined&&raw!==""&&Number.isFinite(scoreValue)&&Number.isFinite(weight)&&weight>0){sum+=scoreValue*weight;total+=weight;used++;}}return total?{score:sum/total,used}:null;};
  const score=filters.score!==""&&Number.isFinite(Number(filters.score))?Number(filters.score):null;
  let rows=data.snbt.filter(r=>(!level||r[3]===level)&&(!q||normalizeSearch(r[0]+" "+r[1]+" "+r[2]).includes(q)));
  if(score!==null)rows.sort((a,b)=>Math.abs(score-a[6])-Math.abs(score-b[6]));
@@ -570,8 +570,8 @@ async function openAdmissionProgram(programName,institutionName){
  await loadDirectoryData();
  const candidates=programs.map(p=>{const ns=admissionNameScore(p.name,programName),cs=admissionNameScore(p.campus,institutionName);const campusOk=!normalizeSearch(institutionName)||normalizeSearch(p.campus).includes(normalizeSearch(institutionName))||normalizeSearch(institutionName).includes(normalizeSearch(p.campus))||cs>=.55;return {p,ns,cs,score:ns*.78+cs*.22,campusOk};}).filter(x=>x.ns>=.78&&x.campusOk).sort((a,b)=>b.score-a.score||alpha(a.p.name,b.p.name));
  const best=candidates[0];if(best&&(!candidates[1]||best.score-candidates[1].score>=.08||best.ns===1)){await showProgramDetail(best.p.id);return;}
- window.explorerQuery=[programName,institutionName].filter(Boolean).join(" ");window.explorerScope="Program studi";window.explorerLimit=60;navigate("Study Program Explorer");
- const root=$("#pageRoot");if(root){const note=document.createElement("div");note.className="notice section-gap";note.textContent="Nama dari sumber seleksi tidak cocok persis atau memiliki beberapa kandidat. Hasil pencarian direktori ditampilkan agar kamu dapat memilih program yang benar.";root.prepend(note);}
+ window.explorerQuery=programName;window.explorerScope="Program studi";window.explorerLimit=60;navigate("Study Program Explorer");
+ const root=$("#pageRoot");if(root){const note=document.createElement("div");note.className="notice section-gap";note.textContent="Pencarian nama program dari sumber seleksi dibuka di direktori. Kampus pada sumber: "+(institutionName||"tidak tercantum")+". Periksa hasilnya sebelum memilih program yang tepat.";root.prepend(note);}
 }
 
 function alumniPage(){
