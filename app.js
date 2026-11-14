@@ -94,13 +94,13 @@ function jalurApplyRoleNavigation(role="guest",user=null){
  bottomButtons.forEach((button,index)=>{
   const page=primary[index];
   if(!page){button.style.display="none";button.setAttribute("aria-hidden","true");return;}
-  button.style.display="flex";button.setAttribute("aria-hidden","false");button.dataset.page=page;
+  button.style.display="grid";button.setAttribute("aria-hidden","false");button.dataset.page=page;
   const icon=button.querySelector("span");if(icon)icon.textContent=JALUR_ROLE_PAGE_ICONS[page]||"◦";
   const label=button.querySelector("small");if(label)label.textContent=jalurPageLabel(page,role);
   button.title=jalurPageLabel(page,role);
  });
  const more=$("#moreNav");
- if(more){more.style.display="flex";more.classList.toggle("active",!primary.includes(currentPage));}
+ if(more){more.style.display="grid";more.classList.toggle("active",!primary.includes(currentPage));}
  const badge=$(".guest-badge");if(badge)badge.textContent=JALUR_ROLE_LABELS[role]||JALUR_ROLE_LABELS.guest;
  const chip=$(".profile-chip");
  if(chip){
