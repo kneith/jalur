@@ -4,8 +4,8 @@ from app.repositories.directory import (
 )
 from app.services import DirectoryService
 
-ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "data" / "database.js"
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+DATA = BACKEND_ROOT / "data" / "database.js"
 
 def make_service():
     repo = JSONDirectoryRepository(str(DATA))

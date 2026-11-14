@@ -3,9 +3,11 @@ name: JALUR quality checks
 on:
   push:
     branches:
+      - main
       - migration/python-fastapi
   pull_request:
     branches:
+      - main
       - migration/python-fastapi
 
 permissions:
@@ -47,15 +49,35 @@ jobs:
           node --check app.js
           node --check central.js
 
-      - name: Verify structured-choice pages do not render textareas
+      - name: Verify structured-choice pages and preserved workflows
         run: |
           python - <<'PY'
           from pathlib import Path
-          for filename in ("app.js", "central.js"):
-              content = Path(filename).read_text(encoding="utf-8").lower()
-              assert "<textarea" not in content, f"Unexpected textarea in {filename}"
+
           app = Path("app.js").read_text(encoding="utf-8")
+          central = Path("central.js").read_text(encoding="utf-8")
+          index = Path("index.html").read_text(encoding="utf-8")
+
+          for filename, content in (("app.js", app), ("central.js", central)):
+              assert "<textarea" not in content.lower(), f"Unexpected textarea in {filename}"
+
+          for page, next_page in (
+              ("function realityPage()", "function similarityPage()"),
+              ("function campusPage()", "function costPage()"),
+          ):
+              start = app.index(page)
+              end = app.index(next_page, start + len(page))
+              section = app[start:end]
+              assert "contenteditable" not in section.lower(), f"Free-text editor remains in {page}"
+
           assert 'choiceChecklist("realityQuestions"' in app
           assert 'choiceChecklist("campusQuestions"' in app
-          print("Structured-choice checks passed.")
+          assert 'choiceChecklist("ventTopics"' in app
+          assert 'function bkPortalPage()' in app
+          assert 'data-page="BK Consultation"' in index
+          assert 'data-page="Anonymous Venting"' in index
+          assert "login('moderator')" in central
+          assert "login('platform')" in central
+          assert "wellbeing_moderator" in central and "platform_admin" in central
+          print("Structured-choice, BK/curhat navigation, and staff-role checks passed.")
           PY
