@@ -102,13 +102,17 @@ jobs:
           assert '"Study Tracer Alumni":admissionsAlumniPage' in app
           assert '"SNBT Predictor":snbtPredictorPage' in app and '"SNBP Data":snbpDataPage' in app
           assert "function applyAlumniFilters(resetPage=true)" in app
-          assert "const snbtEvidence=" in app and "const snbpEvidence=" in app
+          assert 'const rows=$(".alumni-data-row"),matches=[];' in app
+          assert "function admissionNameScore(a,b)" in app and "async function admissionNameScore" not in app
+          assert "jalurSnbtRenderTimer" in app
+          assert "formatNum=admissionFormatNum" in app
+          assert "function snbtResultsHtml()" in app and "function loadSnbtWeights()" in app and "function renderSnbtResults()" in app
           assert 'class="filter-grid"' not in app and 'class="stats-grid"' not in app and 'class="link-list"' not in app
-          assert "20261115-runtime-fix-v4" in index
+          assert "20261115-runtime-fix-v6" in index
           assert "20261115-layout-stability-v1" in index
           assert "async function showProgramDetail(id)" in app
           assert 'id="snbpSearch"' in app
-          assert "const weightedFor=" in app
+          assert "weightsMap=window.JALUR_SNBT_WEIGHTS" in app
           assert "admissionNameScore" in app
           assert "updateAmbient" not in app
           assert 'class="ambient" aria-hidden="true" hidden' in index
