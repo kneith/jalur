@@ -51,12 +51,12 @@
   function formField(label,id,placeholder,type='text',required=true){return `<div class="field"><label for="${id}">${esc(label)}</label><input id="${id}" type="${type}" placeholder="${esc(placeholder)}" ${required?'required':''}></div>`}
   async function serverPage(page){
     const root=$('#pageRoot');if(!root)return;
-    const permissions={"server-home":["student"],"appointment":["student"],"vent":["student"],"server-school":["school_admin"],"school-classes":["school_admin"],"school-alumni":["school_admin"],"server-grades":["teacher"],"grades":["student","teacher","school_admin"],"server-bk":["counselor"],"server-vent":["wellbeing_moderator"],"server-platform":["platform_admin"]};
+    const permissions={"server-home":["student"],"appointment":["student"],"vent":["student"],"server-school":["school_admin"],"school-users":["school_admin"],"school-classes":["school_admin"],"school-alumni":["school_admin"],"server-grades":["teacher"],"grades":["student","teacher","school_admin"],"server-bk":["counselor"],"server-vent":["wellbeing_moderator"],"server-platform":["platform_admin"]};
     const permitted=permissions[page];
     if(permitted&&!permitted.includes(user?.role)){notice("Halaman ini tidak tersedia untuk peran akun yang sedang digunakan.");return;}
     if(page!=="directory"&&!user){notice("Silakan masuk dengan akun yang sesuai untuk membuka halaman ini.");return;}
     if(page==="directory"){window.navigate?.("Study Program Explorer");return;}
-    window.JALUR_ANIMATE_PAGE_TRANSITION?.();const activePage=({'appointment':'BK Consultation','server-bk':'BK Portal','server-school':'School Portal','server-grades':'Academic Profile','grades':'Academic Profile','server-home':'Dashboard','server-vent':'Anonymous Venting','vent':'Anonymous Venting','directory':'Study Program Explorer','server-platform':'Settings'})[page];if(activePage)window.JALUR_SET_ACTIVE_PAGE?.(activePage);root.innerHTML=`<section class="server-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat…</span></section>`;try{
+    window.JALUR_ANIMATE_PAGE_TRANSITION?.();const activePage=({'appointment':'BK Consultation','server-bk':'BK Portal','server-school':'School Portal','school-users':'School Portal','school-classes':'School Portal','school-alumni':'School Portal','server-grades':'Academic Profile','grades':'Academic Profile','server-home':'Dashboard','server-vent':'Anonymous Venting','vent':'Anonymous Venting','directory':'Study Program Explorer','server-platform':'Settings'})[page];if(activePage)window.JALUR_SET_ACTIVE_PAGE?.(activePage);root.innerHTML=`<section class="server-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat…</span></section>`;try{
     if(page==='directory'){root.innerHTML=`${pageHead('Direktori Pendidikan','Pencarian server berdasarkan universitas, jurusan, atau program studi. Hasil alfabetis dan dimuat bertahap.')}<section class="panel glass"><form id="directoryForm" class="form-grid"><div class="field"><label for="directoryType">Cari berdasarkan</label><select id="directoryType"><option value="all">Semua</option><option value="institution">Perguruan tinggi</option><option value="program">Program studi / jurusan</option></select></div><div class="field"><label for="directoryQuery">Kata kunci</label><input id="directoryQuery" placeholder="Ketik nama universitas atau prodi…" autocomplete="off"></div></form><p id="directoryMeta" class="source-line">Masukkan sedikitnya dua karakter agar pencarian dapat menampilkan hasil yang sesuai.</p><div id="directoryResults"></div><button class="btn secondary" id="directoryMore" hidden>Muat hasil berikutnya</button></section>`;wireDirectory();return;}
     if(page==='server-platform'){
       root.innerHTML=`${pageHead('Administrasi Platform','Kelola akun lintas sekolah dan akses Moderator Curhat.')}<section class="panel glass"><h2>Buat akun Moderator Curhat</h2><p class="source-line">Akun moderator memiliki akses global ke pesan curhat anonim. Berikan akses hanya kepada petugas yang ditunjuk dan sampaikan kata sandi sementara melalui kanal terpisah.</p><form id="centralCreateModerator" class="form-grid">${formField('Nama lengkap','moderatorFullName','Nama lengkap')}${formField('Email','moderatorEmail','moderator@jalur.id','email')}${formField('Kata sandi sementara (minimal 14 karakter)','moderatorPassword','Kata sandi kuat','password')}<div class="field full"><button class="btn primary">Buat akun Moderator Curhat</button></div></form></section>`;
@@ -72,8 +72,9 @@
     if(page==='server-vent'){const d=await api('/anonymous-ventings');root.innerHTML=`${pageHead('Moderasi Curhat Anonim','Isi curhat tidak dikaitkan dengan identitas pengirim. Akses ini khusus moderator yang ditunjuk.')}<section class="panel glass">${d.items.length?d.items.map(v=>`<article class="program-card glass"><span class="program-kicker">${esc(v.received_day)} dan ${esc(v.category)}</span><p style="white-space:pre-wrap">${esc(v.text)}</p><label>Status</label><select data-vent-status="${esc(v.id)}"><option value="unreviewed" ${v.status==='unreviewed'?'selected':''}>Belum ditinjau</option><option value="reviewed" ${v.status==='reviewed'?'selected':''}>Ditinjau</option><option value="resource_shared" ${v.status==='resource_shared'?'selected':''}>Sumber bantuan diberikan</option><option value="closed" ${v.status==='closed'?'selected':''}>Ditutup</option></select></article>`).join(''):'<p>Belum ada curhat yang perlu ditinjau.</p>'}</section>`;root.querySelectorAll('[data-vent-status]').forEach(s=>s.onchange=async()=>{try{await api('/anonymous-ventings/'+s.dataset.ventStatus+'/status',{method:'PATCH',body:{status:s.value}});notice('Status diperbarui.');}catch(err){notice(err.message)}});return;}
 
     if(page==='server-school'){
-      const [students,alumni,grades,classData,teacherData,assignmentData]=await Promise.all([
+      const [students,accounts,alumni,grades,classData,teacherData,assignmentData]=await Promise.all([
         api('/school/students').catch(()=>({items:[]})),
+        api('/school/users?limit=500').catch(()=>({items:[],total:0})),
         api('/school/alumni').catch(()=>({items:[]})),
         api('/grades').catch(()=>({items:[]})),
         api('/school/classes').catch(()=>({items:[]})),
@@ -81,11 +82,15 @@
         api('/school/teacher-assignments').catch(()=>({items:[]}))
       ]);
       const classes=classData.items||[],teachers=teacherData.items||[],assignments=assignmentData.items||[];
+      const accountRows=accounts.items||[];
+      const studentCount=accountRows.filter(x=>x.role==='student').length;
+      const teacherCount=accountRows.filter(x=>x.role==='teacher').length;
+      const counselorCount=accountRows.filter(x=>x.role==='counselor').length;
       const classOptions='<option value="">Pilih kelas</option>'+classes.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+' dan '+esc(x.academic_year)+'</option>').join('');
       const teacherOptions='<option value="">Pilih guru</option>'+teachers.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.full_name)+' dan '+esc(x.email)+'</option>').join('');
       const assignmentCards=assignments.length?assignments.map(x=>'<article class="program-card glass"><h3>'+esc(x.teacher_name)+'</h3><p>'+esc(x.class_name)+' dan '+esc(x.academic_year)+'</p><p>'+esc(x.subject_name)+'</p></article>').join(''):'<p>Belum ada penugasan guru. Tambahkan akun guru dan kelas terlebih dahulu.</p>';
       root.innerHTML=pageHead('Portal Pengelola Sekolah','Kelola akun, kelas, penugasan guru, dan data pendidikan. Semua perubahan disimpan ke database pusat.')+
-        '<div class="card-grid"><article class="panel glass"><h2>Siswa</h2><p>'+students.items.length+' siswa terdaftar.</p><button class="btn secondary" data-server-page="school-users">Tambah akun</button></article><article class="panel glass"><h2>Kelas</h2><p>'+classes.length+' kelas terdaftar.</p><button class="btn secondary" data-server-page="school-classes">Kelola kelas</button></article><article class="panel glass"><h2>Rapor</h2><p>'+grades.items.length+' catatan nilai dapat diakses peran ini.</p><button class="btn secondary" data-server-page="grades">Lihat rapor</button></article><article class="panel glass"><h2>Alumni</h2><p>'+alumni.items.length+' profil alumni.</p><button class="btn secondary" data-server-page="school-alumni">Kelola alumni</button></article><article class="panel glass"><h2>Direktori pendidikan</h2><button class="btn secondary" data-server-page="directory">Cari direktori</button></article></div>'+
+        '<div class="card-grid"><article class="panel glass"><h2>Manajemen akun</h2><p>'+accounts.total+' akun sekolah terdaftar. '+studentCount+' siswa, '+teacherCount+' guru, dan '+counselorCount+' Guru BK tercatat.</p><button class="btn secondary" data-server-page="school-users">Kelola akun & pemulihan</button></article><article class="panel glass"><h2>Kelas</h2><p>'+classes.length+' kelas terdaftar.</p><button class="btn secondary" data-server-page="school-classes">Kelola kelas</button></article><article class="panel glass"><h2>Rapor</h2><p>'+grades.items.length+' catatan nilai dapat diakses peran ini.</p><button class="btn secondary" data-server-page="grades">Lihat rapor</button></article><article class="panel glass"><h2>Alumni</h2><p>'+alumni.items.length+' profil alumni.</p><button class="btn secondary" data-server-page="school-alumni">Kelola alumni</button></article><article class="panel glass"><h2>Direktori pendidikan</h2><button class="btn secondary" data-server-page="directory">Cari direktori</button></article></div>'+
         '<section class="panel glass section-gap"><h2>Buat akun siswa / guru / BK</h2><form id="centralCreateUser" class="form-grid">'+
         formField('Nama lengkap','newUserName','Nama lengkap')+formField('Email','newUserEmail','nama@sekolah.id','email')+formField('Kata sandi sementara (minimal 14 karakter)','newUserPassword','Kata sandi kuat','password')+
         '<div class="field"><label for="newUserRole">Peran</label><select id="newUserRole"><option value="student">Siswa</option><option value="teacher">Guru mata pelajaran</option><option value="counselor">Guru BK</option></select></div>'+
@@ -129,17 +134,70 @@
       };
       return;
     }
+    if(page==='school-users'){
+      const [accountData,classData,historyData]=await Promise.all([
+        api('/school/users?limit=500'),
+        api('/school/classes'),
+        api('/school/account-history?limit=100')
+      ]);
+      const accounts=accountData.items||[],classes=classData.items||[],history=historyData.items||[];
+      const roleLabel={student:'Siswa',teacher:'Guru mata pelajaran',counselor:'Guru BK'};
+      const statusLabel={active:'Aktif',disabled:'Nonaktif',pending:'Menunggu'};
+      const roleOptions='<option value="all">Semua peran</option><option value="student">Siswa</option><option value="teacher">Guru</option><option value="counselor">Guru BK</option>';
+      const statusOptions='<option value="all">Semua status</option><option value="active">Aktif</option><option value="disabled">Nonaktif</option><option value="pending">Menunggu</option>';
+      const rows=accounts.map(x=>{
+        const search=[x.full_name,x.email,x.student_number,x.class_name].filter(Boolean).join(' ').toLowerCase();
+        return '<tr data-school-user-row data-role="'+esc(x.role)+'" data-status="'+esc(x.status)+'" data-search="'+esc(search)+'">'+
+          '<td><strong>'+esc(x.full_name)+'</strong><br><small>'+esc(x.email)+'</small></td>'+
+          '<td>'+esc(roleLabel[x.role]||x.role)+'</td>'+
+          '<td>'+(x.role==='student'?esc(x.student_number||'Belum ada NIS')+'<br><small>'+esc(x.class_name||'Belum masuk kelas')+'</small>':'—')+'</td>'+
+          '<td><span class="data-tag">'+esc(statusLabel[x.status]||x.status)+'</span></td>'+
+          '<td>'+esc(x.created_at?new Date(x.created_at).toLocaleDateString('id-ID'):'—')+'</td>'+
+          '<td><div class="table-actions"><button class="btn secondary small" data-school-user-edit="'+esc(x.id)+'">Edit</button><button class="btn secondary small" data-school-user-reset="'+esc(x.id)+'">Reset sandi</button><button class="btn secondary small" data-school-user-status="'+esc(x.id)+'" data-next-status="'+(x.status==='active'?'disabled':'active')+'">'+(x.status==='active'?'Nonaktifkan':'Aktifkan')+'</button></div></td></tr>';
+      }).join('');
+      const historyRows=history.map(x=>{
+        const labels={'school_user.create':'Akun dibuat','school_user.update':'Data akun diubah','school_user.status':'Status akun diubah','school_user.password_reset':'Password direset','school_class.update':'Data kelas diubah'};
+        const target=x.target_name||x.class_name||x.entity_id||'—';
+        return '<tr><td>'+esc(labels[x.action]||x.action)+'</td><td>'+esc(target)+'</td><td>'+esc(x.target_email||'—')+'</td><td>'+esc(x.actor_name||'Pengelola')+'</td><td>'+esc(x.created_at?new Date(x.created_at).toLocaleString('id-ID'):'—')+'</td></tr>';
+      }).join('');
+      root.innerHTML=pageHead('Manajemen Akun Sekolah','Tinjau seluruh akun siswa, guru, dan Guru BK; perbarui data; aktifkan atau nonaktifkan akses; serta bantu pemulihan akun.')+
+        '<section class="panel glass"><div class="panel-head"><h2>Daftar akun</h2><span class="data-tag">'+accountData.total+' akun</span></div>'+
+        '<p class="notice">Password lama tidak dapat dibaca oleh siapa pun. Pengelola dapat membuat password sementara baru ketika pengguna lupa, lalu menyampaikannya melalui kanal terpisah. Password sementara hanya ditampilkan satu kali.</p>'+
+        '<div class="search-row"><input id="schoolUserSearch" class="search-input" placeholder="Cari nama, email, NIS, atau kelas…" autocomplete="off"><select id="schoolUserRoleFilter" class="filter-select">'+roleOptions+'</select><select id="schoolUserStatusFilter" class="filter-select">'+statusOptions+'</select></div>'+
+        '<div class="table-wrap"><table class="data-table"><thead><tr><th>Pengguna</th><th>Peran</th><th>Data siswa</th><th>Status</th><th>Terdaftar</th><th>Aksi</th></tr></thead><tbody id="schoolUserRows">'+(rows||'<tr><td colspan="6">Belum ada akun.</td></tr>')+'</tbody></table></div>'+
+        (accountData.total>accounts.length?'<p class="source-line">Menampilkan '+accounts.length+' dari '+accountData.total+' akun. Gunakan pencarian untuk mempersempit hasil.</p>':'')+
+        '</section><section class="panel glass section-gap"><div class="panel-head"><h2>Riwayat pengelolaan</h2><span class="data-tag">100 terbaru</span></div>'+
+        '<p class="source-line">Riwayat memuat pembuatan dan perubahan akun, perubahan status, reset password, serta perubahan kelas. Password dan token tidak pernah dicatat.</p>'+
+        (history.length?'<div class="table-wrap"><table class="data-table"><thead><tr><th>Tindakan</th><th>Pengguna / kelas</th><th>Email</th><th>Dilakukan oleh</th><th>Waktu</th></tr></thead><tbody>'+historyRows+'</tbody></table></div>':'<p>Belum ada riwayat perubahan akun yang tercatat.</p>')+
+        '</section>';
+      const applyFilters=()=>{
+        const q=$('#schoolUserSearch').value.trim().toLowerCase(),role=$('#schoolUserRoleFilter').value,status=$('#schoolUserStatusFilter').value;
+        $('#schoolUserRows').querySelectorAll('[data-school-user-row]').forEach(row=>{
+          row.hidden=!!((q&&!row.dataset.search.includes(q))||(role!=='all'&&row.dataset.role!==role)||(status!=='all'&&row.dataset.status!==status));
+        });
+      };
+      $('#schoolUserSearch').oninput=applyFilters;$('#schoolUserRoleFilter').onchange=applyFilters;$('#schoolUserStatusFilter').onchange=applyFilters;
+      return;
+    }
     if(page==='school-classes'){
-      const d=await api('/school/classes');
-      root.innerHTML=pageHead('Kelas Sekolah','Buat kelas dan lihat daftar kelas pada sekolahmu.')+
-        '<section class="panel glass"><form id="centralCreateClass" class="form-grid">'+
-        '<div class="field"><label for="classNameServer">Kelas</label><select id="classNameServer" required><option value="">Pilih kelas</option>'+Array.from({length:3},(_,i)=>10+i).flatMap(level=>Array.from({length:7},(_,j)=>level+'-'+(j+1))).map(name=>'<option value="'+name+'">'+name+'</option>').join('')+'</select></div>'+
+      const [classData,teacherData]=await Promise.all([
+        api('/school/classes'),
+        api('/school/users?role=teacher&status=active&limit=500')
+      ]);
+      const classes=classData.items||[],teachers=teacherData.items||[];
+      root.innerHTML=pageHead('Pengelolaan Kelas','Buat kelas baru, ubah nama dan tahun ajaran, tetapkan wali kelas, serta tinjau siswa pada setiap kelas.')+
+        '<section class="panel glass"><h2>Tambah kelas</h2><form id="centralCreateClass" class="form-grid">'+
+        formField('Nama kelas','classNameServer','Contoh: X-1, XI IPA 2, atau XII IPS 1')+
         formField('Tahun ajaran','classYearServer','2026/2027')+
         '<div class="field full"><button class="btn primary">Simpan kelas</button></div></form></section>'+
-        '<section class="panel glass section-gap"><h2>Daftar kelas</h2>'+
-        (d.items.length?d.items.map(x=>'<article class="program-card glass"><h3>'+esc(x.name)+'</h3><p>'+esc(x.academic_year)+'</p></article>').join(''):'<p>Belum ada kelas terdaftar.</p>')+
-        '</section>';
-      $('#centralCreateClass').onsubmit=async e=>{e.preventDefault();try{await api('/school/classes',{method:'POST',body:{name:$('#classNameServer').value.trim(),academic_year:$('#classYearServer').value.trim()}});notice('Kelas tersimpan.');serverPage('school-classes')}catch(err){notice(err.message)}};
+        '<section class="panel glass section-gap"><div class="panel-head"><h2>Daftar kelas</h2><span class="data-tag">'+classes.length+' kelas</span></div>'+
+        (classes.length?'<div class="table-wrap"><table class="data-table"><thead><tr><th>Kelas</th><th>Wali kelas</th><th>Siswa</th><th>Aksi</th></tr></thead><tbody>'+
+          classes.map(x=>'<tr><td><strong>'+esc(x.name)+'</strong><br><small>'+esc(x.academic_year)+'</small></td><td>'+esc(x.homeroom_teacher_name||'Belum ditetapkan')+'</td><td>'+Number(x.student_count||0)+'</td><td><div class="table-actions"><button class="btn secondary small" data-school-class-edit="'+esc(x.id)+'">Edit</button><button class="btn secondary small" data-school-class-roster="'+esc(x.id)+'">Lihat siswa</button></div></td></tr>').join('')+
+          '</tbody></table></div>':'<p>Belum ada kelas terdaftar. Tambahkan kelas pertama menggunakan formulir di atas.</p>')+'</section>';
+      $('#centralCreateClass').onsubmit=async e=>{e.preventDefault();try{
+        await api('/school/classes',{method:'POST',body:{name:$('#classNameServer').value.trim(),academic_year:$('#classYearServer').value.trim()}});
+        notice('Kelas tersimpan.');serverPage('school-classes');
+      }catch(err){notice(err.message)}};
       return;
     }
     if(page==='school-alumni'){const d=await api('/school/alumni');const currentYear=new Date().getFullYear();const yearOptions=Array.from({length:151},(_,i)=>2100-i).map(y=>'<option value="'+y+'">'+y+'</option>').join('');root.innerHTML=`${pageHead('Data Alumni','Catat informasi alumni setelah memperoleh persetujuan yang diperlukan agar informasi yang dibagikan tetap menghormati privasi mereka.')}<section class="panel glass"><form id="centralCreateAlumni" class="form-grid">${formField('Nama alumni','alumniNameServer','Nama lengkap')}<div class="field"><label for="alumniYearServer">Tahun lulus</label><select id="alumniYearServer" required><option value="">Pilih tahun</option>${yearOptions}</select></div><div class="field"><label for="alumniNextServer">Langkah setelah lulus</label><select id="alumniNextServer"><option value="">Belum ditentukan</option><option value="Melanjutkan pendidikan">Melanjutkan pendidikan</option><option value="Bekerja">Bekerja</option><option value="Wirausaha">Wirausaha</option><option value="Gap year">Gap year</option><option value="Lainnya">Lainnya</option></select></div>${formField('Perguruan tinggi / tempat','alumniInstitutionServer','Nama institusi','text',false)}${formField('Program studi','alumniProgramServer','Nama program studi','text',false)}<div class="field full"><label class="choice-check"><input id="alumniConsentServer" type="checkbox"> <span>Alumni menyetujui informasi ini dibagikan</span></label></div><div class="field full"><button class="btn primary" type="submit">Simpan alumni</button></div></form><h2>Alumni tersimpan</h2>${d.items.map(a=>`<article class="program-card glass"><h3>${esc(a.full_name)}</h3><p>${esc(a.graduation_year)} dan ${esc(a.next_step||'Belum ditentukan')}</p><p>${esc(a.institution||'Belum dicantumkan')} dan ${esc(a.program||'Belum dicantumkan')}</p><p>Persetujuan berbagi informasi ${a.consent_to_share?'Diberikan':'Belum diberikan'}</p></article>`).join('')||'<p>Belum ada data alumni.</p>'}</section>`;$('#centralCreateAlumni').onsubmit=async e=>{e.preventDefault();try{const year=Number($('#alumniYearServer').value);if(!Number.isInteger(year)||year<1950||year>2100)throw new Error('Pilih tahun kelulusan yang valid.');await api('/school/alumni',{method:'POST',body:{full_name:$('#alumniNameServer').value.trim(),graduation_year:year,next_step:$('#alumniNextServer').value.trim(),institution:$('#alumniInstitutionServer').value.trim(),program:$('#alumniProgramServer').value.trim(),consent_to_share:$('#alumniConsentServer').checked}});notice('Data alumni berhasil disimpan.');serverPage('school-alumni')}catch(err){notice(err.message)}};$('#alumniYearServer').value=String(currentYear);return;}
@@ -163,7 +221,7 @@ function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;c
   }
   document.addEventListener('click',e=>{
     const p=e.target.closest('[data-server-page]');
-    if(p){e.preventDefault();if(p.dataset.serverPage==='school-users'){$('#centralCreateUser')?.scrollIntoView({behavior:'smooth',block:'center'});return;}serverPage(p.dataset.serverPage);return;}
+    if(p){e.preventDefault();serverPage(p.dataset.serverPage);return;}
     const nav=e.target.closest('[data-page]');
     if(!nav||!user)return;
     const destination=roleRoute(nav.dataset.page,user.role);
@@ -172,6 +230,103 @@ function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;c
     if(destination===null){notice('Akun ini tidak memiliki akses ke halaman tersebut.');return;}
     serverPage(destination);
   },true);
+  document.addEventListener('click',async e=>{
+    const editUser=e.target.closest('[data-school-user-edit]');
+    if(editUser){
+      try{
+        const [data,classData]=await Promise.all([api('/school/users?limit=500'),api('/school/classes')]);
+        const account=(data.items||[]).find(x=>x.id===editUser.dataset.schoolUserEdit);
+        if(!account)throw new Error('Akun tidak ditemukan.');
+        const isStudent=account.role==='student';
+        const classOptions='<option value="">Belum ditetapkan</option>'+(classData.items||[]).map(x=>'<option value="'+esc(x.id)+'" '+(x.id===account.class_id?'selected':'')+'>'+esc(x.name)+' · '+esc(x.academic_year)+'</option>').join('');
+        modal('Edit data akun', '<form id="schoolAccountEditForm" class="form-grid">'+
+          formField('Nama lengkap','editAccountName','Nama lengkap')+
+          formField('Email','editAccountEmail','nama@sekolah.id','email')+
+          (isStudent?'<div class="field"><label for="editAccountNis">Nomor induk siswa</label><input id="editAccountNis" maxlength="40" required value="'+esc(account.student_number||'')+'"></div>'+
+          '<div class="field"><label for="editAccountClass">Kelas</label><select id="editAccountClass">'+classOptions+'</select></div>'+
+          '<div class="field"><label for="editAccountGrad">Tahun lulus (opsional)</label><input id="editAccountGrad" type="number" min="1950" max="2100" value="'+esc(account.graduation_year??'')+'"></div>':'')+
+          '<div class="field full"><button class="btn primary" type="submit">Simpan perubahan</button></div></form>');
+        $('#editAccountName').value=account.full_name||'';$('#editAccountEmail').value=account.email||'';
+        $('#schoolAccountEditForm').onsubmit=async ev=>{
+          ev.preventDefault();
+          const body={full_name:$('#editAccountName').value.trim(),email:$('#editAccountEmail').value.trim()};
+          if(isStudent){
+            body.student_number=$('#editAccountNis').value.trim();
+            body.class_id=$('#editAccountClass').value||null;
+            body.graduation_year=$('#editAccountGrad').value?Number($('#editAccountGrad').value):null;
+          }
+          try{
+            await api('/school/users/'+encodeURIComponent(account.id),{method:'PATCH',body});
+            dismissLoginModal();notice('Data akun berhasil diperbarui.');serverPage('school-users');
+          }catch(err){notice(err.message);}
+        };
+      }catch(err){notice(err.message);}
+      return;
+    }
+    const resetUser=e.target.closest('[data-school-user-reset]');
+    if(resetUser){
+      if(!confirm('Buat password sementara baru untuk akun ini? Password lama akan langsung tidak berlaku dan semua sesi aktif akan dikeluarkan.'))return;
+      try{
+        const result=await api('/school/users/'+encodeURIComponent(resetUser.dataset.schoolUserReset)+'/reset-password',{method:'POST'});
+        modal('Password sementara berhasil dibuat','<p>Password baru ini hanya ditampilkan sekarang. Salin dan sampaikan kepada pemilik akun melalui kanal terpisah.</p>'+
+          '<div class="field"><label for="oneTimeResetPassword">Password sementara</label><input id="oneTimeResetPassword" type="text" readonly value="'+esc(result.temporary_password)+'"></div>'+
+          '<button class="btn primary" type="button" id="copyOneTimeResetPassword">Salin password</button><p class="source-line">Riwayat hanya mencatat waktu reset dan pengelolanya, bukan isi password.</p>');
+        $('#copyOneTimeResetPassword').onclick=async()=>{
+          const field=$('#oneTimeResetPassword');
+          try{await navigator.clipboard.writeText(result.temporary_password);notice('Password sementara disalin.');}
+          catch{field.select();document.execCommand('copy');notice('Password sementara disalin.');}
+        };
+        serverPage('school-users');
+      }catch(err){notice(err.message);}
+      return;
+    }
+    const statusUser=e.target.closest('[data-school-user-status]');
+    if(statusUser){
+      const next=statusUser.dataset.nextStatus;
+      if(!confirm(next==='disabled'?'Nonaktifkan akun ini? Semua sesi aktifnya akan dicabut.':'Aktifkan kembali akun ini?'))return;
+      try{
+        await api('/school/users/'+encodeURIComponent(statusUser.dataset.schoolUserStatus)+'/status',{method:'PATCH',body:{status:next}});
+        notice('Status akun berhasil diperbarui.');serverPage('school-users');
+      }catch(err){notice(err.message);}
+      return;
+    }
+    const editClass=e.target.closest('[data-school-class-edit]');
+    if(editClass){
+      try{
+        const [classData,teacherData]=await Promise.all([api('/school/classes'),api('/school/users?role=teacher&status=active&limit=500')]);
+        const item=(classData.items||[]).find(x=>x.id===editClass.dataset.schoolClassEdit);
+        if(!item)throw new Error('Kelas tidak ditemukan.');
+        const teacherOptions='<option value="">Belum ditetapkan</option>'+(teacherData.items||[]).map(t=>'<option value="'+esc(t.id)+'" '+(t.id===item.homeroom_teacher_id?'selected':'')+'>'+esc(t.full_name)+' · '+esc(t.email)+'</option>').join('');
+        modal('Edit kelas','<form id="schoolClassEditForm" class="form-grid">'+
+          formField('Nama kelas','editClassName','Nama kelas')+
+          formField('Tahun ajaran','editClassYear','2026/2027')+
+          '<div class="field full"><label for="editClassHomeroom">Wali kelas</label><select id="editClassHomeroom">'+teacherOptions+'</select></div>'+
+          '<div class="field full"><button class="btn primary" type="submit">Simpan perubahan kelas</button></div></form>');
+        $('#editClassName').value=item.name||'';$('#editClassYear').value=item.academic_year||'';
+        $('#schoolClassEditForm').onsubmit=async ev=>{
+          ev.preventDefault();
+          try{
+            await api('/school/classes/'+encodeURIComponent(item.id),{method:'PATCH',body:{name:$('#editClassName').value.trim(),academic_year:$('#editClassYear').value.trim(),homeroom_teacher_id:$('#editClassHomeroom').value||null}});
+            dismissLoginModal();notice('Data kelas berhasil diperbarui.');serverPage('school-classes');
+          }catch(err){notice(err.message);}
+        };
+      }catch(err){notice(err.message);}
+      return;
+    }
+    const classRoster=e.target.closest('[data-school-class-roster]');
+    if(classRoster){
+      try{
+        const [classData,students]=await Promise.all([api('/school/classes'),api('/school/users?role=student&status=all&limit=500')]);
+        const item=(classData.items||[]).find(x=>x.id===classRoster.dataset.schoolClassRoster);
+        if(!item)throw new Error('Kelas tidak ditemukan.');
+        const members=(students.items||[]).filter(x=>x.class_id===item.id);
+        const rosterRows=members.map(x=>'<tr><td>'+esc(x.full_name)+'</td><td>'+esc(x.student_number||'—')+'</td><td>'+esc(x.email)+'</td><td><button class="btn secondary small" data-school-user-edit="'+esc(x.id)+'">Edit</button></td></tr>').join('');
+        modal('Siswa · '+item.name,'<p class="source-line">'+members.length+' siswa terdaftar pada '+esc(item.academic_year)+'. Untuk memindahkan siswa, pilih kelas lain pada menu Edit akun.</p>'+
+          (members.length?'<div class="table-wrap"><table class="data-table"><thead><tr><th>Nama</th><th>NIS</th><th>Email</th><th>Aksi</th></tr></thead><tbody>'+rosterRows+'</tbody></table></div>':'<p>Belum ada siswa di kelas ini.</p>'));
+      }catch(err){notice(err.message);}
+      return;
+    }
+  });
   document.addEventListener('click',async e=>{const edit=e.target.closest('[data-grade-edit]');if(edit){editingGradeId=edit.dataset.gradeEdit;serverPage('grades');return;}if(e.target.closest('#cancelGradeEdit')){editingGradeId=null;serverPage('grades');return;}const del=e.target.closest('[data-grade-delete]');if(del){if(!confirm('Hapus nilai ini?'))return;try{await api('/grades/'+encodeURIComponent(del.dataset.gradeDelete),{method:'DELETE'});notice('Nilai dihapus.');serverPage('grades')}catch(err){notice(err.message)}return;}if(e.target.closest('#printGrades'))window.print();});
   document.addEventListener('click',e=>{if(e.target.closest('#centralLogout')){api('/auth/logout',{method:'POST'}).catch(()=>{}).finally(()=>{sessionStorage.removeItem('jalur-app-open');sessionStorage.removeItem('jalur-guest-mode');history.replaceState({},'',location.pathname+location.search);user=null;csrfToken='';window.JALUR_APPLY_ROLE_NAV?.('guest',null);$('#app')?.classList.add('hidden');$('#welcome')?.classList.remove('hidden');notice('Kamu sudah keluar.');});}});
   $('#enterSchool')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('school')},true);

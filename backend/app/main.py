@@ -553,6 +553,24 @@ class SchoolClassInput(BaseModel):
     academic_year: str = Field(min_length=4, max_length=20)
 
 
+class SchoolClassUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    academic_year: str = Field(min_length=4, max_length=20)
+    homeroom_teacher_id: uuid.UUID | None = None
+
+
+class SchoolUserUpdate(BaseModel):
+    full_name: str | None = Field(default=None, min_length=1, max_length=120)
+    email: EmailStr | None = None
+    student_number: str | None = Field(default=None, max_length=40)
+    class_id: uuid.UUID | None = None
+    graduation_year: int | None = Field(default=None, ge=1950, le=2100)
+
+
+class SchoolUserStatusInput(BaseModel):
+    status: Literal["active", "disabled"]
+
+
 class TeacherAssignmentInput(BaseModel):
     teacher_id: uuid.UUID
     class_id: uuid.UUID
@@ -728,6 +746,59 @@ def get_school_students(request: Request):
     return {"items": [dict(row) for row in rows]}
 
 
+@app.get("/api/school/users")
+def get_school_users(
+    request: Request,
+    q: str = Query("", max_length=100),
+    role: str = Query("all", pattern="^(all|student|teacher|counselor)$"),
+    status: str = Query("all", pattern="^(all|active|disabled|pending)$"),
+    limit: int = Query(200, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+
+    filters = ["u.school_id=%s", "u.role IN ('student','teacher','counselor')"]
+    params: list[Any] = [school_id]
+    if role != "all":
+        filters.append("u.role=%s")
+        params.append(role)
+    if status != "all":
+        filters.append("u.status=%s")
+        params.append(status)
+    search = q.strip()
+    if search:
+        filters.append("(u.full_name ILIKE %s OR u.email ILIKE %s OR COALESCE(sp.student_number,'') ILIKE %s)")
+        params.extend([f"%{search}%"] * 3)
+    where_sql = " AND ".join(filters)
+    with connection() as conn:
+        total = conn.execute(
+            f"""SELECT count(*) AS total
+                FROM users u
+                LEFT JOIN student_profiles sp ON sp.user_id=u.id AND sp.school_id=u.school_id
+                WHERE {where_sql}""",
+            params,
+        ).fetchone()["total"]
+        rows = conn.execute(
+            f"""SELECT u.id, u.email, u.full_name, u.role, u.status,
+                       u.created_at, u.updated_at,
+                       sp.student_number, sp.graduation_year, sp.class_id,
+                       c.name AS class_name, c.academic_year
+                FROM users u
+                LEFT JOIN student_profiles sp ON sp.user_id=u.id AND sp.school_id=u.school_id
+                LEFT JOIN school_classes c ON c.id=sp.class_id AND c.school_id=u.school_id
+                WHERE {where_sql}
+                ORDER BY CASE u.role WHEN 'student' THEN 1 WHEN 'teacher' THEN 2 ELSE 3 END,
+                         u.full_name
+                LIMIT %s OFFSET %s""",
+            [*params, limit, offset],
+        ).fetchall()
+    # Never select password_hash or session/token fields for this endpoint.
+    return {"items": [dict(row) for row in rows], "total": total, "limit": limit, "offset": offset}
+
+
 @app.get("/api/school/classes")
 def get_school_classes(request: Request):
     actor = _require_roles(request, "school_admin")
@@ -736,9 +807,17 @@ def get_school_classes(request: Request):
         raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
     with connection() as conn:
         rows = conn.execute(
-            """SELECT id, name, academic_year, homeroom_teacher_id
-               FROM school_classes WHERE school_id=%s
-               ORDER BY academic_year DESC, name LIMIT 500""",
+            """SELECT c.id, c.name, c.academic_year, c.homeroom_teacher_id,
+                      t.full_name AS homeroom_teacher_name,
+                      count(sp.user_id)::int AS student_count
+               FROM school_classes c
+               LEFT JOIN users t ON t.id=c.homeroom_teacher_id
+                    AND t.school_id=c.school_id AND t.role='teacher'
+               LEFT JOIN student_profiles sp ON sp.class_id=c.id
+                    AND sp.school_id=c.school_id
+               WHERE c.school_id=%s
+               GROUP BY c.id, t.full_name
+               ORDER BY c.academic_year DESC, c.name LIMIT 500""",
             (school_id,),
         ).fetchall()
     return {"items": [dict(row) for row in rows]}
@@ -771,6 +850,80 @@ def create_school_class(payload: SchoolClassInput, request: Request):
         ).fetchone()
         _audit_event(conn, actor, "school_class.create", "school_class", item["id"])
     return {"item": dict(item), "message": "Kelas berhasil dibuat."}
+
+
+@app.patch("/api/school/classes/{class_id}")
+def update_school_class(class_id: uuid.UUID, payload: SchoolClassUpdate, request: Request):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    name = payload.name.strip()
+    year = payload.academic_year.strip()
+    if not name or len(year) < 4:
+        raise HTTPException(422, "Nama kelas dan tahun ajaran wajib diisi.")
+    with connection() as conn:
+        current = conn.execute(
+            "SELECT id FROM school_classes WHERE id=%s AND school_id=%s",
+            (class_id, school_id),
+        ).fetchone()
+        if not current:
+            raise HTTPException(404, "Kelas tidak ditemukan di sekolah ini.")
+        if payload.homeroom_teacher_id:
+            teacher = conn.execute(
+                """SELECT id FROM users
+                   WHERE id=%s AND school_id=%s AND role='teacher' AND status='active'""",
+                (payload.homeroom_teacher_id, school_id),
+            ).fetchone()
+            if not teacher:
+                raise HTTPException(400, "Wali kelas harus merupakan akun guru aktif di sekolah ini.")
+        try:
+            item = conn.execute(
+                """UPDATE school_classes
+                   SET name=%s, academic_year=%s, homeroom_teacher_id=%s
+                   WHERE id=%s AND school_id=%s
+                   RETURNING id, name, academic_year, homeroom_teacher_id""",
+                (name, year, payload.homeroom_teacher_id, class_id, school_id),
+            ).fetchone()
+        except Exception as exc:
+            if getattr(exc, "sqlstate", None) == "23505":
+                raise HTTPException(409, "Nama kelas dan tahun ajaran tersebut sudah digunakan.") from exc
+            raise
+        _audit_event(conn, actor, "school_class.update", "school_class", class_id)
+    return {"item": dict(item), "message": "Data kelas berhasil diperbarui."}
+
+
+@app.get("/api/school/account-history")
+def get_school_account_history(request: Request, limit: int = Query(100, ge=1, le=200)):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    with connection() as conn:
+        rows = conn.execute(
+            """SELECT ae.id, ae.action, ae.entity_type, ae.entity_id, ae.created_at,
+                      actor_user.full_name AS actor_name,
+                      target_user.full_name AS target_name,
+                      target_user.email AS target_email,
+                      target_class.name AS class_name
+               FROM audit_events ae
+               LEFT JOIN users actor_user ON actor_user.id=ae.actor_id
+               LEFT JOIN users target_user
+                 ON ae.entity_type='user' AND target_user.id::text=ae.entity_id
+                AND target_user.school_id=ae.school_id
+               LEFT JOIN school_classes target_class
+                 ON ae.entity_type='school_class' AND target_class.id::text=ae.entity_id
+                AND target_class.school_id=ae.school_id
+               WHERE ae.school_id=%s
+                 AND ae.action IN (
+                   'school_user.create','school_user.update','school_user.status',
+                   'school_user.password_reset','school_class.update'
+                 )
+               ORDER BY ae.created_at DESC
+               LIMIT %s""",
+            (school_id, limit),
+        ).fetchall()
+    return {"items": [dict(row) for row in rows]}
 
 
 @app.get("/api/school/alumni")
@@ -865,6 +1018,143 @@ def create_school_user(payload: SchoolUserInput, request: Request):
         raise
 
     return {"item": dict(user), "message": "Akun berhasil dibuat."}
+
+
+@app.patch("/api/school/users/{user_id}")
+def update_school_user(user_id: uuid.UUID, payload: SchoolUserUpdate, request: Request):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    fields = payload.model_fields_set
+    if not fields:
+        raise HTTPException(422, "Tidak ada perubahan data yang dikirim.")
+    with connection() as conn:
+        current = conn.execute(
+            """SELECT id, email, full_name, role
+               FROM users
+               WHERE id=%s AND school_id=%s
+                 AND role IN ('student','teacher','counselor')
+               FOR UPDATE""",
+            (user_id, school_id),
+        ).fetchone()
+        if not current:
+            raise HTTPException(404, "Akun tidak ditemukan di sekolah ini.")
+        full_name = payload.full_name.strip() if "full_name" in fields and payload.full_name is not None else current["full_name"]
+        email = str(payload.email).strip().lower() if "email" in fields and payload.email is not None else current["email"]
+        if not full_name or not email:
+            raise HTTPException(422, "Nama dan email tidak boleh kosong.")
+        if "email" in fields:
+            duplicate = conn.execute(
+                """SELECT 1 FROM users
+                   WHERE school_id=%s AND lower(email)=lower(%s) AND id<>%s
+                   LIMIT 1""",
+                (school_id, email, user_id),
+            ).fetchone()
+            if duplicate:
+                raise HTTPException(409, "Email sudah digunakan akun lain di sekolah ini.")
+
+        profile = None
+        if current["role"] == "student":
+            profile = conn.execute(
+                """SELECT student_number, class_id, graduation_year
+                   FROM student_profiles WHERE user_id=%s AND school_id=%s FOR UPDATE""",
+                (user_id, school_id),
+            ).fetchone()
+            if not profile:
+                raise HTTPException(409, "Profil siswa belum tersedia untuk akun ini.")
+            student_number = payload.student_number.strip() if "student_number" in fields and payload.student_number is not None else profile["student_number"]
+            class_id = payload.class_id if "class_id" in fields else profile["class_id"]
+            graduation_year = payload.graduation_year if "graduation_year" in fields else profile["graduation_year"]
+            if not student_number:
+                raise HTTPException(422, "Nomor induk siswa tidak boleh kosong.")
+            if class_id and not conn.execute(
+                "SELECT id FROM school_classes WHERE id=%s AND school_id=%s",
+                (class_id, school_id),
+            ).fetchone():
+                raise HTTPException(400, "Kelas yang dipilih tidak valid untuk sekolah ini.")
+            try:
+                conn.execute(
+                    """UPDATE student_profiles
+                       SET student_number=%s, class_id=%s, graduation_year=%s
+                       WHERE user_id=%s AND school_id=%s""",
+                    (student_number, class_id, graduation_year, user_id, school_id),
+                )
+            except Exception as exc:
+                if getattr(exc, "sqlstate", None) == "23505":
+                    raise HTTPException(409, "Nomor induk siswa sudah digunakan di sekolah ini.") from exc
+                raise
+        elif any(field in fields for field in ("student_number", "class_id", "graduation_year")):
+            raise HTTPException(400, "Data NIS, kelas, dan tahun lulus hanya berlaku untuk akun siswa.")
+
+        try:
+            updated = conn.execute(
+                """UPDATE users SET full_name=%s, email=%s, updated_at=now()
+                   WHERE id=%s AND school_id=%s
+                   RETURNING id, email, full_name, role, status, updated_at""",
+                (full_name, email, user_id, school_id),
+            ).fetchone()
+        except Exception as exc:
+            if getattr(exc, "sqlstate", None) == "23505":
+                raise HTTPException(409, "Email sudah digunakan akun lain di sekolah ini.") from exc
+            raise
+        _audit_event(conn, actor, "school_user.update", "user", user_id)
+    result = dict(updated)
+    if profile is not None:
+        result.update({"student_number": student_number, "class_id": str(class_id) if class_id else None,
+                       "graduation_year": graduation_year})
+    return {"item": result, "message": "Data akun berhasil diperbarui."}
+
+
+@app.patch("/api/school/users/{user_id}/status")
+def update_school_user_status(user_id: uuid.UUID, payload: SchoolUserStatusInput, request: Request):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    with connection() as conn:
+        item = conn.execute(
+            """UPDATE users SET status=%s, updated_at=now()
+               WHERE id=%s AND school_id=%s
+                 AND role IN ('student','teacher','counselor')
+               RETURNING id, email, full_name, role, status, updated_at""",
+            (payload.status, user_id, school_id),
+        ).fetchone()
+        if not item:
+            raise HTTPException(404, "Akun tidak ditemukan di sekolah ini.")
+        if payload.status == "disabled":
+            conn.execute("DELETE FROM sessions WHERE user_id=%s", (user_id,))
+        _audit_event(conn, actor, "school_user.status", "user", user_id)
+    return {"item": dict(item), "message": "Status akun berhasil diperbarui."}
+
+
+@app.post("/api/school/users/{user_id}/reset-password")
+def reset_school_user_password(user_id: uuid.UUID, request: Request):
+    actor = _require_roles(request, "school_admin")
+    school_id = actor["school_id"]
+    if not school_id:
+        raise HTTPException(403, "Akun pengelola belum terhubung ke sekolah.")
+    with connection() as conn:
+        target = conn.execute(
+            """SELECT id FROM users
+               WHERE id=%s AND school_id=%s
+                 AND role IN ('student','teacher','counselor')""",
+            (user_id, school_id),
+        ).fetchone()
+        if not target:
+            raise HTTPException(404, "Akun tidak ditemukan di sekolah ini.")
+        temporary_password = new_token(24)
+        conn.execute(
+            """UPDATE users SET password_hash=%s, updated_at=now()
+               WHERE id=%s AND school_id=%s""",
+            (hash_password(temporary_password), user_id, school_id),
+        )
+        conn.execute("DELETE FROM sessions WHERE user_id=%s", (user_id,))
+        _audit_event(conn, actor, "school_user.password_reset", "user", user_id)
+    return {
+        "temporary_password": temporary_password,
+        "message": "Kata sandi sementara dibuat. Catat dan sampaikan kepada pemilik akun melalui kanal terpisah.",
+    }
 
 
 @app.post("/api/platform/users", status_code=201)
