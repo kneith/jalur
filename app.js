@@ -149,6 +149,8 @@ let institutions = [];
 let programSearchIndex = [];
 let institutionSearchIndex = [];
 let institutionProgramCounts = new Map();
+let programCodeIndex = new Map();
+let programsByNormalizedName = new Map();
 let directoryDataReady = false;
 let directoryDataPromise = null;
 let directoryDataFailed = false;
@@ -187,6 +189,15 @@ function hydrateDirectoryData(){
   programs=rawPrograms.map(p=>({...p,subjects:p.subjects||[],sourceLabel:p.code?"Basis data JALUR":(p.source||"Data Contoh"),updated:p.referenceYear||p.updated||"Tidak tercantum",field:p.field||p.group||"Belum diklasifikasikan"}));
   institutions=rawInstitutions;
   buildDirectoryIndexes();
+  programCodeIndex=new Map(programs.filter(p=>p.code).map(p=>[String(p.code),p]));
+  programsByNormalizedName=new Map();
+  for(const program of programs){
+    const key=normalizeSearch(program.name);
+    if(!key)continue;
+    const matches=programsByNormalizedName.get(key)||[];
+    matches.push(program);
+    programsByNormalizedName.set(key,matches);
+  }
   directoryDataReady=true;
   directoryDataFailed=false;
 }
@@ -288,9 +299,10 @@ function render(){
    $("#main")?.focus({preventScroll:true});
    return;
   }
-  if(ADMISSIONS_DATA_PAGES.has(currentPage)&&(!window.JALUR_ADMISSIONS||(currentPage==="SNBT Predictor"&&!directoryDataReady))){
+  if(ADMISSIONS_DATA_PAGES.has(currentPage)&&!window.JALUR_ADMISSIONS){
+   const requestedPage=currentPage;
    root.innerHTML='<section class="directory-loading" role="status"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat data alumni dan seleksi nasional…</span></section>';
-   Promise.all([loadAdmissionsData(),currentPage==="SNBT Predictor"?loadDirectoryData():Promise.resolve()]).then(()=>{if(currentPage&&ADMISSIONS_DATA_PAGES.has(currentPage))render();}).catch(error=>{root.innerHTML=`<section class="panel glass"><h2>Data belum dapat dimuat</h2><p>${escapeHtml(error.message||"Periksa koneksi lalu coba lagi.")}</p><button class="btn primary" id="retryAdmissionsData">Coba lagi</button></section>`;});
+   loadAdmissionsData().then(()=>{if(currentPage===requestedPage)render();}).catch(error=>{if(currentPage===requestedPage)root.innerHTML=`<section class="panel glass"><h2>Data belum dapat dimuat</h2><p>${escapeHtml(error.message||"Periksa koneksi lalu coba lagi.")}</p><button class="btn primary" id="retryAdmissionsData">Coba lagi</button></section>`;});
    $("#main")?.focus({preventScroll:true});return;
   }
   const renderers={"Dashboard":dashboardPage,"Academic Profile":profilePage,"Study Program Explorer":explorerPage,"Study Tracer Alumni":admissionsAlumniPage,"SNBT Predictor":snbtPredictorPage,"SNBP Data":snbpDataPage,"Decision Comparison":comparisonPage,"Plan B Builder":planBPage,"Decision Blind Spot Detector":blindSpotPage,"Decision Summary":summaryPage,"Settings":settingsPage,"Help / About":helpPage,"User Guide":guidePage,"Official Sources":sourcesPage,"Program Study Reality Check":realityPage,"Similarity Explorer":similarityPage,"Alternative Pathway Planner":pathwayPage,"Campus Life Preview":campusPage,"Education Cost Planner":costPage,"Decision Journal":journalPage,"BK Consultation":consultationPage,"Anonymous Venting":ventingPage,"School Portal":schoolPortalPage,"BK Portal":bkPortalPage};
@@ -484,6 +496,7 @@ function loadAdmissionsData(){
   const data=await new Response(stream).json();
   const allowedLevels=new Set(["S1","D-III","D-IV"]);
   if(data?.alumni?.length!==252||data?.snbt?.length!==4643||!Array.isArray(data?.snbt)||data.snbt.some(r=>!allowedLevels.has(r[3]))||data?.snbp?.topProgramsByApplicants?.length!==20||data?.snbp?.mirrorUrls?.length!==43)throw new Error("Validasi isi data penerimaan tidak cocok dengan sumber.");
+  data.snbtSearchIndex=data.snbt.map(r=>normalizeSearch(r[0]+" "+r[1]+" "+r[2]));
   window.JALUR_ADMISSIONS=data;
   return data;
  })().catch(error=>{window.JALUR_ADMISSIONS_PROMISE=null;throw error;});
@@ -526,9 +539,10 @@ function snbtPredictorPage(){
  const subtestKeys=[...new Set(programs.flatMap(p=>Object.keys(p.weights||{})))];
  const subtestLabels={PU:"Penalaran Umum",PPU:"Pengetahuan dan Pemahaman Umum",PBM:"Pemahaman Bacaan dan Menulis",PK:"Pengetahuan Kuantitatif",LBI:"Literasi Bahasa Indonesia",LBE:"Literasi Bahasa Inggris",PM:"Penalaran Matematika"};
  const subScores=window.snbtSubtestScores||{};
- const weightedFor=record=>{const p=programs.find(x=>x.code&&String(x.code)===String(record[0]))||programs.map(x=>({p:x,ns:admissionNameScore(x.name,record[2]),cs:admissionNameScore(x.campus,record[1])})).filter(x=>x.ns>=.82&&(x.cs>=.45||x.cs===0)).sort((a,b)=>(b.ns*.8+b.cs*.2)-(a.ns*.8+a.cs*.2))[0]?.p;if(!p?.weights)return null;let sum=0,total=0,used=0;for(const [key,w0] of Object.entries(p.weights)){const short=key.replace(/_weight_pct$/,"");const raw=subScores[short]??subScores[short.toUpperCase()];const scoreValue=Number(raw),weight=Number(w0);if(raw!==undefined&&raw!==""&&Number.isFinite(scoreValue)&&Number.isFinite(weight)&&weight>0){sum+=scoreValue*weight;total+=weight;used++;}}return total?{score:sum/total,used}:null;};
+ const weightedFor=record=>{const nameMatches=programsByNormalizedName.get(normalizeSearch(record[2]))||[];const campusKey=normalizeSearch(record[1]);const p=programCodeIndex.get(String(record[0]))||nameMatches.find(x=>normalizeSearch(x.campus)===campusKey)||(nameMatches.length===1?nameMatches[0]:null);if(!p?.weights)return null;let sum=0,total=0,used=0;for(const [key,w0] of Object.entries(p.weights)){const short=key.replace(/_weight_pct$/,"");const raw=subScores[short]??subScores[short.toUpperCase()];const scoreValue=Number(raw),weight=Number(w0);if(raw!==undefined&&raw!==""&&Number.isFinite(scoreValue)&&Number.isFinite(weight)&&weight>0){sum+=scoreValue*weight;total+=weight;used++;}}return total?{score:sum/total,used}:null;};
  const score=filters.score!==""&&Number.isFinite(Number(filters.score))?Number(filters.score):null;
- let rows=data.snbt.filter(r=>(!level||r[3]===level)&&(!q||normalizeSearch(r[0]+" "+r[1]+" "+r[2]).includes(q)));
+ const searchIndex=data.snbtSearchIndex||[];
+ let rows=data.snbt.filter((r,i)=>(!level||r[3]===level)&&(!q||(searchIndex[i]||"").includes(q)));
  if(score!==null)rows.sort((a,b)=>Math.abs(score-a[6])-Math.abs(score-b[6]));
  const limit=window.snbtLimit||50;const shown=rows.slice(0,limit);
  const trs=shown.map(r=>{const diff=score===null?null:score-r[6];const comparison=diff===null?"Masukkan skor total":Math.abs(diff)<0.005?"Setara referensi":diff>0?"Di atas referensi":"Di bawah referensi";const weighted=weightedFor(r);return `<tr><td>${escapeHtml(r[0])}</td><td><strong>${escapeHtml(r[1])}</strong></td><td>${escapeHtml(r[2])}</td><td>${escapeHtml(r[3])}</td><td>${admissionFormatNum(r[4])}</td><td>${r[5]===null?"Prodi baru":admissionFormatNum(r[5])}</td><td><strong>${Number(r[6]).toFixed(2)}</strong></td><td>${weighted?weighted.score.toFixed(2)+" ("+weighted.used+" subtes)":"—"}</td><td>${diff===null?"—":(diff>0?"+":"")+diff.toFixed(2)}</td><td>${comparison}</td><td><button class="btn secondary small" data-snbt-detail="${escapeHtml(r[0])}">Detail prodi</button></td></tr>`;}).join("");
