@@ -2917,3 +2917,14 @@ body.rasa-chat-active #pageRoot{display:contents!important}
 @media(prefers-reduced-motion:reduce){
  .rasa-chat-screen,.rasa-bubble,.rasa-typing span,.rasa-send,.rasa-chat-composer textarea{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
+
+
+/* Instant optimistic send: keep the chat viewport stable while the request completes. */
+.rasa-chat-screen .rasa-messages{overflow-anchor:none;scroll-behavior:smooth}
+.rasa-chat-screen .rasa-bubble{will-change:opacity,transform}
+.rasa-chat-composer .rasa-send{position:relative;transition:transform .16s ease,opacity .16s ease,box-shadow .16s ease}
+.rasa-chat-composer .rasa-send.is-sending{opacity:.72;cursor:wait;box-shadow:0 0 0 4px color-mix(in srgb,var(--accent,#7194d6) 12%,transparent)}
+.rasa-chat-composer .rasa-send.is-sending::after{content:"";position:absolute;width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:rasaSendSpin .65s linear infinite}
+@keyframes rasaSendSpin{to{transform:rotate(360deg)}}
+.rasa-chat-screen .rasa-bubble .rasa-delivery-state{transition:opacity .18s ease}
+@media(prefers-reduced-motion:reduce){.rasa-chat-screen .rasa-messages{scroll-behavior:auto}.rasa-chat-composer .rasa-send.is-sending::after{animation:none}}
