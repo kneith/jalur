@@ -62,7 +62,7 @@ const JALUR_ROLE_PAGE_ICONS = {
 const JALUR_PUBLIC_DATA_PAGES=["Study Tracer Alumni","SNBT Predictor","SNBP Data"];
 function jalurAllowedPages(role="guest"){return [...new Set([...(JALUR_ROLE_MENUS[role]||JALUR_ROLE_MENUS.guest),...JALUR_PUBLIC_DATA_PAGES])];}
 function jalurPageLabel(page,role="guest"){
- if(page==="Anonymous Venting"&&role==="wellbeing_moderator")return "Moderasi Curhat";
+ if(page==="Anonymous Venting")return "RASA";
  if(page==="Academic Profile"&&role==="teacher")return "Data Rapor";
  return PAGE_LABELS[page]||page;
 }
@@ -271,7 +271,7 @@ function escapeHtml(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","
 const PAGE_LABELS={"Dashboard":"Beranda","Academic Profile":"Profil Akademik","Study Program Explorer":"Penjelajah Program Studi","Study Tracer Alumni":"Data Alumni","SNBT Predictor":"Prediksi SNBT","SNBP Data":"Data SNBP","Decision Comparison":"Perbandingan Program Studi","Plan B Builder":"Rencana Alternatif","Decision Blind Spot Detector":"Daftar Periksa Keputusan","Decision Summary":"Ringkasan Keputusan","Settings":"Pengaturan","Help / About":"Bantuan dan Tentang JALUR","User Guide":"Panduan Penggunaan","Official Sources":"Pusat Informasi Resmi","Program Study Reality Check":"Realitas Perkuliahan","Similarity Explorer":"Program Studi Serupa","Alternative Pathway Planner":"Peta Jalur Alternatif","Campus Life Preview":"Gambaran Kehidupan Kampus","Education Cost Planner":"Perencana Biaya Pendidikan","Decision Journal":"Jurnal Keputusan","BK Consultation":"Konsultasi BK","Anonymous Venting":"RASA","School Portal":"Portal Pengelola Sekolah","BK Portal":"Portal Guru BK"};
 /* Remove literal bullet glyphs from all rendered JALUR pages. */
 (function(){
- const clean=root=>{if(!root)return;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);for(const node of nodes)if(node.nodeValue.includes('•'))node.nodeValue=node.nodeValue.replace(/\\s*•\\s*/g,' | ');};
+ const clean=root=>{if(!root)return;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);for(const node of nodes)if(node.nodeValue.includes('•'))node.nodeValue=node.nodeValue.replace(/\\s*•\\s*/g,' ');};
  const start=()=>{clean(document.body);if(!window.__jalurBulletCleaner){window.__jalurBulletCleaner=new MutationObserver(records=>{for(const record of records){if(record.type==='characterData')clean(record.target.parentNode);for(const node of record.addedNodes||[])if(node.nodeType===1)clean(node);}});window.__jalurBulletCleaner.observe(document.body,{subtree:true,childList:true,characterData:true});}};
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
