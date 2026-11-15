@@ -1,0 +1,17 @@
+-- RASA migration: encrypted chat, access codes, moderator assignments, BK referrals and appointment workflow.
+alter table public.bk_appointments drop constraint if exists bk_appointments_status_check;
+alter table public.bk_appointments add constraint bk_appointments_status_check check(status=any(array['pending_review','awaiting_confirmation','confirmed','reschedule_requested','completed','cancelled']));
+alter table public.bk_appointments add column if not exists scheduled_at timestamptz;
+alter table public.bk_appointments add column if not exists counselor_note text;
+alter table public.bk_appointments add column if not exists reviewed_at timestamptz;
+alter table public.bk_appointments add column if not exists confirmed_at timestamptz;
+alter table public.bk_appointments add column if not exists student_accepted boolean not null default false;
+update public.bk_appointments set status='pending_review' where status='pending';
+create table if not exists public.rasa_conversations(id uuid primary key default gen_random_uuid(),category text not null check(category in ('academic','family','friends','future','wellbeing','other')),status text not null default 'unassigned' check(status in ('unassigned','assigned','waiting_student','waiting_moderator','referred','closed')),assigned_moderator_id uuid references public.users(id) on delete set null,created_at timestamptz not null default now(),updated_at timestamptz not null default now(),last_message_at timestamptz not null default now());
+create table if not exists public.rasa_messages(id uuid primary key default gen_random_uuid(),conversation_id uuid not null references public.rasa_conversations(id) on delete cascade,sender_type text not null check(sender_type in ('visitor','moderator')),sender_id uuid references public.users(id) on delete set null,encrypted_payload text not null,nonce text not null,auth_tag text not null,created_at timestamptz not null default now(),read_at timestamptz);
+create index if not exists rasa_messages_conversation_created_idx on public.rasa_messages(conversation_id,created_at);
+create table if not exists public.rasa_access_codes(conversation_id uuid primary key references public.rasa_conversations(id) on delete cascade,code_hash text not null unique,expires_at timestamptz not null default(now()+interval '30 days'),created_at timestamptz not null default now());
+create index if not exists rasa_conversations_queue_idx on public.rasa_conversations(status,last_message_at desc);
+create table if not exists public.rasa_referrals(id uuid primary key default gen_random_uuid(),conversation_id uuid not null references public.rasa_conversations(id) on delete cascade,moderator_id uuid not null references public.users(id),summary text not null check(length(summary) between 10 and 1200),consent boolean not null default false,urgent boolean not null default false,status text not null default 'pending' check(status in ('pending','accepted','closed')),created_at timestamptz not null default now());
+alter table public.rasa_conversations enable row level security; alter table public.rasa_messages enable row level security; alter table public.rasa_access_codes enable row level security; alter table public.rasa_referrals enable row level security;
+revoke all on public.rasa_conversations,public.rasa_messages,public.rasa_access_codes,public.rasa_referrals from anon,authenticated;
