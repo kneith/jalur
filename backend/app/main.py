@@ -1,7 +1,7 @@
 """JALUR Python API — FastAPI migration from the original Node backend."""
 from contextlib import asynccontextmanager
 from collections import defaultdict, deque
-from time import monotonic
+from time import monotonic, sleep
 import secrets, uuid
 import base64
 from datetime import datetime
@@ -10,7 +10,7 @@ import json
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from psycopg_pool import PoolTimeout
 from pydantic import BaseModel, EmailStr, Field
 from app.core.config import settings
@@ -183,8 +183,10 @@ def login(payload: LoginInput, response: Response, request: Request):
             _login_attempts.pop(ip, None)
     except RuntimeError:
         raise HTTPException(503, "Database belum dikonfigurasi.")
-    opts = {"max_age": settings.session_ttl_hours*3600, "secure": settings.cookie_secure,
-            "samesite": "none" if settings.cookie_secure else "lax"}
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip().lower()
+    secure_cookie = settings.cookie_secure or forwarded_proto == "https" or request.url.scheme == "https"
+    opts = {"max_age": settings.session_ttl_hours*3600, "secure": secure_cookie,
+            "samesite": "none" if secure_cookie else "lax"}
     response.set_cookie("jalur_session", session_token, httponly=True, path="/api", **opts)
     response.set_cookie("jalur_csrf", csrf, httponly=False, path="/", **opts)
     return {"user": {k:user[k] for k in ("id","school_id","full_name","email","role")}, "csrfToken":csrf}
@@ -203,10 +205,11 @@ def me(request: Request):
 def logout(request: Request, response: Response):
     user = current_user(request)
     with connection() as conn: conn.execute("DELETE FROM sessions WHERE id=%s", (user["session_id"],))
-    response.delete_cookie("jalur_session", path="/api", secure=settings.cookie_secure,
-                           samesite="none" if settings.cookie_secure else "lax")
-    response.delete_cookie("jalur_csrf", path="/", secure=settings.cookie_secure,
-                           samesite="none" if settings.cookie_secure else "lax")
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip().lower()
+    secure_cookie = settings.cookie_secure or forwarded_proto == "https" or request.url.scheme == "https"
+    same_site = "none" if secure_cookie else "lax"
+    response.delete_cookie("jalur_session", path="/api", secure=secure_cookie, samesite=same_site)
+    response.delete_cookie("jalur_csrf", path="/", secure=secure_cookie, samesite=same_site)
 
 @app.get("/api/journal")
 def get_journal(request: Request):
@@ -618,6 +621,7 @@ class RasaConversationInput(BaseModel):
     school_id: uuid.UUID | None = None
 class RasaMessageInput(BaseModel):
     text: str = Field(min_length=1, max_length=3000)
+    client_message_id: uuid.UUID | None = None
 class RasaAccessInput(BaseModel):
     access_code: str = Field(min_length=20, max_length=100)
 class RasaReviewInput(BaseModel):
@@ -1305,6 +1309,27 @@ def _rasa_access(conn,code):
     if not row: raise HTTPException(404,"Kode akses tidak valid atau sudah kedaluwarsa.")
     return row
 
+
+def _rasa_save_message(conn, conversation_id, sender_type, text, sender_id=None, client_message_id=None):
+    encrypted = _rasa_encrypt(text.strip())
+    row = conn.execute("""INSERT INTO rasa_messages
+      (conversation_id,sender_type,sender_id,encrypted_payload,nonce,auth_tag,client_message_id)
+      VALUES (%s,%s,%s,%s,%s,%s,%s)
+      ON CONFLICT (conversation_id,sender_type,client_message_id)
+        WHERE client_message_id IS NOT NULL DO NOTHING
+      RETURNING id,created_at,encrypted_payload,nonce,auth_tag""",
+      (conversation_id,sender_type,sender_id,*encrypted,client_message_id)).fetchone()
+    inserted = row is not None
+    if not row and client_message_id:
+        row = conn.execute("""SELECT id,created_at,encrypted_payload,nonce,auth_tag
+          FROM rasa_messages WHERE conversation_id=%s AND sender_type=%s AND client_message_id=%s""",
+          (conversation_id,sender_type,client_message_id)).fetchone()
+    if not row:
+        raise HTTPException(409,"Pesan belum dapat disimpan. Silakan kirim ulang.")
+    return row, inserted
+
+
+
 @app.post("/api/rasa/conversations",status_code=201)
 def rasa_create_conversation(payload:RasaConversationInput):
     code=secrets.token_urlsafe(32); encrypted=_rasa_encrypt(payload.text.strip())
@@ -1325,7 +1350,8 @@ def rasa_access_conversation(payload:RasaAccessInput):
     with connection() as conn:
         c=_rasa_access(conn,payload.access_code.strip())
         rows=conn.execute("SELECT id,sender_type,encrypted_payload,nonce,auth_tag,created_at FROM rasa_messages WHERE conversation_id=%s ORDER BY created_at LIMIT 300",(c["id"],)).fetchall()
-    return {"conversation":{"id":str(c["id"]),"status":c["status"],"category":c["category"]},
+        typing=conn.execute("SELECT EXISTS(SELECT 1 FROM rasa_typing_presence WHERE conversation_id=%s AND actor_type='moderator' AND is_typing=true AND updated_at>now()-interval '8 seconds') AS typing",(c["id"],)).fetchone()
+    return {"conversation":{"id":str(c["id"]),"status":c["status"],"category":c["category"]},"counterpart_typing":bool(typing["typing"]),
       "messages":[{"id":str(m["id"]),"sender":m["sender_type"],"text":_rasa_decrypt(m),"created_at":m["created_at"].isoformat()} for m in rows]}
 
 @app.post("/api/rasa/conversations/{conversation_id}/messages",status_code=201)
@@ -1334,10 +1360,11 @@ def rasa_visitor_message(conversation_id:uuid.UUID,payload:RasaMessageInput,requ
     with connection() as conn:
         c=_rasa_access(conn,code)
         if str(c["id"])!=str(conversation_id): raise HTTPException(403,"Kode akses tidak cocok.")
-        encrypted=_rasa_encrypt(payload.text.strip())
-        row=conn.execute("INSERT INTO rasa_messages(conversation_id,sender_type,encrypted_payload,nonce,auth_tag) VALUES (%s,'visitor',%s,%s,%s) RETURNING id,created_at",(conversation_id,*encrypted)).fetchone()
-        conn.execute("UPDATE rasa_conversations SET status='waiting_moderator',updated_at=now(),last_message_at=now() WHERE id=%s",(conversation_id,))
-    return {"item":{"id":str(row["id"]),"created_at":row["created_at"].isoformat()}}
+        if c["status"]=="closed": raise HTTPException(409,"Percakapan telah ditutup dan tidak menerima pesan baru.")
+        row,inserted=_rasa_save_message(conn,conversation_id,"visitor",payload.text,client_message_id=payload.client_message_id)
+        if inserted:
+            conn.execute("UPDATE rasa_conversations SET status='waiting_moderator',updated_at=now(),last_message_at=now() WHERE id=%s",(conversation_id,))
+    return {"item":{"id":str(row["id"]),"sender":"visitor","text":_rasa_decrypt(row),"created_at":row["created_at"].isoformat(),"delivery":"sent"}}
 
 
 class RasaTypingInput(BaseModel):
@@ -1374,6 +1401,62 @@ def rasa_moderator_typing(conversation_id:uuid.UUID,payload:RasaTypingInput,requ
           AND updated_at>now()-interval '8 seconds') AS typing""",(conversation_id,)).fetchone()
     return {"visitor_typing":bool(row["typing"])}
 
+
+def _rasa_stream_snapshot(conn, conversation_id, counterpart_type):
+    c=conn.execute("SELECT id,status,category FROM rasa_conversations WHERE id=%s",(conversation_id,)).fetchone()
+    if not c: raise HTTPException(404,"Percakapan tidak ditemukan.")
+    rows=conn.execute("SELECT id,sender_type,encrypted_payload,nonce,auth_tag,created_at FROM rasa_messages WHERE conversation_id=%s ORDER BY created_at LIMIT 300",(conversation_id,)).fetchall()
+    typing=conn.execute("SELECT EXISTS(SELECT 1 FROM rasa_typing_presence WHERE conversation_id=%s AND actor_type=%s AND is_typing=true AND updated_at>now()-interval '8 seconds') AS typing",(conversation_id,counterpart_type)).fetchone()
+    return {"conversation":{"id":str(c["id"]),"status":c["status"],"category":c["category"]},
+      "counterpart_typing":bool(typing["typing"]),
+      "messages":[{"id":str(m["id"]),"sender":m["sender_type"],"text":_rasa_decrypt(m),"created_at":m["created_at"].isoformat()} for m in rows]}
+
+
+@app.get("/api/rasa/conversations/{conversation_id}/stream")
+def rasa_visitor_stream(conversation_id:uuid.UUID,request:Request):
+    code=request.headers.get("X-RASA-ACCESS-CODE","").strip()
+    with connection() as conn:
+        c=_rasa_access(conn,code)
+        if str(c["id"])!=str(conversation_id): raise HTTPException(403,"Kode akses tidak cocok.")
+    def events():
+        deadline=monotonic()+45
+        signature=None
+        while monotonic()<deadline:
+            with connection() as conn:
+                snapshot=_rasa_stream_snapshot(conn,conversation_id,"moderator")
+            current=(len(snapshot["messages"]),snapshot["messages"][-1]["id"] if snapshot["messages"] else "",snapshot["conversation"]["status"],snapshot["counterpart_typing"])
+            if current!=signature:
+                signature=current
+                yield "event: update\ndata: "+json.dumps(snapshot,separators=(",",":"))+"\n\n"
+            else:
+                yield ": keep-alive\n\n"
+            sleep(0.8)
+    return StreamingResponse(events(),media_type="text/event-stream",headers={"Cache-Control":"no-cache, no-transform","X-Accel-Buffering":"no"})
+
+
+@app.get("/api/rasa/moderator/conversations/{conversation_id}/stream")
+def rasa_moderator_stream(conversation_id:uuid.UUID,request:Request):
+    actor=_require_roles(request,"wellbeing_moderator")
+    with connection() as conn:
+        c=conn.execute("SELECT assigned_moderator_id FROM rasa_conversations WHERE id=%s",(conversation_id,)).fetchone()
+        if not c: raise HTTPException(404,"Percakapan tidak ditemukan.")
+        if c["assigned_moderator_id"] and str(c["assigned_moderator_id"])!=str(actor["id"]): raise HTTPException(403,"Percakapan ditugaskan ke moderator lain.")
+    def events():
+        deadline=monotonic()+45
+        signature=None
+        while monotonic()<deadline:
+            with connection() as conn:
+                snapshot=_rasa_stream_snapshot(conn,conversation_id,"visitor")
+            current=(len(snapshot["messages"]),snapshot["messages"][-1]["id"] if snapshot["messages"] else "",snapshot["conversation"]["status"],snapshot["counterpart_typing"])
+            if current!=signature:
+                signature=current
+                yield "event: update\ndata: "+json.dumps(snapshot,separators=(",",":"))+"\n\n"
+            else:
+                yield ": keep-alive\n\n"
+            sleep(0.8)
+    return StreamingResponse(events(),media_type="text/event-stream",headers={"Cache-Control":"no-cache, no-transform","X-Accel-Buffering":"no"})
+
+
 @app.get("/api/rasa/moderator/queue")
 def rasa_moderator_queue(request:Request):
     actor=_require_roles(request,"wellbeing_moderator")
@@ -1402,7 +1485,8 @@ def rasa_moderator_messages(conversation_id:uuid.UUID,request:Request):
         if not c: raise HTTPException(404,"Percakapan tidak ditemukan.")
         if c["assigned_moderator_id"] and str(c["assigned_moderator_id"])!=str(actor["id"]): raise HTTPException(403,"Percakapan ditugaskan ke moderator lain.")
         rows=conn.execute("SELECT id,sender_type,encrypted_payload,nonce,auth_tag,created_at FROM rasa_messages WHERE conversation_id=%s ORDER BY created_at LIMIT 300",(conversation_id,)).fetchall()
-    return {"conversation":{"id":str(c["id"]),"status":c["status"],"category":c["category"]},
+        typing=conn.execute("SELECT EXISTS(SELECT 1 FROM rasa_typing_presence WHERE conversation_id=%s AND actor_type='visitor' AND is_typing=true AND updated_at>now()-interval '8 seconds') AS typing",(conversation_id,)).fetchone()
+    return {"conversation":{"id":str(c["id"]),"status":c["status"],"category":c["category"]},"counterpart_typing":bool(typing["typing"]),
       "messages":[{"id":str(m["id"]),"sender":m["sender_type"],"text":_rasa_decrypt(m),"created_at":m["created_at"].isoformat()} for m in rows]}
 
 @app.post("/api/rasa/moderator/conversations/{conversation_id}/messages",status_code=201)
@@ -1412,10 +1496,10 @@ def rasa_moderator_message(conversation_id:uuid.UUID,payload:RasaMessageInput,re
         c=conn.execute("SELECT assigned_moderator_id FROM rasa_conversations WHERE id=%s AND status<>'closed'",(conversation_id,)).fetchone()
         if not c: raise HTTPException(404,"Percakapan tidak ditemukan atau ditutup.")
         if c["assigned_moderator_id"] and str(c["assigned_moderator_id"])!=str(actor["id"]): raise HTTPException(403,"Percakapan ditugaskan ke moderator lain.")
-        encrypted=_rasa_encrypt(payload.text.strip())
-        row=conn.execute("INSERT INTO rasa_messages(conversation_id,sender_type,sender_id,encrypted_payload,nonce,auth_tag) VALUES (%s,'moderator',%s,%s,%s,%s) RETURNING id,created_at",(conversation_id,actor["id"],*encrypted)).fetchone()
-        conn.execute("UPDATE rasa_conversations SET status='waiting_student',updated_at=now(),last_message_at=now() WHERE id=%s",(conversation_id,))
-    return {"item":{"id":str(row["id"]),"created_at":row["created_at"].isoformat()}}
+        row,inserted=_rasa_save_message(conn,conversation_id,"moderator",payload.text,sender_id=actor["id"],client_message_id=payload.client_message_id)
+        if inserted:
+            conn.execute("UPDATE rasa_conversations SET status='waiting_student',updated_at=now(),last_message_at=now() WHERE id=%s",(conversation_id,))
+    return {"item":{"id":str(row["id"]),"sender":"moderator","text":_rasa_decrypt(row),"created_at":row["created_at"].isoformat(),"delivery":"sent"}}
 
 @app.patch("/api/rasa/moderator/conversations/{conversation_id}/status")
 def rasa_status(conversation_id:uuid.UUID,payload:dict,request:Request):
