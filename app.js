@@ -1156,7 +1156,7 @@ if(jalurResumeApp){
       pointerFrame=requestAnimationFrame(()=>{
         ambient.style.setProperty("--mouse-x",(lastX*100).toFixed(1)+"%");
         ambient.style.setProperty("--mouse-y",(lastY*100).toFixed(1)+"%");
-        ambient.style.backgroundImage="radial-gradient(260px circle at var(--mouse-x,50%) var(--mouse-y,50%),rgba(210,236,249,.075),transparent 72%),radial-gradient(ellipse at 16% 18%,rgba(113,148,214,.10),transparent 42%),radial-gradient(ellipse at 84% 78%,rgba(210,236,249,.075),transparent 44%),linear-gradient(135deg,#14243A 0%,#1D304A 50%,#172538 100%)";
+        ambient.style.backgroundImage="radial-gradient(300px circle at var(--mouse-x,50%) var(--mouse-y,50%),rgba(255,255,255,.16),rgba(210,236,249,.055) 38%,transparent 74%)";
         pointerFrame=0;
       });
     },{passive:true});
