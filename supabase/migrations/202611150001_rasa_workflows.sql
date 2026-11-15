@@ -16,3 +16,26 @@ create table if not exists public.rasa_typing_presence(conversation_id uuid not 
 create table if not exists public.rasa_referrals(id uuid primary key default gen_random_uuid(),conversation_id uuid not null references public.rasa_conversations(id) on delete cascade,moderator_id uuid not null references public.users(id),summary text not null check(length(summary) between 10 and 1200),consent boolean not null default false,urgent boolean not null default false,status text not null default 'pending' check(status in ('pending','accepted','closed')),created_at timestamptz not null default now());
 alter table public.rasa_conversations enable row level security; alter table public.rasa_messages enable row level security; alter table public.rasa_access_codes enable row level security; alter table public.rasa_referrals enable row level security; alter table public.rasa_typing_presence enable row level security;
 revoke all on public.rasa_conversations,public.rasa_messages,public.rasa_access_codes,public.rasa_referrals,public.rasa_typing_presence from anon,authenticated;
+create table if not exists public.rasa_bk_requests(
+ id uuid primary key default gen_random_uuid(),
+ school_id uuid not null references public.schools(id) on delete cascade,
+ code_hash text not null unique,
+ requested_at timestamptz not null,
+ mode text not null check(mode in ('in_person','online')),
+ encrypted_payload text not null,
+ nonce text not null,
+ auth_tag text not null,
+ status text not null default 'pending_review' check(status in ('pending_review','awaiting_confirmation','reschedule_requested','confirmed','completed','cancelled')),
+ scheduled_at timestamptz,
+ counselor_id uuid references public.users(id) on delete set null,
+ counselor_note text,
+ student_accepted boolean not null default false,
+ created_at timestamptz not null default now(),
+ updated_at timestamptz not null default now(),
+ reviewed_at timestamptz,
+ confirmed_at timestamptz,
+ expires_at timestamptz not null default(now()+interval '30 days')
+);
+create index if not exists rasa_bk_requests_school_queue_idx on public.rasa_bk_requests(school_id,status,created_at);
+alter table public.rasa_bk_requests enable row level security;
+revoke all on public.rasa_bk_requests from anon,authenticated;
