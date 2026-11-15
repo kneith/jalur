@@ -1791,9 +1791,9 @@ input[type="submit"]{
 
 
 /* JALUR motion refinement: calm, consistent easing for route and auth transitions. */
-@keyframes jalurWelcomeExitSoft{0%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}100%{opacity:0;transform:translate3d(0,-9px,0) scale(.996);filter:blur(2px)}}
-@keyframes jalurAppEnter{0%{opacity:0;transform:translate3d(0,13px,0) scale(.994);filter:blur(3px)}100%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}}
-@keyframes jalurPageEnter{0%{opacity:0;transform:translate3d(0,9px,0);filter:blur(2px)}100%{opacity:1;transform:translate3d(0,0,0);filter:blur(0)}}
+@keyframes jalurWelcomeExitSoft{0%{opacity:1;transform:translate3d(0,0,0) scale(1)}100%{opacity:0;transform:translate3d(0,-9px,0) scale(.996)}}
+@keyframes jalurAppEnter{0%{opacity:0;transform:translate3d(0,10px,0) scale(.998)}100%{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+@keyframes jalurPageEnter{0%{opacity:0;transform:translate3d(0,7px,0)}100%{opacity:1;transform:translate3d(0,0,0)}}
 @keyframes jalurModalBackdropIn{from{opacity:0;backdrop-filter:blur(0)}to{opacity:1;backdrop-filter:blur(5px)}}
 @keyframes jalurModalBackdropOut{from{opacity:1}to{opacity:0}}
 @keyframes jalurModalPanelIn{0%{opacity:0;transform:translate3d(0,15px,0) scale(.985);filter:blur(2px)}100%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}}
