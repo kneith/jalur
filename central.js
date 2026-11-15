@@ -145,7 +145,22 @@
         let count=data.messages.length;
         stopStream=rasaLiveStream('/rasa/conversations/'+data.conversation.id+'/stream',{'X-RASA-ACCESS-CODE':accessCode},latest=>{
           const nearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<100;
-          if(latest.messages.length!==count){list.innerHTML=messageMarkup(latest.messages);count=latest.messages.length;if(nearBottom)list.scrollTop=list.scrollHeight;}
+          if(latest.messages.length>count){
+            const incoming=latest.messages.slice(count);
+            incoming.forEach(message=>{
+              // Replace the optimistic visitor bubble when its server-confirmed echo arrives.
+              if(message.sender==='visitor'){
+                const optimistic=[...list.querySelectorAll('.rasa-bubble.from-visitor')].find(node=>node.dataset.optimistic==='true'&&node.querySelector('p')?.textContent===message.text);
+                optimistic?.remove();
+              }
+              list.insertAdjacentHTML('beforeend',messageMarkup([message]));
+            });
+            count=latest.messages.length;
+            if(nearBottom)list.scrollTo({top:list.scrollHeight,behavior:'smooth'});
+          }else if(latest.messages.length<count){
+            list.innerHTML=messageMarkup(latest.messages);count=latest.messages.length;
+            if(nearBottom)list.scrollTop=list.scrollHeight;
+          }
           $('#rasaTypingPage').hidden=!latest.counterpart_typing;
           $('#rasaChatPresence').textContent='Percakapan anonim · '+(latest.conversation.status||'Aktif');
           if(latest.conversation.status==='closed'){const input=$('#rasaReplyPageText'),send=$('#rasaReplyPage button');if(input)input.disabled=true;if(send)send.disabled=true;$('#rasaTypingPage').hidden=true;stopStream?.();stopStream=null;rasaLiveStop=null;}
@@ -169,7 +184,7 @@
           const messageId=pendingMessageId;
           const optimistic={sender:'visitor',text:value,created_at:new Date().toISOString()};
           list.insertAdjacentHTML('beforeend',messageMarkup([optimistic]).replace('✓ Terkirim','◌ Mengirim'));
-          const optimisticBubble=list.lastElementChild;
+          const optimisticBubble=list.lastElementChild;if(optimisticBubble)optimisticBubble.dataset.optimistic='true';
           list.scrollTo({top:list.scrollHeight,behavior:'smooth'});
           field.value='';field.style.height='auto';
           api('/rasa/conversations/'+data.conversation.id+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{is_typing:false}}).catch(()=>{});
