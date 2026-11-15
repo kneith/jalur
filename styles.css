@@ -2603,3 +2603,20 @@ html.jalur-welcome-mode .welcome-screen{position:relative;z-index:1;isolation:is
 .welcome-ribbon.ribbon-three{bottom:-3%;right:-28%;transform:rotate(-19deg);width:min(70vw,900px);height:clamp(90px,14vw,170px);opacity:.3}
 @media(max-width:700px){.welcome-ribbon{width:125vw;opacity:.28}.welcome-ribbon.ribbon-one{top:12%;right:-64%}.welcome-ribbon.ribbon-two{top:47%;left:-65%}.welcome-ribbon.ribbon-three{bottom:5%;right:-62%}}
 html.jalur-welcome-mode .orbit-one,html.jalur-welcome-mode .orbit-two,html.jalur-welcome-mode .orbit-satellite,html.jalur-welcome-mode .welcome-visual-beacon,html.jalur-welcome-mode .welcome-visual-spark,html.jalur-welcome-mode .visual-center,html.jalur-welcome-mode .path-node{animation:none!important}
+
+/* Login-only flowing wave ribbons. The application shell keeps its existing background. */
+.welcome-ribbon-layer{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;contain:paint;opacity:1;transition:opacity .45s ease}
+html:not(.jalur-welcome-mode) .welcome-ribbon-layer{display:none}
+.welcome-ribbon-art{position:absolute;inset:-8% -7%;width:114%;height:116%;overflow:visible;filter:drop-shadow(0 18px 32px rgba(113,148,214,.12));will-change:transform}
+.ribbon-back{animation:jalurRibbonFloat 17s ease-in-out infinite alternate}
+.ribbon-back path:nth-of-type(2){animation:jalurRibbonFloatReverse 21s ease-in-out infinite alternate;transform-origin:center}
+@keyframes jalurRibbonFloat{0%{transform:translate3d(-1.2%,1.2%,0) scale(1)}100%{transform:translate3d(1.4%,-1.1%,0) scale(1.025)}}
+@keyframes jalurRibbonFloatReverse{0%{transform:translate3d(1%,0,0)}100%{transform:translate3d(-1.2%,1.4%,0)}}
+@media(max-width:700px){.welcome-ribbon-art{inset:-4% -34%;width:168%;height:108%}}
+@media(prefers-reduced-motion:reduce){.ribbon-back,.ribbon-back path{animation:none!important}}
+/* Loading state is placed in the visible app viewport, never at the document tail. */
+#app #main.page-content{min-height:calc(100dvh - 150px);display:flex;align-items:flex-start}
+#app #pageRoot{width:100%;min-height:0;display:block}
+#app .dashboard-loading{box-sizing:border-box;width:100%;min-height:clamp(390px,calc(100dvh - 190px),720px);margin:0 auto;display:grid;place-content:center;justify-items:center;gap:13px;padding:28px 18px;border:1px solid var(--border);border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025));box-shadow:var(--shadow);text-align:center}
+#app .dashboard-skeleton{width:min(100%,520px)}
+@media(max-width:700px){#app #main.page-content{min-height:calc(100dvh - 130px);padding:12px 14px calc(105px + env(safe-area-inset-bottom))}#app .dashboard-loading{min-height:clamp(390px,calc(100dvh - 190px),680px)}}
