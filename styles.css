@@ -2660,3 +2660,36 @@ html.jalur-welcome-mode .login-ambient .bubble-three{width:29px;height:29px;righ
 @media(max-width:700px){html.jalur-welcome-mode .login-ambient .ambient-glow{opacity:.22;filter:blur(62px)}html.jalur-welcome-mode .login-ambient .ambient-orbit{box-shadow:0 0 8px rgba(113,148,214,.14)}html.jalur-welcome-mode .login-ambient .bubble-one{left:8%;top:28%}html.jalur-welcome-mode .login-ambient .bubble-two{right:9%;top:17%}html.jalur-welcome-mode .login-ambient .bubble-three{right:20%;bottom:13%}}
 
 .rasa-messages{display:grid;gap:10px;max-height:52vh;overflow:auto;margin:16px 0}.rasa-messages .summary-block{margin:0}#rasaConversation[hidden]{display:none}@media(max-width:700px){.rasa-messages{max-height:48vh}.program-card [data-bk-offer-time],.program-card [data-bk-offer-note]{width:100%;min-width:0}}
+
+/* RASA landing and workflow: JALUR palette, type scale and surfaces. */
+.rasa-hero{position:relative;overflow:hidden;padding:clamp(22px,4vw,38px);border-radius:26px;background:linear-gradient(135deg,rgba(113,148,214,.19),rgba(184,168,216,.13) 58%,rgba(210,236,249,.16))}
+.rasa-brand-row,.rasa-service-top,.rasa-panel-heading{display:flex;align-items:center;gap:12px}
+.rasa-brand-mark,.rasa-service-icon,.rasa-access-icon{display:grid;place-items:center;flex:0 0 auto;border-radius:15px;background:rgba(184,168,216,.28);color:var(--text)}
+.rasa-brand-mark{width:48px;height:48px;font-size:27px}
+.rasa-brand-copy{display:grid;gap:2px}.rasa-brand-copy strong{font-size:18px}.rasa-brand-copy small,.rasa-service-card p,.rasa-access-link small{color:var(--muted)}
+.rasa-active-label,.rasa-service-tag{margin-left:auto;padding:6px 10px;border-radius:999px;background:rgba(90,160,125,.13);color:#36865c;font-size:12px;font-weight:700}
+.rasa-kicker{display:inline-block;margin-top:22px;color:var(--accent-strong,#5876a8);font-size:11px;font-weight:800;letter-spacing:.12em}
+.rasa-hero h2{max-width:720px;margin:10px 0 12px;font-size:clamp(27px,4vw,39px);line-height:1.13;letter-spacing:-.035em}
+.rasa-hero>p{max-width:760px;color:var(--muted);font-size:15px;line-height:1.65}
+.rasa-privacy-line{display:flex;align-items:center;gap:9px;margin:22px 0 0!important;font-size:13px!important}
+.rasa-services{margin-top:28px}.rasa-services>h2,.rasa-access-section>h2{font-size:19px;margin:0 0 15px}
+.rasa-service-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.rasa-service-card{min-width:0;padding:20px;border:1px solid var(--border);border-radius:22px;background:var(--panel,rgba(255,255,255,.72));box-shadow:var(--shadow-soft,0 8px 28px rgba(34,54,82,.06));display:flex;flex-direction:column;align-items:flex-start}
+.rasa-service-icon{width:43px;height:43px;font-size:22px}.rasa-service-tag{font-size:11px;background:rgba(113,148,214,.14);color:var(--accent-strong,#5876a8)}
+.rasa-consult-card .rasa-service-icon{background:rgba(115,185,195,.18)}.rasa-consult-card .rasa-service-tag{background:rgba(115,185,195,.15);color:#39828a}
+.rasa-service-card h3{font-size:18px;margin:14px 0 7px}.rasa-service-card p{font-size:14px;line-height:1.6;margin:0 0 18px;flex:1}
+.rasa-service-card .btn{width:100%;justify-content:center;min-height:46px}
+.rasa-access-section{margin-top:30px;padding-top:24px;border-top:1px solid var(--border)}
+.rasa-access-link{display:flex;align-items:center;gap:14px;width:100%;padding:15px 4px;border:0;border-bottom:1px solid var(--border);background:transparent;color:var(--text);text-align:left;cursor:pointer}
+.rasa-access-link>span:nth-child(2){display:grid;gap:4px;flex:1}.rasa-access-link strong{font-size:15px}.rasa-access-link small{font-size:12px;line-height:1.4}
+.rasa-access-icon{width:38px;height:38px;font-size:19px;background:rgba(113,148,214,.13)}
+.rasa-work-panel{margin-top:22px;padding:clamp(18px,3vw,28px);border-radius:22px}.rasa-work-panel[hidden]{display:none!important}
+.rasa-panel-heading{justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.rasa-panel-heading h2{margin:5px 0;font-size:22px}.rasa-panel-heading p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.rasa-panel-heading .rasa-kicker{margin:0}
+.rasa-code-explainer{padding:16px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(120deg,rgba(113,148,214,.10),rgba(184,168,216,.10));margin:14px 0 20px}
+.rasa-code-explainer p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.65}
+.rasa-help-note{margin:18px 2px}.rasa-messages{display:grid;gap:10px;max-height:52vh;overflow:auto;margin:16px 0}.rasa-messages .summary-block{margin:0}
+#rasaConversation[hidden]{display:none}li::marker{content:""}
+@media(max-width:700px){.rasa-service-grid{grid-template-columns:1fr}.rasa-service-card{padding:17px}.rasa-panel-heading{flex-direction:column}.rasa-panel-heading .btn{width:100%}.rasa-hero{padding:22px}.rasa-hero h2{font-size:29px}.rasa-messages{max-height:48vh}}
+@media(prefers-reduced-motion:reduce){.rasa-service-card,.rasa-access-link{scroll-behavior:auto}}
