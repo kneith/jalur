@@ -413,7 +413,7 @@ function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;c
         modal("Masuk dengan akun siswa","<p>Konsultasi BK merupakan layanan khusus siswa dengan akun sekolah.</p>");
         return;
       }
-      if(page==="Anonymous Venting"){return oldNav?.(page);}
+      if(page==="Anonymous Venting"){return serverPage('vent');}
       if(["School Portal","BK Portal","Grades"].includes(page)){
         modal("Login diperlukan","<p>Portal dan data sekolah hanya dapat digunakan melalui akun dengan peran yang sesuai.</p>");
         return;
