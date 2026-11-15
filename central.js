@@ -199,7 +199,7 @@
             field.dispatchEvent(new Event('input',{bubbles:true}));
             notice(err.message);
           }finally{
-            send.disabled=false;send.classList.remove('is-sending');send.setAttribute('aria-label','Kirim pesan');field.focus();
+            send.disabled=false;send.classList.remove('is-sending');send.setAttribute('aria-label','Kirim pesan');field.blur();
           }
         };
       };
