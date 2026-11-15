@@ -128,9 +128,10 @@
       const showChat=data=>{
         stopStream?.();clearTimeout(typingTimer);
         accessCode=$('#rasaAccessPageCode')?.value.trim()||accessCode;
-        const box=$('#rasaConversationPage');box.hidden=false;
+        const box=$('#rasaConversationPage');box.hidden=false;box.classList.add('rasa-chat-screen');
         box.innerHTML='<header class="rasa-chat-header"><button type="button" class="rasa-chat-back" id="rasaChatBack" aria-label="Kembali">‹</button><span class="rasa-chat-avatar">♡</span><div class="rasa-chat-title"><strong>RASA · Moderator</strong><small id="rasaChatPresence">Percakapan anonim · '+esc(data.conversation.status||'Menunggu moderator')+'</small></div><span class="rasa-chat-secure" title="Percakapan menggunakan kode akses">●</span></header><div class="rasa-chat-notice">Jangan kirim kata sandi atau data pribadi yang tidak diperlukan.</div><div class="rasa-messages" id="rasaMessagesPage" role="log" aria-live="polite">'+messageMarkup(data.messages)+'</div><div class="rasa-typing" id="rasaTypingPage" hidden><i></i><i></i><i></i><span>Moderator sedang mengetik</span></div><form id="rasaReplyPage" class="rasa-chat-composer"><textarea id="rasaReplyPageText" required maxlength="3000" rows="1" placeholder="Tulis pesan..." aria-label="Tulis pesan"></textarea><button class="rasa-send" aria-label="Kirim pesan" type="submit">➤</button></form>';
         $('#rasaChatBack').onclick=home;
+        box.scrollIntoView({behavior:'smooth',block:'start'});
         const list=$('#rasaMessagesPage');list.scrollTop=list.scrollHeight;
         let count=data.messages.length;
         stopStream=rasaLiveStream('/rasa/conversations/'+data.conversation.id+'/stream',{'X-RASA-ACCESS-CODE':accessCode},latest=>{
