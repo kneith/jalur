@@ -2743,3 +2743,14 @@ html.jalur-welcome-mode .login-ambient .bubble-three{width:29px;height:29px;righ
 .rasa-chat-avatar{display:grid;place-items:center;flex:0 0 auto}
 .rasa-chat-avatar .rasa-symbol{width:27px;height:27px}
 .rasa-nav-mark svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+
+
+/* RASA corrections: visible consultation action and chat bubble-first layout. */
+.rasa-consult-action{background:linear-gradient(135deg,#6688c5 0%,#788fc2 48%,#9b88bd 100%)!important;color:#fff!important;border:1px solid rgba(255,255,255,.18)!important;box-shadow:0 8px 22px rgba(91,112,164,.22)!important}
+.rasa-consult-action:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.rasa-consult-action:focus-visible{outline:3px solid rgba(123,157,220,.55);outline-offset:3px}
+.rasa-chat-screen .rasa-messages{display:flex;flex-direction:column;gap:12px;flex:1;min-height:180px;max-height:none;overflow-y:auto;padding:16px 18px;margin:0;scroll-behavior:smooth}
+.rasa-chat-screen .rasa-bubble{width:fit-content;max-width:min(82%,560px);padding:11px 14px 8px;border-radius:18px}
+.rasa-chat-screen .rasa-bubble.from-moderator{align-self:flex-start;border-top-left-radius:5px;background:rgba(142,164,202,.13)}
+.rasa-chat-screen .rasa-bubble.from-visitor{align-self:flex-end;border-top-right-radius:5px;background:linear-gradient(135deg,rgba(113,148,214,.28),rgba(184,168,216,.26));border-color:rgba(154,174,224,.38)}
+.rasa-chat-screen .rasa-chat-composer{position:sticky;bottom:0;z-index:2}
