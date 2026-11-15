@@ -16,6 +16,43 @@
     return data;
   }
   function notice(text){ const root=$('#toastRegion'); if(root){root.innerHTML=`<div class="toast">${esc(text)}</div>`;setTimeout(()=>{root.innerHTML=''},4000)}else alert(text); }
+
+  function rasaLiveStream(path, headers, onUpdate) {
+    let active = true, controller = null;
+    const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+    (async () => {
+      while (active) {
+        controller = new AbortController();
+        try {
+          const response = await fetch(apiBase + path, {method:'GET', headers, credentials:'include', signal:controller.signal, cache:'no-store'});
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || error.message || 'Koneksi percakapan terputus.');
+          }
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          while (active) {
+            const part = await reader.read();
+            if (part.done) break;
+            buffer += decoder.decode(part.value, {stream:true});
+            let boundary;
+            while ((boundary = buffer.indexOf('\\n\\n')) >= 0) {
+              const frame = buffer.slice(0,boundary);
+              buffer = buffer.slice(boundary+2);
+              const data = frame.split(/\\r?\\n/).filter(line => line.startsWith('data:')).map(line => line.slice(5).trim()).join('\\n');
+              if (data) { try { onUpdate(JSON.parse(data)); } catch {} }
+            }
+          }
+        } catch (error) {
+          if (active && error.name !== 'AbortError') await pause(700);
+        } finally { controller = null; }
+        if (active) await pause(250);
+      }
+    })();
+    return () => { active = false; controller?.abort(); };
+  }
+
   function dismissLoginModal(onDone){
     const root=$('#modalRoot'),backdrop=$('#centralModalBackdrop');
     if(!backdrop){onDone?.();return;}
@@ -52,12 +89,12 @@
   function formField(label,id,placeholder,type='text',required=true){return `<div class="field"><label for="${id}">${esc(label)}</label><input id="${id}" type="${type}" placeholder="${esc(placeholder)}" ${required?'required':''}></div>`}
   async function serverPage(page){
     const root=$('#pageRoot');if(!root)return;
-    const permissions={"server-home":["student"],"appointment":["student"],"vent":["student","guest"],"server-school":["school_admin"],"school-users":["school_admin"],"school-classes":["school_admin"],"school-alumni":["school_admin"],"server-grades":["teacher"],"grades":["student","teacher","school_admin"],"server-bk":["counselor"],"server-vent":["wellbeing_moderator"],"server-platform":["platform_admin"]};
+    const permissions={"server-home":["student"],"appointment":["student"],"vent":["student","guest"],"vent-chat":["student","guest"],"server-school":["school_admin"],"school-users":["school_admin"],"school-classes":["school_admin"],"school-alumni":["school_admin"],"server-grades":["teacher"],"grades":["student","teacher","school_admin"],"server-bk":["counselor"],"server-vent":["wellbeing_moderator"],"server-platform":["platform_admin"]};
     const permitted=permissions[page];
     if(permitted&&!permitted.includes(user?.role||"guest")){notice("Halaman ini tidak tersedia untuk peran akun yang sedang digunakan.");return;}
     if(page!=="directory"&&!user&&page!=="vent"){notice("Silakan masuk dengan akun yang sesuai untuk membuka halaman ini.");return;}
     if(page==="directory"){window.navigate?.("Study Program Explorer");return;}
-    window.JALUR_ANIMATE_PAGE_TRANSITION?.();const activePage=({'appointment':'BK Consultation','server-bk':'BK Portal','server-school':'School Portal','school-users':'School Portal','school-classes':'School Portal','school-alumni':'School Portal','server-grades':'Academic Profile','grades':'Academic Profile','server-home':'Dashboard','server-vent':'Anonymous Venting','vent':'Anonymous Venting','directory':'Study Program Explorer','server-platform':'Settings'})[page];if(activePage)window.JALUR_SET_ACTIVE_PAGE?.(activePage);root.innerHTML=`<section class="server-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat…</span></section>`;try{
+    window.JALUR_ANIMATE_PAGE_TRANSITION?.();const activePage=({'appointment':'BK Consultation','server-bk':'BK Portal','server-school':'School Portal','school-users':'School Portal','school-classes':'School Portal','school-alumni':'School Portal','server-grades':'Academic Profile','grades':'Academic Profile','server-home':'Dashboard','server-vent':'Anonymous Venting','vent':'Anonymous Venting','vent-chat':'Anonymous Venting','directory':'Study Program Explorer','server-platform':'Settings'})[page];if(activePage)window.JALUR_SET_ACTIVE_PAGE?.(activePage);root.innerHTML=`<section class="server-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat…</span></section>`;try{
     if(page==='directory'){root.innerHTML=`${pageHead('Direktori Pendidikan','Pencarian server berdasarkan universitas, jurusan, atau program studi. Hasil alfabetis dan dimuat bertahap.')}<section class="panel glass"><form id="directoryForm" class="form-grid"><div class="field"><label for="directoryType">Cari berdasarkan</label><select id="directoryType"><option value="all">Semua</option><option value="institution">Perguruan tinggi</option><option value="program">Program studi / jurusan</option></select></div><div class="field"><label for="directoryQuery">Kata kunci</label><input id="directoryQuery" placeholder="Ketik nama universitas atau prodi…" autocomplete="off"></div></form><p id="directoryMeta" class="source-line">Masukkan sedikitnya dua karakter agar pencarian dapat menampilkan hasil yang sesuai.</p><div id="directoryResults"></div><button class="btn secondary" id="directoryMore" hidden>Muat hasil berikutnya</button></section>`;wireDirectory();return;}
     if(page==='server-platform'){
       root.innerHTML=`${pageHead('Administrasi Platform','Kelola akun lintas sekolah dan akses Moderator Curhat.')}<section class="panel glass"><h2>Buat akun Moderator Curhat</h2><p class="source-line">Akun moderator memiliki akses global ke pesan curhat anonim. Berikan akses hanya kepada petugas yang ditunjuk dan sampaikan kata sandi sementara melalui kanal terpisah.</p><form id="centralCreateModerator" class="form-grid">${formField('Nama lengkap','moderatorFullName','Nama lengkap')}${formField('Email','moderatorEmail','moderator@jalur.id','email')}${formField('Kata sandi sementara (minimal 14 karakter)','moderatorPassword','Kata sandi kuat','password')}<div class="field full"><button class="btn primary">Buat akun Moderator Curhat</button></div></form></section>`;
@@ -77,6 +114,69 @@
       return;
     }
 
+
+    if(page==='vent-chat'){
+      root.innerHTML=`${pageHead('Curhat Anonim','Ruang percakapan pribadi dengan moderator RASA. Gunakan kode akses untuk kembali kapan saja.')}`+
+        '<section class="panel glass rasa-work-panel"><div class="rasa-panel-heading"><div><span class="rasa-kicker">CURHAT ANONIM</span><h2>Mulai percakapan</h2><p>Ceritakan hal yang ingin disampaikan. Pesan awal akan langsung masuk ke antrean moderator.</p></div><button type="button" class="btn secondary small" id="rasaChatHome">Kembali ke RASA</button></div><div class="rasa-code-explainer"><strong>Privasi dan kode akses</strong><p>Percakapan tidak ditautkan ke akun siswa. Kode akses rahasia ditampilkan satu kali setelah cerita dikirim. Simpan kode itu untuk membuka kembali chat.</p></div><form id="rasaStartPage" class="form-grid"><div class="field full"><label for="rasaSchoolPage">Sekolah</label><select id="rasaSchoolPage" required><option value="">Memuat daftar sekolah...</option></select></div><div class="field"><label for="rasaCategoryPage">Topik cerita</label><select id="rasaCategoryPage"><option value="academic">Akademik</option><option value="family">Keluarga</option><option value="friends">Teman</option><option value="future">Masa depan</option><option value="wellbeing">Keadaan diri</option><option value="other">Lainnya</option></select></div><div class="field full"><label for="rasaInitialPage">Ceritakan hal yang ingin disampaikan</label><textarea id="rasaInitialPage" minlength="3" maxlength="3000" required placeholder="Tuliskan ceritamu di sini..."></textarea></div><div class="field full"><button class="btn primary" type="submit">Kirim cerita dan buat kode akses</button></div></form></section>'+
+        '<section class="panel glass rasa-work-panel"><h2>Percakapan Saya</h2><p>Sudah punya kode akses? Masukkan untuk melanjutkan chat.</p><form id="rasaAccessPage" class="form-grid"><div class="field full"><label for="rasaAccessPageCode">Kode akses rahasia</label><input id="rasaAccessPageCode" minlength="20" required autocomplete="off" placeholder="Tempelkan kode akses"></div><div class="field full"><button class="btn secondary" type="submit">Buka percakapan</button></div></form></section>'+
+        '<section id="rasaConversationPage" class="panel glass rasa-work-panel" hidden></section>';
+      let accessCode='', stopStream=null, typingTimer=null, pendingMessageId=null;
+      const messageMarkup=(items,own='visitor')=>items.map(m=>'<article class="rasa-bubble '+(m.sender==='moderator'?'from-moderator':'from-visitor')+'"><p>'+esc(m.text)+'</p><time>'+esc(new Date(m.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}))+'</time>'+(m.sender===own?'<small class="rasa-delivery-state">✓ Terkirim</small>':'')+'</article>').join('');
+      const home=()=>{stopStream?.();stopStream=null;clearTimeout(typingTimer);serverPage('vent');};
+      $('#rasaChatHome').onclick=home;
+      api('/public/schools').then(data=>{$('#rasaSchoolPage').innerHTML='<option value="">Pilih sekolah</option>'+(data.items||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');}).catch(err=>{const select=$('#rasaSchoolPage');if(select)select.innerHTML='<option value="">Daftar sekolah belum tersedia</option>';notice(err.message);});
+      const showChat=data=>{
+        stopStream?.();clearTimeout(typingTimer);
+        accessCode=$('#rasaAccessPageCode')?.value.trim()||accessCode;
+        const box=$('#rasaConversationPage');box.hidden=false;
+        box.innerHTML='<header class="rasa-chat-header"><button type="button" class="rasa-chat-back" id="rasaChatBack" aria-label="Kembali">‹</button><span class="rasa-chat-avatar">♡</span><div class="rasa-chat-title"><strong>RASA · Moderator</strong><small id="rasaChatPresence">Percakapan anonim · '+esc(data.conversation.status||'Menunggu moderator')+'</small></div><span class="rasa-chat-secure" title="Percakapan menggunakan kode akses">●</span></header><div class="rasa-chat-notice">Jangan kirim kata sandi atau data pribadi yang tidak diperlukan.</div><div class="rasa-messages" id="rasaMessagesPage" role="log" aria-live="polite">'+messageMarkup(data.messages)+'</div><div class="rasa-typing" id="rasaTypingPage" hidden><i></i><i></i><i></i><span>Moderator sedang mengetik</span></div><form id="rasaReplyPage" class="rasa-chat-composer"><textarea id="rasaReplyPageText" required maxlength="3000" rows="1" placeholder="Tulis pesan..." aria-label="Tulis pesan"></textarea><button class="rasa-send" aria-label="Kirim pesan" type="submit">➤</button></form>';
+        $('#rasaChatBack').onclick=home;
+        const list=$('#rasaMessagesPage');list.scrollTop=list.scrollHeight;
+        let count=data.messages.length;
+        stopStream=rasaLiveStream('/rasa/conversations/'+data.conversation.id+'/stream',{'X-RASA-ACCESS-CODE':accessCode},latest=>{
+          const nearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<100;
+          if(latest.messages.length!==count){list.innerHTML=messageMarkup(latest.messages);count=latest.messages.length;if(nearBottom)list.scrollTop=list.scrollHeight;}
+          $('#rasaTypingPage').hidden=!latest.counterpart_typing;
+          $('#rasaChatPresence').textContent='Percakapan anonim · '+(latest.conversation.status||'Aktif');
+        });
+        const field=$('#rasaReplyPageText');
+        field.addEventListener('input',()=>{
+          clearTimeout(typingTimer);
+          api('/rasa/conversations/'+data.conversation.id+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{is_typing:true}}).catch(()=>{});
+          typingTimer=setTimeout(()=>api('/rasa/conversations/'+data.conversation.id+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{is_typing:false}}).catch(()=>{}),1800);
+        });
+        field.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();$('#rasaReplyPage').requestSubmit();}});
+        $('#rasaReplyPage').onsubmit=async ev=>{
+          ev.preventDefault();const value=field.value.trim();if(!value)return;
+          const send=ev.target.querySelector('button');send.disabled=true;
+          pendingMessageId ||= (crypto.randomUUID?.()||([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,x=>(x^crypto.getRandomValues(new Uint8Array(1))[0]&15>>x/4).toString(16)));
+          try{
+            await api('/rasa/conversations/'+data.conversation.id+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{is_typing:false}});
+            const result=await api('/rasa/conversations/'+data.conversation.id+'/messages',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{text:value,client_message_id:pendingMessageId}});
+            if(result.item?.delivery!=='sent')throw new Error('Pesan belum dikonfirmasi tersimpan. Coba kirim ulang.');
+            pendingMessageId=null;field.value='';
+            const fresh=await api('/rasa/conversations/access',{method:'POST',body:{access_code:accessCode}});
+            const nearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<100;
+            list.innerHTML=messageMarkup(fresh.messages);count=fresh.messages.length;if(nearBottom)list.scrollTop=list.scrollHeight;
+          }catch(err){notice(err.message);}finally{send.disabled=false;field.focus();}
+        };
+      };
+      $('#rasaStartPage').onsubmit=async ev=>{
+        ev.preventDefault();const btn=ev.target.querySelector('button');btn.disabled=true;
+        try{
+          const schoolId=$('#rasaSchoolPage').value;if(!schoolId)throw new Error('Pilih sekolah terlebih dahulu.');
+          const created=await api('/rasa/conversations',{method:'POST',body:{school_id:schoolId,category:$('#rasaCategoryPage').value,text:$('#rasaInitialPage').value}});
+          accessCode=created.access_code;$('#rasaAccessPageCode').value=accessCode;
+          modal('Simpan kode akses rahasia','<p>Kode hanya ditampilkan satu kali. Simpan untuk membuka kembali percakapan ini. Kode tidak dapat dipulihkan jika hilang.</p><label for="rasaCodePageOnce">Kode akses</label><input id="rasaCodePageOnce" readonly value="'+esc(accessCode)+'"><button type="button" class="btn secondary" id="rasaCopyPageCode">Salin kode</button><button type="button" class="btn primary" id="rasaContinuePageChat">Buka percakapan</button>');
+          $('#rasaCopyPageCode').onclick=()=>navigator.clipboard?.writeText(accessCode).then(()=>notice('Kode akses disalin.')).catch(()=>notice('Silakan salin kode secara manual.'));
+          $('#rasaContinuePageChat').onclick=()=>dismissLoginModal(async()=>{const loaded=await api('/rasa/conversations/access',{method:'POST',body:{access_code:accessCode}});showChat(loaded);});
+          ev.target.reset();
+        }catch(err){notice(err.message);}finally{btn.disabled=false;}
+      };
+      $('#rasaAccessPage').onsubmit=async ev=>{ev.preventDefault();const btn=ev.target.querySelector('button');btn.disabled=true;try{accessCode=$('#rasaAccessPageCode').value.trim();showChat(await api('/rasa/conversations/access',{method:'POST',body:{access_code:accessCode}}));}catch(err){notice(err.message);}finally{btn.disabled=false;}};
+      return;
+    }
+
     if(page==='vent'){
       root.innerHTML=`${pageHead('RASA','Ruang Aman, Suara, dan Aspirasi. Ruang untuk bercerita, memperoleh pendampingan, dan menemukan langkah berikutnya.')}<section class="rasa-hero panel glass">
         <div class="rasa-brand-row"><span class="rasa-brand-mark" aria-hidden="true">♡</span><div class="rasa-brand-copy"><strong>RASA</strong><small>Layanan dukungan siswa</small></div><span class="rasa-active-label">Layanan aktif</span></div>
@@ -88,12 +188,12 @@
         <article class="rasa-service-card rasa-chat-card"><div class="rasa-service-top"><span class="rasa-service-icon">♡</span><span class="rasa-service-tag">Anonim</span></div><h3>Curhat Anonim</h3><p>Sampaikan cerita tanpa mencantumkan identitas. Moderator akan membaca dan memberikan tanggapan melalui percakapan.</p><button class="btn primary" id="rasaOpenChat">Mulai Curhat <span aria-hidden="true">→</span></button></article>
         <article class="rasa-service-card rasa-consult-card"><div class="rasa-service-top"><span class="rasa-service-icon">▣</span><span class="rasa-service-tag">Konsultasi</span></div><h3>Konsultasi BK</h3><p>Ajukan permohonan konsultasi dengan Guru BK menggunakan akun siswa. Guru BK akan meninjau dan mengonfirmasi jadwal.</p><button class="btn secondary" id="rasaOpenConsult">Ajukan Konsultasi <span aria-hidden="true">→</span></button></article>
       </div></section>
-      <section class="rasa-access-section"><h2>Akses dan panduan</h2><button class="rasa-access-link" id="rasaOpenAccess"><span class="rasa-access-icon">▤</span><span><strong>Percakapan Saya</strong><small>Lanjutkan percakapan dengan moderator menggunakan kode akses.</small></span><span aria-hidden="true">›</span></button><button class="rasa-access-link" id="rasaOpenStatus"><span class="rasa-access-icon">▣</span><span><strong>Status Konsultasi</strong><small>Periksa perkembangan permohonan konsultasimu.</small></span><span aria-hidden="true">›</span></button></section>
+      <section class="rasa-access-section"><h2>Akses dan panduan</h2><button class="rasa-access-link" id="rasaOpenAccess"><span class="rasa-access-icon">▤</span><span><strong>Percakapan Saya</strong><small>Lanjutkan percakapan dengan moderator menggunakan kode akses.</small></span><span aria-hidden="true">›</span></button><button class="rasa-access-link" id="rasaOpenStatus"><span class="rasa-access-icon">▣</span><span><strong>Status Konsultasi</strong><small>Periksa perkembangan permohonan konsultasimu.</small></span><span aria-hidden="true">›</span></button><button class="rasa-access-link" id="rasaOpenPrivacy"><span class="rasa-access-icon">◇</span><span><strong>Panduan Privasi</strong><small>Pelajari anonimitas, kode akses, dan batas akses petugas.</small></span><span aria-hidden="true">›</span></button></section>
       <section id="rasaBkPanel" class="panel glass rasa-work-panel" hidden><div class="rasa-panel-heading"><div><span class="rasa-kicker">KONSULTASI BK</span><h2>Ajukan konsultasi</h2><p>Kamu dapat mengajukan secara anonim tanpa menautkan permohonan ke akun. Pilih sekolah dan waktu yang kamu harapkan.</p></div><button type="button" class="btn secondary small" id="rasaBkBack">Kembali ke RASA</button></div><div id="rasaIdentifiedOption" class="rasa-code-explainer" hidden><strong>Ingin menggunakan identitas akun?</strong><p>Permohonan teridentifikasi tetap tersedia melalui akun siswa. <button type="button" class="text-btn" id="rasaIdentifiedGo">Gunakan akun siswa</button></p></div><form id="rasaBkStart" class="form-grid"><div class="field full"><label for="rasaBkSchool">Sekolah</label><select id="rasaBkSchool" required><option value="">Memuat daftar sekolah...</option></select></div><div class="field"><label for="rasaBkDate">Waktu yang diusulkan</label><input id="rasaBkDate" type="datetime-local" required></div><div class="field"><label for="rasaBkMode">Metode</label><select id="rasaBkMode"><option value="in_person">Tatap muka</option><option value="online">Daring</option></select></div><div class="field full"><label for="rasaBkTopic">Topik konsultasi</label><select id="rasaBkTopic"><option>Perencanaan studi lanjut</option><option>Kesulitan akademik</option><option>Pengembangan diri</option><option>Masalah sosial di sekolah</option><option>Lainnya</option></select></div><div class="field full"><label for="rasaBkNote">Keterangan tambahan (opsional)</label><textarea id="rasaBkNote" maxlength="1000"></textarea></div><div class="field full"><button class="btn primary">Kirim permohonan anonim</button></div></form><p class="source-line">Setelah mengirim, simpan kode akses yang dibuat otomatis. Kode berlaku 30 hari dan diperlukan untuk memeriksa status serta menyepakati jadwal.</p></section>
       <section id="rasaBkStatusPanel" class="panel glass rasa-work-panel" hidden><div class="rasa-panel-heading"><div><span class="rasa-kicker">STATUS KONSULTASI</span><h2>Periksa permohonan</h2><p>Masukkan kode akses konsultasi anonim yang kamu simpan.</p></div><button type="button" class="btn secondary small" id="rasaBkStatusBack">Kembali ke RASA</button></div><form id="rasaBkStatusForm" class="form-grid"><div class="field full"><label for="rasaBkAccessCode">Kode akses konsultasi</label><input id="rasaBkAccessCode" minlength="20" required autocomplete="off" placeholder="Tempel kode akses"></div><div class="field full"><button class="btn primary">Periksa status</button></div></form><div id="rasaBkStatusResult"></div></section>
       <section id="rasaChatPanel" class="panel glass rasa-work-panel" hidden><div class="rasa-panel-heading"><div><span class="rasa-kicker">CURHAT ANONIM</span><h2>Mulai percakapan</h2><p>Isi cerita awalmu. Setelah dikirim, sistem akan membuat kode akses rahasia secara otomatis.</p></div><button type="button" class="btn secondary small" id="rasaBackHome">Kembali ke RASA</button></div>
         <div class="rasa-code-explainer"><strong>Bagaimana kode akses didapat?</strong><p>Setelah kamu menekan tombol kirim, JALUR membuat kode acak khusus untuk percakapanmu. Kode ditampilkan satu kali. Salin atau simpan sendiri, karena kode diperlukan untuk membuka kembali percakapan dan tidak bisa dipulihkan jika hilang. Kode berlaku 30 hari.</p></div>
-        <div class="rasa-start-header"><div><span class="rasa-kicker">CURHAT ANONIM</span><h2>Mulai percakapan</h2><p>Ruang percakapan pribadi dengan moderator RASA.</p></div><button type="button" class="btn secondary small" id="rasaBackHome">Kembali</button></div><div class="rasa-code-explainer"><strong>Kode akses dibuat otomatis oleh JALUR</strong><p>Setelah pesan pertamamu dikirim, server membuat kode acak yang hanya ditampilkan satu kali. Simpan kode tersebut untuk membuka percakapan kembali. Kode berlaku 30 hari dan tidak dapat dipulihkan jika hilang.</p></div><form id="rasaStart" class="form-grid"><div class="field full"><label for="rasaSchool">Sekolah</label><select id="rasaSchool" required><option value="">Memuat daftar sekolah...</option></select></div><div class="field"><label for="rasaCategory">Topik cerita</label><select id="rasaCategory"><option value="academic">Akademik</option><option value="family">Keluarga</option><option value="friends">Teman</option><option value="future">Masa depan</option><option value="wellbeing">Keadaan diri</option><option value="other">Lainnya</option></select></div><div class="field full"><label for="rasaInitialText">Ceritakan hal yang ingin disampaikan</label><textarea id="rasaInitialText" minlength="3" maxlength="3000" required placeholder="Tuliskan ceritamu di sini..."></textarea></div><div class="field full"><button class="btn primary">Kirim cerita dan buat kode akses</button></div></form>
+<form id="rasaStart" class="form-grid"><div class="field full"><label for="rasaSchool">Sekolah</label><select id="rasaSchool" required><option value="">Memuat daftar sekolah...</option></select></div><div class="field"><label for="rasaCategory">Topik cerita</label><select id="rasaCategory"><option value="academic">Akademik</option><option value="family">Keluarga</option><option value="friends">Teman</option><option value="future">Masa depan</option><option value="wellbeing">Keadaan diri</option><option value="other">Lainnya</option></select></div><div class="field full"><label for="rasaInitialText">Ceritakan hal yang ingin disampaikan</label><textarea id="rasaInitialText" minlength="3" maxlength="3000" required placeholder="Tuliskan ceritamu di sini..."></textarea></div><div class="field full"><button class="btn primary">Kirim cerita dan buat kode akses</button></div></form>
       </section>
       <section id="rasaAccessPanel" class="panel glass rasa-work-panel" hidden><div class="rasa-panel-heading"><div><span class="rasa-kicker">LANJUTKAN CERITA</span><h2>Percakapan Saya</h2><p>Masukkan kode akses yang kamu simpan setelah mengirim cerita pertama.</p></div><button type="button" class="btn secondary small" id="rasaBackAccess">Kembali ke RASA</button></div><form id="rasaAccess" class="form-grid"><div class="field full"><label for="rasaAccessCode">Kode akses rahasia</label><input id="rasaAccessCode" minlength="20" required autocomplete="off" placeholder="Tempelkan kode akses di sini"></div><div class="field full"><button class="btn primary">Buka percakapan</button></div></form><p class="source-line">Kode berlaku 30 hari sejak percakapan dibuat. Jika kode hilang, percakapan tidak dapat dipulihkan karena tidak ditautkan ke akun.</p></section>
       <section id="rasaConversation" class="panel glass section-gap rasa-work-panel" hidden></section>
@@ -101,8 +201,9 @@
       let code='',conversationId='';
       const home=()=>{clearInterval(rasaPollTimer);$('#rasaChatPanel').hidden=true;$('#rasaChatPanel').classList.remove('rasa-start-screen');$('#rasaAccessPanel').hidden=true;$('#rasaConversation').hidden=true;window.scrollTo({top:0,behavior:'smooth'});};
       const hideRasaPanels=()=>{['rasaChatPanel','rasaAccessPanel','rasaConversation','rasaBkPanel','rasaBkStatusPanel'].forEach(id=>{const el=$('#'+id);if(el)el.hidden=true;});};
-      $('#rasaOpenChat').onclick=()=>{hideRasaPanels();$('#rasaChatPanel').hidden=false;$('#rasaChatPanel').classList.add('rasa-start-screen');loadRasaSchools();};
-      $('#rasaOpenAccess').onclick=()=>{hideRasaPanels();$('#rasaAccessPanel').hidden=false;$('#rasaAccessPanel').scrollIntoView({behavior:'smooth',block:'start'});};
+      $('#rasaOpenChat').onclick=()=>serverPage('vent-chat');
+      $('#rasaOpenAccess').onclick=()=>serverPage('vent-chat');
+      $('#rasaOpenPrivacy').onclick=()=>modal('Panduan Privasi RASA','<p><strong>Curhat Anonim:</strong> percakapan tidak ditautkan ke akun siswa, nama, NIS, atau kelas. Moderator hanya melihat isi dan konteks yang diperlukan untuk menanggapi.</p><p><strong>Kode akses:</strong> kode rahasia dibuat otomatis, ditampilkan satu kali, dan harus disimpan sendiri. Jangan bagikan kepada orang lain.</p><p><strong>Rujukan BK:</strong> rujukan dilakukan terpisah oleh moderator dengan persetujuan siswa, kecuali keadaan mendesak sesuai kebijakan perlindungan sekolah.</p><p><strong>Konsultasi BK:</strong> merupakan permohonan dan penjadwalan terpisah, bukan ruang chat.</p>');
       $('#rasaBackHome').onclick=home;$('#rasaBackAccess').onclick=home;
       const loadRasaSchools=async()=>{try{const data=await api('/public/schools');const options='<option value="">Pilih sekolah</option>'+data.items.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');['rasaBkSchool','rasaSchool'].forEach(id=>{const el=$('#'+id);if(el)el.innerHTML=options;});}catch(err){['rasaBkSchool','rasaSchool'].forEach(id=>{const el=$('#'+id);if(el)el.innerHTML='<option value="">Daftar sekolah belum tersedia</option>';});notice(err.message);}};
       const goConsult=()=>{hideRasaPanels();$('#rasaBkPanel').hidden=false;$('#rasaIdentifiedOption').hidden=user?.role!=='student';$('#rasaBkPanel').scrollIntoView({behavior:'smooth',block:'start'});loadRasaSchools();};
@@ -146,6 +247,7 @@
 
 
     if(page==='server-vent'){
+      let modStopStream=null;
       const d=await api('/rasa/moderator/queue');
       root.innerHTML=`${pageHead('RASA · Antrean Curhat','Antrean bersama. Moderator mengambil penugasan agar penanganan terkoordinasi dan tidak tumpang tindih.')}<section class="panel glass"><h2>Antrean bersama</h2>${d.items.length?d.items.map(v=>`<article class="program-card glass"><span class="program-kicker">${esc(v.status)} · ${esc(v.category)}</span><p>${v.message_count} pesan · ${v.assigned_moderator_id?'Sudah ditugaskan':'Belum ditugaskan'}</p><button class="btn primary" data-rasa-open="${esc(v.id)}">${v.assigned_to_me?'Buka percakapan':'Ambil penugasan'}</button></article>`).join(''):'<p>Antrean kosong.</p>'}</section><section id="moderatorConversation" class="panel glass section-gap" hidden></section>`;
       root.querySelectorAll('[data-rasa-open]').forEach(b=>b.onclick=async()=>{
@@ -153,13 +255,16 @@
           await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/assign',{method:'POST',body:{}});
           const data=await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen);
           const box=$('#moderatorConversation');box.hidden=false;
-          const messageMarkup=items=>items.map(m=>'<article class="rasa-bubble '+(m.sender==='moderator'?'from-moderator':'from-visitor')+'"><p>'+esc(m.text)+'</p><time>'+esc(new Date(m.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}))+'</time></article>').join('');
+          const messageMarkup=(items,own='moderator')=>items.map(m=>'<article class="rasa-bubble '+(m.sender==='moderator'?'from-moderator':'from-visitor')+'"><p>'+esc(m.text)+'</p><time>'+esc(new Date(m.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}))+'</time>'+(m.sender===own?'<small class="rasa-delivery-state">✓ Terkirim</small>':'')+'</article>').join('');
           box.innerHTML='<header class="rasa-chat-header"><span class="rasa-chat-avatar">♡</span><div class="rasa-chat-title"><strong>Percakapan RASA</strong><small>Penanganan anonim · Moderator</small></div></header><div id="modMessages" class="rasa-messages">'+messageMarkup(data.messages)+'</div><div class="rasa-typing" id="modTyping" hidden><i></i><i></i><i></i><span>Pengunjung sedang mengetik</span></div><form id="modReply" class="rasa-chat-composer"><textarea id="modReplyText" required maxlength="3000" rows="1" placeholder="Tulis balasan..." aria-label="Tulis balasan"></textarea><button class="rasa-send" type="submit" aria-label="Kirim balasan">➤</button></form><div class="rasa-chat-actions"><button class="btn secondary" id="modClose">Tutup percakapan</button><button class="btn secondary" id="modRefer">Rujuk ke BK</button></div>';
-          const modList=$('#modMessages');modList.scrollTop=modList.scrollHeight;let modCount=data.messages.length;
-          clearInterval(rasaPollTimer);
-          rasaPollTimer=setInterval(async()=>{try{const latest=await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen);if(latest.messages.length!==modCount){const nearBottom=modList.scrollHeight-modList.scrollTop-modList.clientHeight<100;modList.innerHTML=messageMarkup(latest.messages);modCount=latest.messages.length;if(nearBottom)modList.scrollTop=modList.scrollHeight;}const typing=await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/typing',{method:'POST',body:{is_typing:false}});$('#modTyping').hidden=!typing.visitor_typing;}catch{clearInterval(rasaPollTimer);}},1800);
-          let modTypingTimer=null;$('#modReplyText').addEventListener('input',()=>{clearTimeout(modTypingTimer);api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/typing',{method:'POST',body:{is_typing:true}}).catch(()=>{});modTypingTimer=setTimeout(()=>api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/typing',{method:'POST',body:{is_typing:false}}).catch(()=>{}),2200);});
-          $('#modReply').onsubmit=async ev=>{ev.preventDefault();const field=$('#modReplyText'),value=field.value.trim();if(!value)return;const send=ev.target.querySelector('button');send.disabled=true;try{await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/typing',{method:'POST',body:{is_typing:false}});await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/messages',{method:'POST',body:{text:value}});field.value='';const fresh=await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen);modList.innerHTML=messageMarkup(fresh.messages);modCount=fresh.messages.length;modList.scrollTop=modList.scrollHeight;notice('Balasan berhasil dikirim.');}catch(err){notice(err.message);}finally{send.disabled=false;field.focus();}};
+          const modList=$('#modMessages');modList.scrollTop=modList.scrollHeight;let modCount=data.messages.length,modPendingId=null,modTypingTimer=null;
+          modStopStream?.();modStopStream=rasaLiveStream('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/stream',{},latest=>{
+            const nearBottom=modList.scrollHeight-modList.scrollTop-modList.clientHeight<100;
+            if(latest.messages.length!==modCount){modList.innerHTML=messageMarkup(latest.messages);modCount=latest.messages.length;if(nearBottom)modList.scrollTop=modList.scrollHeight;}
+            $('#modTyping').hidden=!latest.counterpart_typing;
+          });
+          $('#modReplyText').addEventListener('input',()=>{clearTimeout(modTypingTimer);api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/typing',{method:'POST',body:{is_typing:true}}).catch(()=>{});modTypingTimer=setTimeout(()=>api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/typing',{method:'POST',body:{is_typing:false}}).catch(()=>{}),1800);});
+          $('#modReply').onsubmit=async ev=>{ev.preventDefault();const field=$('#modReplyText'),value=field.value.trim();if(!value)return;const send=ev.target.querySelector('button');send.disabled=true;modPendingId ||= crypto.randomUUID();try{await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/typing',{method:'POST',body:{is_typing:false}});const result=await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/messages',{method:'POST',body:{text:value,client_message_id:modPendingId}});if(result.item?.delivery!=='sent')throw new Error('Pesan belum dikonfirmasi tersimpan.');modPendingId=null;field.value='';const fresh=await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen);modList.innerHTML=messageMarkup(fresh.messages);modCount=fresh.messages.length;modList.scrollTop=modList.scrollHeight;notice('Balasan terkirim.');}catch(err){notice(err.message);}finally{send.disabled=false;field.focus();}};
           $('#modClose').onclick=async()=>{try{await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/status',{method:'PATCH',body:{status:'closed'}});serverPage('server-vent');}catch(err){notice(err.message);}};
           $('#modRefer').onclick=async()=>{const summary=prompt('Ringkasan seperlunya untuk Guru BK (jangan salin seluruh percakapan):');if(!summary)return;const consent=confirm('Siswa menyetujui rujukan?');const urgent=consent?false:confirm('Apakah ada risiko keselamatan mendesak sesuai kebijakan sekolah?');try{await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/referral',{method:'POST',body:{summary,consent,urgent}});notice('Rujukan dikirim.');serverPage('server-vent');}catch(err){notice(err.message);}};
         }catch(err){notice(err.message);}
