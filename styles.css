@@ -2573,3 +2573,33 @@ body{font-size:var(--type-body);line-height:1.6}
 .alumni-bar-track{height:9px;overflow:hidden;border-radius:999px;background:var(--surface-3,rgba(127,127,127,.16))}
 .alumni-bar-track>span{display:block;height:100%;min-width:2px;border-radius:inherit;background:var(--accent,var(--primary,#6688a8))}
 @media(max-width:600px){.alumni-bar-label{align-items:flex-start;flex-direction:column;gap:2px}.alumni-chart{gap:12px}}
+
+
+/* Dashboard entry: keep the first-load state in the visible viewport. */
+@media(max-width:700px){
+ #app.app-shell{min-height:100svh;min-height:100dvh;grid-template-columns:minmax(0,1fr);align-content:start;padding:0;gap:0}
+ #app .app-main{min-height:100svh;min-height:100dvh;min-width:0;gap:0}
+ #app .topbar{position:relative;top:auto;z-index:5;flex:none;margin:10px 12px 0}
+ #app #main.page-content{display:block;min-height:calc(100svh - 150px);min-height:calc(100dvh - 150px);padding:14px 14px calc(105px + env(safe-area-inset-bottom))}
+ #app #pageRoot{display:block;width:100%;min-height:100%}
+ #app .dashboard-loading{box-sizing:border-box;width:100%;min-height:clamp(360px,58svh,620px);min-height:clamp(360px,58dvh,620px);margin:0 auto;border:1px solid var(--border);border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025));box-shadow:var(--shadow);color:var(--text)}
+}
+.dashboard-loading{display:grid;justify-items:center;align-content:center;gap:12px;text-align:center}
+.dashboard-loading strong{font-size:16px;letter-spacing:-.02em}
+.dashboard-loading-hint{font-size:12px;color:var(--muted)}
+.dashboard-skeleton{width:min(100%,420px);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.dashboard-skeleton i{display:block;height:68px;border-radius:14px;border:1px solid var(--border-soft);background:linear-gradient(110deg,rgba(255,255,255,.025),rgba(255,255,255,.09),rgba(255,255,255,.025));background-size:220% 100%;animation:jalur-skeleton-shimmer 1.8s ease-in-out infinite}
+.dashboard-skeleton i:nth-child(3),.dashboard-skeleton i:nth-child(4){height:94px}
+@keyframes jalur-skeleton-shimmer{0%,100%{background-position:100% 0}50%{background-position:-100% 0}}
+
+/* Welcome ribbon artwork replaces the old ambient motion background. */
+html.jalur-welcome-mode body{background:linear-gradient(145deg,#111820 0%,#171b25 52%,#21191f 100%)}
+html.jalur-welcome-mode .welcome-screen{position:relative;z-index:1;isolation:isolate}
+.welcome-ribbon-layer{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;contain:paint}
+.welcome-ribbon{position:absolute;display:block;width:min(78vw,1050px);height:clamp(90px,15vw,190px);border-radius:999px;opacity:.36;filter:blur(.2px);transform:rotate(-27deg);background:linear-gradient(100deg,rgba(113,148,214,0),rgba(113,148,214,.34) 22%,rgba(125,195,190,.25) 48%,rgba(196,145,171,.28) 72%,rgba(196,145,171,0));box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 22px 70px rgba(76,111,165,.12)}
+.welcome-ribbon::after{content:"";position:absolute;inset:20% 0;border-radius:inherit;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);filter:blur(14px)}
+.welcome-ribbon.ribbon-one{top:8%;right:-24%;transform:rotate(-24deg);height:clamp(80px,12vw,150px)}
+.welcome-ribbon.ribbon-two{top:42%;left:-34%;transform:rotate(21deg);width:min(88vw,1180px);height:clamp(100px,18vw,220px);opacity:.25}
+.welcome-ribbon.ribbon-three{bottom:-3%;right:-28%;transform:rotate(-19deg);width:min(70vw,900px);height:clamp(90px,14vw,170px);opacity:.3}
+@media(max-width:700px){.welcome-ribbon{width:125vw;opacity:.28}.welcome-ribbon.ribbon-one{top:12%;right:-64%}.welcome-ribbon.ribbon-two{top:47%;left:-65%}.welcome-ribbon.ribbon-three{bottom:5%;right:-62%}}
+html.jalur-welcome-mode .orbit-one,html.jalur-welcome-mode .orbit-two,html.jalur-welcome-mode .orbit-satellite,html.jalur-welcome-mode .welcome-visual-beacon,html.jalur-welcome-mode .welcome-visual-spark,html.jalur-welcome-mode .visual-center,html.jalur-welcome-mode .path-node{animation:none!important}
