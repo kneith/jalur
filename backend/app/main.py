@@ -1425,7 +1425,10 @@ def rasa_bk_referrals(request:Request):
     actor=_require_roles(request,"counselor")
     if not actor.get("school_id"): raise HTTPException(403,"Akun Guru BK belum terhubung ke sekolah.")
     with connection() as conn:
-        rows=conn.execute("SELECT id,summary,consent,urgent,status,created_at FROM rasa_referrals WHERE status='pending' ORDER BY urgent DESC,created_at LIMIT 100").fetchall()
+        rows=conn.execute("""SELECT r.id,r.summary,r.consent,r.urgent,r.status,r.created_at
+          FROM rasa_referrals r JOIN users m ON m.id=r.moderator_id
+          WHERE r.status='pending' AND m.school_id=%s
+          ORDER BY r.urgent DESC,r.created_at LIMIT 100""",(actor["school_id"],)).fetchall()
     return {"items":[dict(r) for r in rows]}
 
 @app.post("/api/anonymous-ventings", status_code=201)
