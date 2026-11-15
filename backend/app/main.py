@@ -1457,6 +1457,30 @@ def rasa_moderator_stream(conversation_id:uuid.UUID,request:Request):
     return StreamingResponse(events(),media_type="text/event-stream",headers={"Cache-Control":"no-cache, no-transform","X-Accel-Buffering":"no"})
 
 
+
+@app.get("/api/rasa/moderator/queue/stream")
+def rasa_moderator_queue_stream(request:Request):
+    actor=_require_roles(request,"wellbeing_moderator")
+    def events():
+        deadline=monotonic()+45
+        signature=None
+        while monotonic()<deadline:
+            with connection() as conn:
+                rows=conn.execute("""SELECT c.id,c.category,c.status,c.created_at,c.last_message_at,c.assigned_moderator_id,
+                  (SELECT count(*) FROM rasa_messages m WHERE m.conversation_id=c.id) message_count
+                  FROM rasa_conversations c WHERE c.status<>'closed'
+                  ORDER BY (c.assigned_moderator_id IS NULL) DESC,c.last_message_at DESC LIMIT 200""").fetchall()
+            items=[{**dict(r),"id":str(r["id"]),"assigned_to_me":bool(r["assigned_moderator_id"] and str(r["assigned_moderator_id"])==str(actor["id"]))} for r in rows]
+            serialized=json.dumps(items,default=str,separators=(",",":"))
+            if serialized!=signature:
+                signature=serialized
+                yield "event: update\ndata: "+json.dumps({"items":items},default=str,separators=(",",":"))+"\n\n"
+            else:
+                yield ": keep-alive\n\n"
+            sleep(0.8)
+    return StreamingResponse(events(),media_type="text/event-stream",headers={"Cache-Control":"no-cache, no-transform","X-Accel-Buffering":"no"})
+
+
 @app.get("/api/rasa/moderator/queue")
 def rasa_moderator_queue(request:Request):
     actor=_require_roles(request,"wellbeing_moderator")
