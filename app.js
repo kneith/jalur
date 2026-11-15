@@ -299,11 +299,16 @@ function render(){
    $("#main")?.focus({preventScroll:true});
    return;
   }
-  if(ADMISSIONS_DATA_PAGES.has(currentPage)&&!window.JALUR_ADMISSIONS){
+  if(ADMISSIONS_DATA_PAGES.has(currentPage)){
    const requestedPage=currentPage;
-   root.innerHTML='<section class="directory-loading" role="status"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat data alumni dan seleksi nasional…</span></section>';
-   loadAdmissionsData().then(()=>{if(currentPage===requestedPage)render();}).catch(error=>{if(currentPage===requestedPage)root.innerHTML=`<section class="panel glass"><h2>Data belum dapat dimuat</h2><p>${escapeHtml(error.message||"Periksa koneksi lalu coba lagi.")}</p><button class="btn primary" id="retryAdmissionsData">Coba lagi</button></section>`;});
-   $("#main")?.focus({preventScroll:true});return;
+   const showFailure=error=>{if(currentPage===requestedPage)root.innerHTML=`<section class="panel glass admissions-load-error" role="alert"><h2>Data halaman belum dapat dimuat</h2><p>${escapeHtml(error?.message||"Periksa koneksi lalu coba lagi.")}</p><button class="btn primary" id="retryAdmissionsData" type="button">Coba lagi</button></section>`;};
+   if(!window.JALUR_ADMISSIONS){
+    root.innerHTML='<section class="directory-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat data halaman…</span></section>';
+    loadAdmissionsData().then(data=>{if(currentPage!==requestedPage)return;const issue=validateAdmissionsPageData(requestedPage,data);if(issue)showFailure(new Error(issue));else render();}).catch(showFailure);
+    $("#main")?.focus({preventScroll:true});return;
+   }
+   const issue=validateAdmissionsPageData(requestedPage,window.JALUR_ADMISSIONS);
+   if(issue){showFailure(new Error(issue));$("#main")?.focus({preventScroll:true});return;}
   }
   const renderers={"Dashboard":dashboardPage,"Academic Profile":profilePage,"Study Program Explorer":explorerPage,"Study Tracer Alumni":admissionsAlumniPage,"SNBT Predictor":snbtPredictorPage,"SNBP Data":snbpDataPage,"Decision Comparison":comparisonPage,"Plan B Builder":planBPage,"Decision Blind Spot Detector":blindSpotPage,"Decision Summary":summaryPage,"Settings":settingsPage,"Help / About":helpPage,"User Guide":guidePage,"Official Sources":sourcesPage,"Program Study Reality Check":realityPage,"Similarity Explorer":similarityPage,"Alternative Pathway Planner":pathwayPage,"Campus Life Preview":campusPage,"Education Cost Planner":costPage,"Decision Journal":journalPage,"BK Consultation":consultationPage,"Anonymous Venting":ventingPage,"School Portal":schoolPortalPage,"BK Portal":bkPortalPage};
   root.innerHTML=(renderers[currentPage]||dashboardPage)();
@@ -486,22 +491,28 @@ function loadAdmissionsData(){
  if(window.JALUR_ADMISSIONS)return Promise.resolve(window.JALUR_ADMISSIONS);
  if(window.JALUR_ADMISSIONS_PROMISE)return window.JALUR_ADMISSIONS_PROMISE;
  window.JALUR_ADMISSIONS_PROMISE=(async()=>{
-  const response=await fetch("/data/admissions/admissions-data.b64",{cache:"force-cache"});
+  const response=await fetch("/data/admissions/admissions-data.b64",{cache:"no-store",credentials:"same-origin"});
   if(!response.ok)throw new Error("Berkas data penerimaan tidak ditemukan ("+response.status+").");
-  const encoded=(await response.text()).trim();
-  const binary=atob(encoded);
-  const bytes=new Uint8Array(binary.length);
+  const encoded=(await response.text()).replace(/\\s+/g,"");
+  if(!encoded||!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded))throw new Error("Berkas data penerimaan kosong atau format Base64 tidak valid.");
+  if(typeof atob!=="function")throw new Error("Browser tidak menyediakan decoder Base64 yang diperlukan.");
+  const binary=atob(encoded),bytes=new Uint8Array(binary.length);
   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-  if(typeof DecompressionStream==="undefined")throw new Error("Browser ini belum mendukung pembacaan arsip data. Gunakan Chrome, Edge, atau Firefox versi terbaru.");
-  const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-  const data=await new Response(stream).json();
-  const allowedLevels=new Set(["S1","D-III","D-IV"]);
-  if(data?.alumni?.length!==252||data?.snbt?.length!==4643||!Array.isArray(data?.snbt)||data.snbt.some(r=>!allowedLevels.has(r[3]))||data?.snbp?.topProgramsByApplicants?.length!==20||data?.snbp?.mirrorUrls?.length!==43)throw new Error("Validasi isi data penerimaan tidak cocok dengan sumber.");
-  data.snbtSearchIndex=data.snbt.map(r=>normalizeSearch(r[0]+" "+r[1]+" "+r[2]));
-  window.JALUR_ADMISSIONS=data;
-  return data;
+  if(typeof DecompressionStream==="undefined")throw new Error("Browser belum mendukung dekompresi data. Perbarui Chrome atau gunakan browser modern.");
+  let data;
+  try{const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));data=await new Response(stream).json();}
+  catch(error){throw new Error("Arsip data penerimaan gagal dibaca: "+(error?.message||"format gzip/JSON tidak valid"));}
+  if(!data||typeof data!=="object")throw new Error("Struktur data penerimaan tidak valid.");
+  data.snbtSearchIndex=Array.isArray(data.snbt)?data.snbt.map(r=>normalizeSearch([r?.[0],r?.[1],r?.[2]].join(" "))):[];
+  window.JALUR_ADMISSIONS=data;return data;
  })().catch(error=>{window.JALUR_ADMISSIONS_PROMISE=null;throw error;});
  return window.JALUR_ADMISSIONS_PROMISE;
+}
+function validateAdmissionsPageData(page,data){
+ if(page==="Study Tracer Alumni"&&(!Array.isArray(data?.alumni)||!data.alumni.length))return "Data alumni tidak tersedia atau formatnya tidak sesuai.";
+ if(page==="SNBT Predictor"&&(!Array.isArray(data?.snbt)||!data.snbt.length))return "Data SNBT tidak tersedia atau formatnya tidak sesuai.";
+ if(page==="SNBP Data"&&(!data?.snbp||typeof data.snbp!=="object"||!Array.isArray(data.snbp.topProgramsByApplicants)))return "Data SNBP tidak tersedia atau formatnya tidak sesuai.";
+ return "";
 }
 function admissionFormatNum(value){return value===null||value===undefined?"—":Number(value).toLocaleString("id-ID");}
 function admissionStatCard(label,value,hint){return '<article class="stat-card glass"><div class="stat-top"><span class="stat-icon">◈</span><span class="stat-label">'+escapeHtml(label)+'</span></div><div class="stat-value">'+value+'</div><div class="stat-hint">'+escapeHtml(hint||"")+'</div></article>';}
@@ -586,18 +597,26 @@ function admissionNameScore(a,b){
  const aa=new Set(x.split(" ").filter(t=>t.length>1&&!stop.has(t))),bb=new Set(y.split(" ").filter(t=>t.length>1&&!stop.has(t)));
  if(!aa.size||!bb.size)return 0;let n=0;for(const t of aa)if(bb.has(t))n++;return n/Math.max(aa.size,bb.size);
 }
+function admissionProgramTerms(value){
+ const raw=String(value||"").trim(),parts=raw.split(/\\s+[–—-]\\s+/).map(x=>x.trim()).filter(Boolean);
+ const primary=(parts.length?parts[parts.length-1]:raw).replace(/^D-(?:III|IV)\\s+/i,"").trim();
+ const aliases={"fttm":["Teknik Pertambangan","Teknik Perminyakan","Teknik Geofisika","Teknik Metalurgi"],"fakultas teknik pertambangan dan perminyakan":["Teknik Pertambangan","Teknik Perminyakan","Teknik Geofisika","Teknik Metalurgi"],"sith":["Rekayasa Hayati","Teknik Pangan","Teknik Bioenergi dan Kemurgi","Mikrobiologi"],"stei":["Teknik Elektro","Informatika","Sistem dan Teknologi Informasi"],"ftsl":["Teknik Sipil","Teknik Lingkungan","Teknik Kelautan"]};
+ return [...new Set([primary,...(aliases[normalizeSearch(primary)]||[])].filter(Boolean))];
+}
 async function openAdmissionProgram(programName,institutionName){
- const matchName=String(programName||"").split(" - ")[0].replace(/^D-(?:III|IV)\s+/i,"").trim();
+ const terms=admissionProgramTerms(programName),matchName=terms[0]||String(programName||"").trim();
  let candidates=[];const request=window.JALUR_API?.request;
  if(typeof request==="function"){
-  try{const data=await request("/directory/search?q="+encodeURIComponent(matchName)+"&type=program&limit=50&offset=0");candidates=(data.items||[]).map(item=>({...((item.data)||{}),id:item.id,name:item.name||item.data?.name||"Program studi",campus:item.institution_name||item.data?.campus||"",level:item.level||item.data?.level||"",field:item.field||item.data?.field||""}));}
-  catch(error){console.warn("JALUR directory API search unavailable; using local directory fallback.",error);}
+  const results=await Promise.all(terms.map(term=>request("/directory/search?q="+encodeURIComponent(term)+"&type=program&limit=30&offset=0").catch(()=>null)));
+  const seen=new Set();
+  for(const data of results)for(const item of (data?.items||[])){if(seen.has(String(item.id)))continue;seen.add(String(item.id));candidates.push({...((item.data)||{}),id:item.id,name:item.name||item.data?.name||"Program studi",campus:item.institution_name||item.data?.campus||"",level:item.level||item.data?.level||"",field:item.field||item.data?.field||""});}
  }
  if(!candidates.length){await loadDirectoryData();candidates=programs;}
- const ranked=candidates.map(p=>{const ns=admissionNameScore(p.name,matchName),cs=admissionNameScore(p.campus,institutionName);const campusOk=!normalizeSearch(institutionName)||normalizeSearch(p.campus).includes(normalizeSearch(institutionName))||normalizeSearch(institutionName).includes(normalizeSearch(p.campus))||cs>=.55;return {p,ns,cs,score:ns*.78+cs*.22,campusOk};}).filter(x=>x.ns>=.78&&x.campusOk).sort((a,b)=>b.score-a.score||alpha(a.p.name,b.p.name));
- const best=ranked[0];if(best&&(!ranked[1]||best.score-ranked[1].score>=.08||best.ns===1)){if(!programs.some(p=>String(p.id)===String(best.p.id)))programs.push(best.p);await showProgramDetail(best.p.id);return;}
+ const ranked=candidates.map(p=>{const ns=Math.max(...terms.map(term=>admissionNameScore(p.name,term))),cs=admissionNameScore(p.campus,institutionName),campus=normalizeSearch(p.campus),institution=normalizeSearch(institutionName),campusOk=!institution||!campus||campus.includes(institution)||institution.includes(campus)||cs>=.45;return {p,ns,score:ns*.78+cs*.22,campusOk};}).filter(x=>x.ns>=.62&&x.campusOk).sort((a,b)=>b.score-a.score||alpha(a.p.name,b.p.name));
+ const best=ranked[0];
+ if(best&&(!ranked[1]||best.score-ranked[1].score>=.08||best.ns>=.95)){if(!programs.some(p=>String(p.id)===String(best.p.id)))programs.push(best.p);await showProgramDetail(best.p.id);return;}
  window.explorerQuery=matchName;window.explorerScope="Program studi";window.explorerLimit=60;navigate("Study Program Explorer");
- const root=$("#pageRoot");if(root){const note=document.createElement("div");note.className="notice section-gap";note.textContent="Pencarian nama program dari sumber seleksi dibuka di direktori. Kampus pada sumber: "+(institutionName||"tidak tercantum")+". Periksa hasilnya sebelum memilih program yang tepat.";root.prepend(note);}
+ const root=$("#pageRoot");if(root){const note=document.createElement("div");note.className="notice section-gap";note.textContent="Pencarian direktori menggunakan nama prodi dan istilah fakultas dari sumber seleksi. Kampus pada sumber: "+(institutionName||"tidak tercantum")+". Pilih hasil yang sesuai.";root.prepend(note);}
 }
 
 function alumniPage(){
@@ -752,7 +771,7 @@ function bkPortalPage(){const d=portalData();return `${pageHead("BK Portal","Bag
 function openDrawer(){
  const role=window.JALUR_API?.getUser?.()?.role||"guest";
  const allowed=jalurAllowedPages(role),primary=JALUR_ROLE_BOTTOM[role]||JALUR_ROLE_BOTTOM.guest;
- const pages=allowed.filter(page=>page!=="Dashboard"&&!primary.includes(page));
+ const pages=allowed.filter(page=>page!=="Dashboard"); // SNBP/SNBT remain in the drawer too.
  const backdrop=$("#drawerBackdrop");
  backdrop.classList.remove("hidden");
  backdrop.innerHTML=`<section class="mobile-drawer" role="dialog" aria-modal="true" aria-labelledby="mobileDrawerTitle">
