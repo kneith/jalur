@@ -2620,3 +2620,25 @@ html:not(.jalur-welcome-mode) .welcome-ribbon-layer{display:none}
 #app .dashboard-loading{box-sizing:border-box;width:100%;min-height:clamp(390px,calc(100dvh - 190px),720px);margin:0 auto;display:grid;place-content:center;justify-items:center;gap:13px;padding:28px 18px;border:1px solid var(--border);border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025));box-shadow:var(--shadow);text-align:center}
 #app .dashboard-skeleton{width:min(100%,520px)}
 @media(max-width:700px){#app #main.page-content{min-height:calc(100dvh - 130px);padding:12px 14px calc(105px + env(safe-area-inset-bottom))}#app .dashboard-loading{min-height:clamp(390px,calc(100dvh - 190px),680px)}}
+
+
+/* Restrained welcome-only ambient: subtle glows, fine orbits and slow bubbles. */
+html.jalur-welcome-mode .login-ambient{display:block!important;position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:radial-gradient(ellipse at 16% 18%,rgba(113,148,214,.10),transparent 42%),radial-gradient(ellipse at 84% 78%,rgba(210,236,249,.075),transparent 44%),linear-gradient(135deg,#14243A 0%,#1D304A 50%,#172538 100%)!important}
+html.jalur-welcome-mode .login-ambient::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,rgba(184,168,216,.045),transparent 58%)}
+html.jalur-welcome-mode .login-ambient .ambient-glow{display:block!important;width:clamp(220px,34vw,480px);height:clamp(220px,34vw,480px);filter:blur(86px);opacity:.19;mix-blend-mode:screen;animation:loginGlowDrift 34s ease-in-out infinite alternate}
+html.jalur-welcome-mode .login-ambient .glow-a{left:4%;top:8%;background:#7194D6}
+html.jalur-welcome-mode .login-ambient .glow-b{right:3%;bottom:4%;background:#D2ECF9;animation-delay:-17s;opacity:.14}
+html.jalur-welcome-mode .login-ambient .ambient-orbit{display:block!important;position:absolute;border:1px solid rgba(210,236,249,.10);border-radius:50%;filter:none;mix-blend-mode:screen;will-change:transform}
+html.jalur-welcome-mode .login-ambient .ambient-orbit-one{width:clamp(520px,72vw,980px);height:clamp(260px,44vh,500px);left:-18%;top:10%;border-color:rgba(210,236,249,.105);animation:loginOrbitA 92s linear infinite}
+html.jalur-welcome-mode .login-ambient .ambient-orbit-two{width:clamp(440px,58vw,800px);height:clamp(300px,50vh,560px);right:-17%;bottom:-8%;border-style:solid;border-color:rgba(184,168,216,.10);animation:loginOrbitB 118s linear infinite}
+html.jalur-welcome-mode .login-ambient .ambient-bubble{position:absolute;display:block;border:1px solid rgba(210,236,249,.18);border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(210,236,249,.12),rgba(113,148,214,.025) 58%,transparent 72%);box-shadow:inset 0 0 14px rgba(210,236,249,.035),0 0 18px rgba(113,148,214,.035);animation:loginBubbleFloat 19s ease-in-out infinite}
+html.jalur-welcome-mode .login-ambient .bubble-one{width:18px;height:18px;left:17%;top:27%}
+html.jalur-welcome-mode .login-ambient .bubble-two{width:11px;height:11px;right:19%;top:22%;animation-delay:-7s}
+html.jalur-welcome-mode .login-ambient .bubble-three{width:24px;height:24px;right:27%;bottom:18%;animation-delay:-12s}
+@keyframes loginGlowDrift{from{transform:translate3d(-12px,-8px,0)}to{transform:translate3d(26px,18px,0)}}
+@keyframes loginOrbitA{from{transform:rotate(-18deg)}to{transform:rotate(342deg)}}
+@keyframes loginOrbitB{from{transform:rotate(12deg)}to{transform:rotate(-348deg)}}
+@keyframes loginBubbleFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(8px,-16px,0)}}
+html:not(.jalur-welcome-mode) .login-ambient{display:none!important}
+@media(max-width:700px){html.jalur-welcome-mode .login-ambient .ambient-orbit-one{width:130vw;height:34vh;left:-38%;top:22%}html.jalur-welcome-mode .login-ambient .ambient-orbit-two{width:112vw;height:42vh;right:-38%;bottom:3%}html.jalur-welcome-mode .login-ambient .ambient-glow{opacity:.14;filter:blur(68px)}}
+@media(prefers-reduced-motion:reduce){html.jalur-welcome-mode .login-ambient *{animation:none!important}}
