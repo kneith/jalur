@@ -945,8 +945,9 @@ function showAccountForm(mode){
   });
 }
 $("#enterGuest").onclick=()=>window.JALUR_ENTER_GUEST?.();
-$("#enterSchool").onclick=()=>{openModal("Masuk Portal Pengelola Sekolah",`<div class="auth-notice"><strong>Portal pengelola sekolah</strong><p>Dalam versi ini, portal hanya untuk pengujian lokal di perangkat yang sama. Ini belum melindungi data dengan autentikasi server. Jangan masukkan data siswa sungguhan.</p></div><form id="schoolGateForm" class="form-grid"><div class="field full"><label for="schoolCode">Kode akses uji lokal</label><input id="schoolCode" required minlength="4" placeholder="Buat kode lokal untuk sesi uji"></div><div class="field full"><button class="btn primary" type="submit">Buka portal uji</button></div></form>`,`<button class="btn secondary" id="gateCancel">Kembali</button>`);$("#gateCancel").onclick=closeModal;};
-$("#enterBK").onclick=()=>{openModal("Masuk Portal Guru BK",`<div class="auth-notice"><strong>Portal Guru BK</strong><p>Portal ini masih lokal pada browser yang sama dan belum terhubung ke sistem sekolah. Jangan masukkan data konseling nyata.</p></div><form id="bkGateForm" class="form-grid"><div class="field full"><label for="bkCode">Kode akses uji lokal</label><input id="bkCode" required minlength="4" placeholder="Buat kode lokal untuk sesi uji"></div><div class="field full"><button class="btn primary" type="submit">Buka portal uji BK</button></div></form>`,`<button class="btn secondary" id="bkGateCancel">Kembali</button>`);$("#bkGateCancel").onclick=closeModal;};
+$("#enterSchool").onclick=()=>window.JALUR_OPEN_LOGIN?.("school");
+$("#enterBK").onclick=()=>window.JALUR_OPEN_LOGIN?.("bk");
+$("#enterTeacher").onclick=()=>window.JALUR_OPEN_LOGIN?.("teacher");
 $("#createAccount").onclick=()=>showAccountForm("create");
 $("#signIn").onclick=()=>showAccountForm("login");
 function showHowItWorks(){
