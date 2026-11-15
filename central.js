@@ -2,7 +2,7 @@
 (() => {
   const $ = (s, r=document) => r.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let user = null, csrfToken = '', busy = false, editingGradeId = null, rasaPollTimer = null;
+  let user = null, csrfToken = '', busy = false, editingGradeId = null, rasaPollTimer = null, rasaLiveStop = null;
   const apiBase = (window.JALUR_API_BASE || 'https://jalur-api.vercel.app/api').replace(/\/$/, '');
   const roleNames = {student:'Siswa',school_admin:'Pengelola Sekolah',teacher:'Guru Mata Pelajaran',counselor:'Guru BK',wellbeing_moderator:'Moderator Curhat',platform_admin:'Admin Platform'};
   function cookie(name){ const part=document.cookie.split('; ').find(x=>x.startsWith(name+'=')); return part ? decodeURIComponent(part.slice(name.length+1)) : ''; }
@@ -88,11 +88,12 @@
   function pageHead(title,sub){return `<div class="page-head"><div><span class="eyebrow">JALUR dan PORTAL TERPUSAT</span><h1>${esc(title)}</h1><p>${esc(sub)}</p></div><button class="btn secondary small" id="centralLogout">Keluar</button></div>`}
   function formField(label,id,placeholder,type='text',required=true){return `<div class="field"><label for="${id}">${esc(label)}</label><input id="${id}" type="${type}" placeholder="${esc(placeholder)}" ${required?'required':''}></div>`}
   async function serverPage(page){
+    rasaLiveStop?.();rasaLiveStop=null;
     const root=$('#pageRoot');if(!root)return;
     const permissions={"server-home":["student"],"appointment":["student"],"vent":["student","guest"],"vent-chat":["student","guest"],"server-school":["school_admin"],"school-users":["school_admin"],"school-classes":["school_admin"],"school-alumni":["school_admin"],"server-grades":["teacher"],"grades":["student","teacher","school_admin"],"server-bk":["counselor"],"server-vent":["wellbeing_moderator"],"server-platform":["platform_admin"]};
     const permitted=permissions[page];
     if(permitted&&!permitted.includes(user?.role||"guest")){notice("Halaman ini tidak tersedia untuk peran akun yang sedang digunakan.");return;}
-    if(page!=="directory"&&!user&&page!=="vent"){notice("Silakan masuk dengan akun yang sesuai untuk membuka halaman ini.");return;}
+    if(page!=="directory"&&!user&&!['vent','vent-chat'].includes(page)){notice("Silakan masuk dengan akun yang sesuai untuk membuka halaman ini.");return;}
     if(page==="directory"){window.navigate?.("Study Program Explorer");return;}
     window.JALUR_ANIMATE_PAGE_TRANSITION?.();const activePage=({'appointment':'BK Consultation','server-bk':'BK Portal','server-school':'School Portal','school-users':'School Portal','school-classes':'School Portal','school-alumni':'School Portal','server-grades':'Academic Profile','grades':'Academic Profile','server-home':'Dashboard','server-vent':'Anonymous Venting','vent':'Anonymous Venting','vent-chat':'Anonymous Venting','directory':'Study Program Explorer','server-platform':'Settings'})[page];if(activePage)window.JALUR_SET_ACTIVE_PAGE?.(activePage);root.innerHTML=`<section class="server-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat…</span></section>`;try{
     if(page==='directory'){root.innerHTML=`${pageHead('Direktori Pendidikan','Pencarian server berdasarkan universitas, jurusan, atau program studi. Hasil alfabetis dan dimuat bertahap.')}<section class="panel glass"><form id="directoryForm" class="form-grid"><div class="field"><label for="directoryType">Cari berdasarkan</label><select id="directoryType"><option value="all">Semua</option><option value="institution">Perguruan tinggi</option><option value="program">Program studi / jurusan</option></select></div><div class="field"><label for="directoryQuery">Kata kunci</label><input id="directoryQuery" placeholder="Ketik nama universitas atau prodi…" autocomplete="off"></div></form><p id="directoryMeta" class="source-line">Masukkan sedikitnya dua karakter agar pencarian dapat menampilkan hasil yang sesuai.</p><div id="directoryResults"></div><button class="btn secondary" id="directoryMore" hidden>Muat hasil berikutnya</button></section>`;wireDirectory();return;}
@@ -122,7 +123,7 @@
         '<section id="rasaConversationPage" class="panel glass rasa-work-panel" hidden></section>';
       let accessCode='', stopStream=null, typingTimer=null, pendingMessageId=null;
       const messageMarkup=(items,own='visitor')=>items.map(m=>'<article class="rasa-bubble '+(m.sender==='moderator'?'from-moderator':'from-visitor')+'"><p>'+esc(m.text)+'</p><time>'+esc(new Date(m.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}))+'</time>'+(m.sender===own?'<small class="rasa-delivery-state">✓ Terkirim</small>':'')+'</article>').join('');
-      const home=()=>{stopStream?.();stopStream=null;clearTimeout(typingTimer);serverPage('vent');};
+      const home=()=>{stopStream?.();stopStream=null;rasaLiveStop=null;clearTimeout(typingTimer);serverPage('vent');};
       $('#rasaChatHome').onclick=home;
       api('/public/schools').then(data=>{$('#rasaSchoolPage').innerHTML='<option value="">Pilih sekolah</option>'+(data.items||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');}).catch(err=>{const select=$('#rasaSchoolPage');if(select)select.innerHTML='<option value="">Daftar sekolah belum tersedia</option>';notice(err.message);});
       const showChat=data=>{
@@ -140,6 +141,7 @@
           $('#rasaTypingPage').hidden=!latest.counterpart_typing;
           $('#rasaChatPresence').textContent='Percakapan anonim · '+(latest.conversation.status||'Aktif');
         });
+        rasaLiveStop=stopStream;
         const field=$('#rasaReplyPageText');
         field.addEventListener('input',()=>{
           clearTimeout(typingTimer);
@@ -264,6 +266,7 @@
             if(latest.messages.length!==modCount){modList.innerHTML=messageMarkup(latest.messages);modCount=latest.messages.length;if(nearBottom)modList.scrollTop=modList.scrollHeight;}
             $('#modTyping').hidden=!latest.counterpart_typing;
           });
+          rasaLiveStop=modStopStream;
           $('#modReplyText').addEventListener('input',()=>{clearTimeout(modTypingTimer);api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/typing',{method:'POST',body:{is_typing:true}}).catch(()=>{});modTypingTimer=setTimeout(()=>api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/typing',{method:'POST',body:{is_typing:false}}).catch(()=>{}),1800);});
           $('#modReply').onsubmit=async ev=>{ev.preventDefault();const field=$('#modReplyText'),value=field.value.trim();if(!value)return;const send=ev.target.querySelector('button');send.disabled=true;modPendingId ||= crypto.randomUUID();try{await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/typing',{method:'POST',body:{is_typing:false}});const result=await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/messages',{method:'POST',body:{text:value,client_message_id:modPendingId}});if(result.item?.delivery!=='sent')throw new Error('Pesan belum dikonfirmasi tersimpan.');modPendingId=null;field.value='';const fresh=await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen);modList.innerHTML=messageMarkup(fresh.messages);modCount=fresh.messages.length;modList.scrollTop=modList.scrollHeight;notice('Balasan terkirim.');}catch(err){notice(err.message);}finally{send.disabled=false;field.focus();}};
           $('#modClose').onclick=async()=>{try{await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/status',{method:'PATCH',body:{status:'closed'}});serverPage('server-vent');}catch(err){notice(err.message);}};
