@@ -2732,3 +2732,14 @@ html.jalur-welcome-mode .login-ambient .bubble-three{width:29px;height:29px;righ
 .rasa-chat-actions{display:flex;gap:8px;justify-content:flex-end;padding:8px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--border,rgba(255,255,255,.08));background:var(--panel,rgba(25,35,49,.98))}
 @media(min-width:760px){.rasa-chat-screen{inset:24px 8vw!important;width:auto!important;height:calc(100dvh - 48px)!important;max-height:calc(100dvh - 48px)!important;border:1px solid var(--border,rgba(255,255,255,.14))!important;border-radius:24px!important;box-shadow:0 24px 90px rgba(0,0,0,.35)!important}.rasa-chat-screen .rasa-messages{padding:24px max(24px,calc((100% - 760px)/2)) 16px}.rasa-chat-composer{padding-left:max(18px,calc((100% - 800px)/2));padding-right:max(18px,calc((100% - 800px)/2))}}
 @media(prefers-reduced-motion:reduce){.rasa-typing i{animation:none!important}}
+
+/* RASA icon system: consistent, crisp line icons across cards, navigation and chat. */
+.rasa-symbol{display:block;width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.rasa-symbol-brand{width:34px;height:34px;stroke-width:2.1}
+.rasa-brand-mark{display:grid;place-items:center}
+.rasa-service-icon,.rasa-access-icon{display:grid;place-items:center}
+.rasa-service-icon .rasa-symbol{width:27px;height:27px}
+.rasa-access-icon .rasa-symbol{width:22px;height:22px}
+.rasa-chat-avatar{display:grid;place-items:center;flex:0 0 auto}
+.rasa-chat-avatar .rasa-symbol{width:27px;height:27px}
+.rasa-nav-mark svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
