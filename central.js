@@ -37,10 +37,10 @@
             if (part.done) break;
             buffer += decoder.decode(part.value, {stream:true});
             let boundary;
-            while ((boundary = buffer.indexOf('\\n\\n')) >= 0) {
+            while ((boundary = buffer.indexOf('\n\n')) >= 0) {
               const frame = buffer.slice(0,boundary);
               buffer = buffer.slice(boundary+2);
-              const data = frame.split(/\\r?\\n/).filter(line => line.startsWith('data:')).map(line => line.slice(5).trim()).join('\\n');
+              const data = frame.split(/\r?\n/).filter(line => line.startsWith('data:')).map(line => line.slice(5).trim()).join('\n');
               if (data) { try { onUpdate(JSON.parse(data)); } catch {} }
             }
           }
