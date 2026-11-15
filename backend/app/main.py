@@ -1320,6 +1320,41 @@ def rasa_visitor_message(conversation_id:uuid.UUID,payload:RasaMessageInput,requ
         conn.execute("UPDATE rasa_conversations SET status='waiting_moderator',updated_at=now(),last_message_at=now() WHERE id=%s",(conversation_id,))
     return {"item":{"id":str(row["id"]),"created_at":row["created_at"].isoformat()}}
 
+
+class RasaTypingInput(BaseModel):
+    is_typing: bool = False
+
+@app.post("/api/rasa/conversations/{conversation_id}/typing")
+def rasa_visitor_typing(conversation_id:uuid.UUID,payload:RasaTypingInput,request:Request):
+    code=request.headers.get("X-RASA-ACCESS-CODE","").strip()
+    with connection() as conn:
+        c=_rasa_access(conn,code)
+        if str(c["id"])!=str(conversation_id): raise HTTPException(403,"Kode akses tidak cocok.")
+        conn.execute("""INSERT INTO rasa_typing_presence(conversation_id,actor_type,actor_key,is_typing,updated_at)
+          VALUES (%s,'visitor',%s,%s,now())
+          ON CONFLICT(conversation_id,actor_type,actor_key) DO UPDATE
+          SET is_typing=EXCLUDED.is_typing,updated_at=now()""",(conversation_id,digest(code),payload.is_typing))
+        row=conn.execute("""SELECT EXISTS(SELECT 1 FROM rasa_typing_presence
+          WHERE conversation_id=%s AND actor_type='moderator' AND is_typing=true
+          AND updated_at>now()-interval '8 seconds') AS typing""",(conversation_id,)).fetchone()
+    return {"moderator_typing":bool(row["typing"])}
+
+@app.post("/api/rasa/moderator/conversations/{conversation_id}/typing")
+def rasa_moderator_typing(conversation_id:uuid.UUID,payload:RasaTypingInput,request:Request):
+    actor=_require_roles(request,"wellbeing_moderator")
+    with connection() as conn:
+        c=conn.execute("SELECT assigned_moderator_id FROM rasa_conversations WHERE id=%s AND status<>'closed'",(conversation_id,)).fetchone()
+        if not c: raise HTTPException(404,"Percakapan tidak ditemukan atau ditutup.")
+        if c["assigned_moderator_id"] and str(c["assigned_moderator_id"])!=str(actor["id"]): raise HTTPException(403,"Percakapan ditugaskan ke moderator lain.")
+        conn.execute("""INSERT INTO rasa_typing_presence(conversation_id,actor_type,actor_key,is_typing,updated_at)
+          VALUES (%s,'moderator',%s,%s,now())
+          ON CONFLICT(conversation_id,actor_type,actor_key) DO UPDATE
+          SET is_typing=EXCLUDED.is_typing,updated_at=now()""",(conversation_id,str(actor["id"]),payload.is_typing))
+        row=conn.execute("""SELECT EXISTS(SELECT 1 FROM rasa_typing_presence
+          WHERE conversation_id=%s AND actor_type='visitor' AND is_typing=true
+          AND updated_at>now()-interval '8 seconds') AS typing""",(conversation_id,)).fetchone()
+    return {"visitor_typing":bool(row["typing"])}
+
 @app.get("/api/rasa/moderator/queue")
 def rasa_moderator_queue(request:Request):
     actor=_require_roles(request,"wellbeing_moderator")
