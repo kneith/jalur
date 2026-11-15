@@ -1144,6 +1144,22 @@ if(jalurResumeApp){
  document.addEventListener("focusin",e=>{const p=e.target.closest?.(".grade-chart-point");if(p)showGradeDetail(p)});
  document.addEventListener("click",e=>{const p=e.target.closest?.(".grade-chart-point");if(p)showGradeDetail(p);else document.querySelectorAll(".grade-chart-tooltip:not([hidden])").forEach(t=>t.hidden=true)});
  document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".grade-chart-tooltip:not([hidden])").forEach(t=>t.hidden=true)});
- // Ambient pointer movement temporarily disabled.
+ // Subtle pointer-responsive glow, limited to the welcome/login screen.
+  const ambient=document.querySelector(".login-ambient");
+  if(ambient){
+    let pointerFrame=0,lastX=.5,lastY=.5;
+    document.addEventListener("pointermove",event=>{
+      if(event.pointerType==="touch"||!document.documentElement.classList.contains("jalur-welcome-mode"))return;
+      lastX=event.clientX/Math.max(1,window.innerWidth);
+      lastY=event.clientY/Math.max(1,window.innerHeight);
+      if(pointerFrame)return;
+      pointerFrame=requestAnimationFrame(()=>{
+        ambient.style.setProperty("--mouse-x",(lastX*100).toFixed(1)+"%");
+        ambient.style.setProperty("--mouse-y",(lastY*100).toFixed(1)+"%");
+        ambient.style.backgroundImage="radial-gradient(260px circle at var(--mouse-x,50%) var(--mouse-y,50%),rgba(210,236,249,.075),transparent 72%),radial-gradient(ellipse at 16% 18%,rgba(113,148,214,.10),transparent 42%),radial-gradient(ellipse at 84% 78%,rgba(210,236,249,.075),transparent 44%),linear-gradient(135deg,#14243A 0%,#1D304A 50%,#172538 100%)";
+        pointerFrame=0;
+      });
+    },{passive:true});
+  }
 
 })();
