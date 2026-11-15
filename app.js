@@ -760,8 +760,8 @@ function openDrawer(){
   <div class="mobile-drawer-list">${pages.length?pages.map(page=>`<button type="button" class="mobile-drawer-item ${page===currentPage?"active":""}" data-drawer-page="${page}">${jalurPageLabel(page,role)}</button>`).join(""):'<p class="source-line">Tidak ada menu tambahan untuk peran ini.</p>'}</div>
  </section>`;
  $("#closeDrawer").onclick=closeDrawer;
- // $() selects one node; $() is required to wire every menu entry.
- $("[data-drawer-page]",backdrop).forEach(button=>{
+ // querySelectorAll wires every menu entry; querySelector only returns the first.
+ backdrop.querySelectorAll("[data-drawer-page]").forEach(button=>{
   button.onclick=()=>{const page=button.dataset.drawerPage;closeDrawer();navigate(page)};
  });
  backdrop.onclick=event=>{if(event.target===backdrop)closeDrawer()};
