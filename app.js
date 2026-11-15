@@ -522,7 +522,7 @@ function admissionTable(headers, rows){
 function admissionsAlumniPage(){
  window.alumniPageNumber=1;
  const rows=Array.isArray(window.JALUR_ADMISSIONS?.alumni)?window.JALUR_ADMISSIONS.alumni:[];
- const route=v=>String(v||"Belum diisi").trim().toUpperCase(),routes={},campuses={};
+ const route=v=>{const value=String(v||"Belum diisi").trim().toUpperCase();return value==="TIDAK LULUS"?"TIDAK DIKETAHUI":value;},routes={},campuses={};
  const ptn=new Set(["UGM","UPN V YK","UNY","UNS","UNDIP","UNPAD","ITS","UNAIR","UB","UI","ISI YK","POLITEKNIK NUKLIR","POLTEKKES KEMENKES YK","ITB","UNESA","IPB","UNNES"]);
  const skip=new Set(["BEKERJA/GAPYEAR","BEKERJA/BEKERJA/GAPYEAR","TIDAK LULUS","NONE",""]);let other=0,ptnCount=0;
  rows.forEach(r=>{if(!Array.isArray(r))return;const j=route(r[4]);routes[j]=(routes[j]||0)+1;let c=String(r[3]||"").trim();if(/^undip$/i.test(c))c="UNDIP";const k=c.toUpperCase();if(c&&!skip.has(k)){campuses[c]=(campuses[c]||0)+1;if(ptn.has(k))ptnCount++;else other++;}else other++;});
@@ -883,8 +883,13 @@ window.JALUR_ENTER_GUEST = () => {
  try{localStorage.removeItem("jalur-last-page");}catch{}
  history.replaceState({},"",location.pathname+location.search);
  currentPage="Dashboard";state.currentPage="Dashboard";
- jalurResetScrollTop();window.JALUR_TRANSITION_TO_APP?.();
- jalurWriteRoute("Dashboard",true);render();jalurResetScrollTop();window.requestAnimationFrame?.(()=>jalurResetScrollTop());
+ jalurResetScrollTop();
+ const pageRoot=$("#pageRoot");
+ if(pageRoot)pageRoot.innerHTML='<section class="directory-loading dashboard-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Memuat dashboard…</span></section>';
+ window.JALUR_TRANSITION_TO_APP?.();
+ jalurWriteRoute("Dashboard",true);
+ const paintDashboard=()=>{if(currentPage==="Dashboard")render();jalurResetScrollTop();};
+ if(window.requestAnimationFrame)window.requestAnimationFrame(paintDashboard);else paintDashboard();
  toast("Anda masuk sebagai pengunjung. Data tersimpan secara lokal pada peramban ini.","info");
 };
 function enterApplication(mode="guest",displayName="Pengunjung"){
@@ -938,7 +943,7 @@ function showAccountForm(mode){
     }catch(err){toast(err.message||"Proses akun tidak berhasil. Silakan coba lagi.","error");submit.disabled=false;submit.textContent=isCreate?"Buat akun dan lanjutkan":"Masuk ke JALUR"}
   });
 }
-$("#enterGuest").onclick=()=>enterApplication("guest","Pengunjung");
+$("#enterGuest").onclick=()=>window.JALUR_ENTER_GUEST?.();
 $("#enterSchool").onclick=()=>{openModal("Masuk Portal Pengelola Sekolah",`<div class="auth-notice"><strong>Portal pengelola sekolah</strong><p>Dalam versi ini, portal hanya untuk pengujian lokal di perangkat yang sama. Ini belum melindungi data dengan autentikasi server. Jangan masukkan data siswa sungguhan.</p></div><form id="schoolGateForm" class="form-grid"><div class="field full"><label for="schoolCode">Kode akses uji lokal</label><input id="schoolCode" required minlength="4" placeholder="Buat kode lokal untuk sesi uji"></div><div class="field full"><button class="btn primary" type="submit">Buka portal uji</button></div></form>`,`<button class="btn secondary" id="gateCancel">Kembali</button>`);$("#gateCancel").onclick=closeModal;};
 $("#enterBK").onclick=()=>{openModal("Masuk Portal Guru BK",`<div class="auth-notice"><strong>Portal Guru BK</strong><p>Portal ini masih lokal pada browser yang sama dan belum terhubung ke sistem sekolah. Jangan masukkan data konseling nyata.</p></div><form id="bkGateForm" class="form-grid"><div class="field full"><label for="bkCode">Kode akses uji lokal</label><input id="bkCode" required minlength="4" placeholder="Buat kode lokal untuk sesi uji"></div><div class="field full"><button class="btn primary" type="submit">Buka portal uji BK</button></div></form>`,`<button class="btn secondary" id="bkGateCancel">Kembali</button>`);$("#bkGateCancel").onclick=closeModal;};
 $("#createAccount").onclick=()=>showAccountForm("create");
