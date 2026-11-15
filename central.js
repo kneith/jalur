@@ -122,7 +122,7 @@
         const list=box.querySelector('.rasa-messages');list.scrollTop=list.scrollHeight;$('#rasaConversationHome').onclick=()=>{clearInterval(chatPoll);clearInterval(typingPoll);clearTimeout(typingTimer);box.classList.remove('rasa-chat-screen');home();};
         const update=async()=>{const latest=await api('/rasa/conversations/access',{method:'POST',body:{access_code:code}});const msgBox=box.querySelector('.rasa-messages');if(msgBox&&latest.messages.length!==lastMessageCount){const nearBottom=msgBox.scrollHeight-msgBox.scrollTop-msgBox.clientHeight<100;msgBox.innerHTML=messageMarkup(latest.messages);lastMessageCount=latest.messages.length;if(nearBottom)msgBox.scrollTop=msgBox.scrollHeight;}};
         lastMessageCount=data.messages.length;clearInterval(chatPoll);clearInterval(typingPoll);
-        chatPoll=setInterval(()=>update().catch(()=>{}),3500);
+        chatPoll=setInterval(()=>update().catch(()=>{}),1800);
         typingPoll=setInterval(async()=>{try{const state=await api('/rasa/conversations/'+conversationId+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':code},body:{is_typing:false}});$('#rasaTyping').hidden=!state.moderator_typing;}catch{}},2500);
         const input=$('#rasaReplyText');input.addEventListener('input',()=>{clearTimeout(typingTimer);api('/rasa/conversations/'+conversationId+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':code},body:{is_typing:true}}).catch(()=>{});typingTimer=setTimeout(()=>api('/rasa/conversations/'+conversationId+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':code},body:{is_typing:false}}).catch(()=>{}),2200);});
         input.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();$('#rasaReply').requestSubmit();}});
