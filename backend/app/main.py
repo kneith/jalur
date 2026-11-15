@@ -612,6 +612,24 @@ class AnonymousVentingInput(BaseModel):
 class AnonymousVentingStatusInput(BaseModel):
     status: Literal["unreviewed", "reviewed", "resource_shared", "closed"]
 
+class RasaConversationInput(BaseModel):
+    text: str = Field(min_length=3, max_length=3000)
+    category: Literal["academic","family","friends","future","wellbeing","other"] = "other"
+class RasaMessageInput(BaseModel):
+    text: str = Field(min_length=1, max_length=3000)
+class RasaAccessInput(BaseModel):
+    access_code: str = Field(min_length=20, max_length=100)
+class RasaReviewInput(BaseModel):
+    decision: Literal["awaiting_confirmation","reschedule_requested","cancelled"]
+    counselor_note: str | None = Field(default=None,max_length=1000)
+    proposed_at: datetime | None = None
+class RasaCounterInput(BaseModel):
+    requested_at: datetime
+class RasaReferralInput(BaseModel):
+    summary: str = Field(min_length=10,max_length=1200)
+    consent: bool = False
+    urgent: bool = False
+
 
 def _require_roles(request: Request, *roles: str):
     user = current_user(request)
@@ -1179,69 +1197,201 @@ def create_platform_moderator(payload: PlatformModeratorInput, request: Request)
     return {"item": dict(user), "message": "Akun Moderator Curhat berhasil dibuat."}
 
 
+
 @app.post("/api/bk/appointments", status_code=201)
 def create_bk_appointment(payload: BKAppointmentInput, request: Request):
     actor = _require_roles(request, "student")
-    school_id = actor["school_id"]
-    if not school_id:
-        raise HTTPException(403, "Akun siswa belum terhubung ke sekolah.")
-    if payload.requested_at.tzinfo is None or payload.requested_at.utcoffset() is None:
-        raise HTTPException(422, "Tanggal konsultasi harus menyertakan zona waktu.")
-    topic = payload.topic.strip()
-    if not topic:
-        raise HTTPException(422, "Topik konsultasi wajib diisi.")
-
+    if not actor["school_id"]: raise HTTPException(403, "Akun siswa belum terhubung ke sekolah.")
+    if payload.requested_at.tzinfo is None or payload.requested_at <= datetime.now(payload.requested_at.tzinfo):
+        raise HTTPException(422, "Usulan waktu harus berada di masa mendatang dan menyertakan zona waktu.")
     with connection() as conn:
-        item = conn.execute(
-            """INSERT INTO bk_appointments(school_id, student_id, requested_at, mode, topic, student_note)
-               VALUES (%s, %s, %s, %s, %s, %s)
-               RETURNING id, requested_at, mode, topic, status, created_at""",
-            (school_id, actor["id"], payload.requested_at, payload.mode, topic,
-             (payload.student_note or "").strip() or None),
-        ).fetchone()
-        _audit_event(conn, actor, "bk_appointment.create", "bk_appointment", item["id"])
-    return {"item": dict(item)}
+        item=conn.execute("""INSERT INTO bk_appointments(school_id,student_id,requested_at,mode,topic,student_note,status)
+          VALUES (%s,%s,%s,%s,%s,%s,'pending_review') RETURNING id,requested_at,mode,topic,status,created_at""",
+          (actor["school_id"],actor["id"],payload.requested_at,payload.mode,payload.topic.strip(),payload.student_note.strip() if payload.student_note else None)).fetchone()
+        _audit_event(conn,actor,"bk_appointment.create","bk_appointment",item["id"])
+    return {"item":dict(item)}
 
+@app.get("/api/bk/appointments/mine")
+def get_my_bk_appointments(request: Request):
+    actor=_require_roles(request,"student")
+    with connection() as conn:
+        rows=conn.execute("""SELECT id,requested_at,scheduled_at,mode,topic,student_note,status,counselor_note,created_at,reviewed_at,confirmed_at,student_accepted
+          FROM bk_appointments WHERE student_id=%s ORDER BY created_at DESC LIMIT 100""",(actor["id"],)).fetchall()
+    return {"items":[dict(r) for r in rows]}
 
 @app.get("/api/bk/appointments")
 def get_bk_appointments(request: Request):
-    actor = _require_roles(request, "counselor")
-    school_id = actor["school_id"]
-    if not school_id:
-        raise HTTPException(403, "Akun Guru BK belum terhubung ke sekolah.")
+    actor=_require_roles(request,"counselor")
+    if not actor["school_id"]: raise HTTPException(403,"Akun Guru BK belum terhubung ke sekolah.")
     with connection() as conn:
-        rows = conn.execute(
-            """SELECT a.id, a.requested_at, a.mode, a.topic, a.student_note, a.status, a.created_at,
-                      u.full_name AS student_name, sp.student_number, sc.name AS class_name
-               FROM bk_appointments a
-               JOIN users u ON u.id=a.student_id
-               LEFT JOIN student_profiles sp ON sp.user_id=u.id
-               LEFT JOIN school_classes sc ON sc.id=sp.class_id
-               WHERE a.school_id=%s
-               ORDER BY a.requested_at ASC LIMIT 500""",
-            (school_id,),
-        ).fetchall()
-    return {"items": [dict(row) for row in rows]}
+        rows=conn.execute("""SELECT a.id,a.requested_at,a.scheduled_at,a.mode,a.topic,a.student_note,a.status,a.counselor_note,a.created_at,a.reviewed_at,a.confirmed_at,a.student_accepted,
+          u.full_name AS student_name,sp.student_number,sc.name AS class_name
+          FROM bk_appointments a JOIN users u ON u.id=a.student_id LEFT JOIN student_profiles sp ON sp.user_id=u.id
+          LEFT JOIN school_classes sc ON sc.id=sp.class_id WHERE a.school_id=%s ORDER BY a.created_at ASC LIMIT 500""",(actor["school_id"],)).fetchall()
+    return {"items":[dict(r) for r in rows]}
 
-
-@app.patch("/api/bk/appointments/{appointment_id}/status")
-def update_bk_appointment_status(appointment_id: uuid.UUID, payload: BKAppointmentStatusInput, request: Request):
-    actor = _require_roles(request, "counselor")
-    school_id = actor["school_id"]
-    if not school_id:
-        raise HTTPException(403, "Akun Guru BK belum terhubung ke sekolah.")
+@app.patch("/api/bk/appointments/{appointment_id}/review")
+def review_bk_appointment(appointment_id: uuid.UUID,payload:RasaReviewInput,request:Request):
+    actor=_require_roles(request,"counselor")
+    if payload.proposed_at and (payload.proposed_at.tzinfo is None or payload.proposed_at<=datetime.now(payload.proposed_at.tzinfo)):
+        raise HTTPException(422,"Waktu penawaran harus berada di masa mendatang.")
     with connection() as conn:
-        item = conn.execute(
-            """UPDATE bk_appointments SET status=%s, counselor_id=%s, updated_at=now()
-               WHERE id=%s AND school_id=%s
-               RETURNING id, status, requested_at""",
-            (payload.status, actor["id"], appointment_id, school_id),
-        ).fetchone()
-        if not item:
-            raise HTTPException(404, "Permintaan konsultasi tidak ditemukan.")
-        _audit_event(conn, actor, "bk_appointment.status", "bk_appointment", appointment_id)
-    return {"item": dict(item)}
+        row=conn.execute("""UPDATE bk_appointments SET status=%s,counselor_id=%s,scheduled_at=COALESCE(%s,scheduled_at),
+          counselor_note=%s,reviewed_at=COALESCE(reviewed_at,now()),student_accepted=false,updated_at=now()
+          WHERE id=%s AND school_id=%s RETURNING id,status,requested_at,scheduled_at""",
+          (payload.decision,actor["id"],payload.proposed_at,payload.counselor_note,appointment_id,actor["school_id"])).fetchone()
+        if not row: raise HTTPException(404,"Permohonan konsultasi tidak ditemukan.")
+        _audit_event(conn,actor,"bk_appointment.review","bk_appointment",appointment_id)
+    return {"item":dict(row)}
 
+@app.patch("/api/bk/appointments/{appointment_id}/counter-proposal")
+def student_counter_propose_bk_schedule(appointment_id:uuid.UUID,payload:RasaCounterInput,request:Request):
+    actor=_require_roles(request,"student")
+    if payload.requested_at.tzinfo is None or payload.requested_at<=datetime.now(payload.requested_at.tzinfo):
+        raise HTTPException(422,"Usulan waktu harus berada di masa mendatang.")
+    with connection() as conn:
+        row=conn.execute("""UPDATE bk_appointments SET requested_at=%s,status='reschedule_requested',scheduled_at=NULL,student_accepted=false,updated_at=now()
+          WHERE id=%s AND student_id=%s AND status='awaiting_confirmation' RETURNING id,status,requested_at""",
+          (payload.requested_at,appointment_id,actor["id"])).fetchone()
+        if not row: raise HTTPException(409,"Permohonan belum menunggu persetujuan jadwal.")
+        _audit_event(conn,actor,"bk_appointment.counter_proposal","bk_appointment",appointment_id)
+    return {"item":dict(row)}
+
+@app.patch("/api/bk/appointments/{appointment_id}/confirm-student")
+def student_accept_bk_schedule(appointment_id:uuid.UUID,request:Request):
+    actor=_require_roles(request,"student")
+    with connection() as conn:
+        row=conn.execute("""UPDATE bk_appointments SET student_accepted=true,updated_at=now()
+          WHERE id=%s AND student_id=%s AND status='awaiting_confirmation' AND scheduled_at IS NOT NULL
+          RETURNING id,status,scheduled_at""",(appointment_id,actor["id"])).fetchone()
+        if not row: raise HTTPException(409,"Belum ada penawaran jadwal yang dapat disetujui.")
+        _audit_event(conn,actor,"bk_appointment.student_accept","bk_appointment",appointment_id)
+    return {"item":dict(row)}
+
+@app.patch("/api/bk/appointments/{appointment_id}/confirm")
+def counselor_confirm_bk_schedule(appointment_id:uuid.UUID,request:Request):
+    actor=_require_roles(request,"counselor")
+    with connection() as conn:
+        row=conn.execute("""UPDATE bk_appointments SET status='confirmed',confirmed_at=now(),updated_at=now()
+          WHERE id=%s AND school_id=%s AND status='awaiting_confirmation' AND student_accepted=true AND scheduled_at IS NOT NULL
+          RETURNING id,status,scheduled_at""",(appointment_id,actor["school_id"])).fetchone()
+        if not row: raise HTTPException(409,"Jadwal belum disetujui siswa atau permohonan tidak ditemukan.")
+        _audit_event(conn,actor,"bk_appointment.confirm","bk_appointment",appointment_id)
+    return {"item":dict(row)}
+
+# RASA anonymous encrypted chat. Conversation records never store student identity.
+def _rasa_encrypt(value:str):
+    nonce=secrets.token_bytes(12); packed=_venting_cipher().encrypt(nonce,value.encode("utf-8"),None)
+    return base64.b64encode(packed[:-16]).decode(),base64.b64encode(nonce).decode(),base64.b64encode(packed[-16:]).decode()
+def _rasa_decrypt(row):
+    nonce=base64.b64decode(row["nonce"],validate=True); data=base64.b64decode(row["encrypted_payload"],validate=True); tag=base64.b64decode(row["auth_tag"],validate=True)
+    return _venting_cipher().decrypt(nonce,data+tag,None).decode("utf-8")
+def _rasa_access(conn,code):
+    row=conn.execute("""SELECT c.id,c.status,c.category,c.created_at FROM rasa_access_codes a JOIN rasa_conversations c ON c.id=a.conversation_id
+      WHERE a.code_hash=%s AND a.expires_at>now()""",(digest(code),)).fetchone()
+    if not row: raise HTTPException(404,"Kode akses tidak valid atau sudah kedaluwarsa.")
+    return row
+
+@app.post("/api/rasa/conversations",status_code=201)
+def rasa_create_conversation(payload:RasaConversationInput):
+    code=secrets.token_urlsafe(32); encrypted=_rasa_encrypt(payload.text.strip())
+    with connection() as conn:
+        c=conn.execute("INSERT INTO rasa_conversations(category,status) VALUES (%s,'unassigned') RETURNING id,status",(payload.category,)).fetchone()
+        conn.execute("INSERT INTO rasa_access_codes(conversation_id,code_hash) VALUES (%s,%s)",(c["id"],digest(code)))
+        conn.execute("INSERT INTO rasa_messages(conversation_id,sender_type,encrypted_payload,nonce,auth_tag) VALUES (%s,'visitor',%s,%s,%s)",(c["id"],*encrypted))
+    return {"conversation_id":str(c["id"]),"access_code":code,"status":c["status"]}
+
+@app.post("/api/rasa/conversations/access")
+def rasa_access_conversation(payload:RasaAccessInput):
+    with connection() as conn:
+        c=_rasa_access(conn,payload.access_code.strip())
+        rows=conn.execute("SELECT id,sender_type,encrypted_payload,nonce,auth_tag,created_at FROM rasa_messages WHERE conversation_id=%s ORDER BY created_at LIMIT 300",(c["id"],)).fetchall()
+    return {"conversation":{"id":str(c["id"]),"status":c["status"],"category":c["category"]},
+      "messages":[{"id":str(m["id"]),"sender":m["sender_type"],"text":_rasa_decrypt(m),"created_at":m["created_at"].isoformat()} for m in rows]}
+
+@app.post("/api/rasa/conversations/{conversation_id}/messages",status_code=201)
+def rasa_visitor_message(conversation_id:uuid.UUID,payload:RasaMessageInput,request:Request):
+    code=request.headers.get("X-RASA-ACCESS-CODE","").strip()
+    with connection() as conn:
+        c=_rasa_access(conn,code)
+        if str(c["id"])!=str(conversation_id): raise HTTPException(403,"Kode akses tidak cocok.")
+        encrypted=_rasa_encrypt(payload.text.strip())
+        row=conn.execute("INSERT INTO rasa_messages(conversation_id,sender_type,encrypted_payload,nonce,auth_tag) VALUES (%s,'visitor',%s,%s,%s) RETURNING id,created_at",(conversation_id,*encrypted)).fetchone()
+        conn.execute("UPDATE rasa_conversations SET status='waiting_moderator',updated_at=now(),last_message_at=now() WHERE id=%s",(conversation_id,))
+    return {"item":{"id":str(row["id"]),"created_at":row["created_at"].isoformat()}}
+
+@app.get("/api/rasa/moderator/queue")
+def rasa_moderator_queue(request:Request):
+    actor=_require_roles(request,"wellbeing_moderator")
+    with connection() as conn:
+        rows=conn.execute("""SELECT c.id,c.category,c.status,c.created_at,c.last_message_at,c.assigned_moderator_id,
+          (SELECT count(*) FROM rasa_messages m WHERE m.conversation_id=c.id) message_count
+          FROM rasa_conversations c WHERE c.status<>'closed' ORDER BY (c.assigned_moderator_id IS NULL) DESC,c.last_message_at DESC LIMIT 200""").fetchall()
+    return {"items":[{**dict(r),"id":str(r["id"]),"assigned_to_me":bool(r["assigned_moderator_id"] and str(r["assigned_moderator_id"])==str(actor["id"]))} for r in rows]}
+
+@app.post("/api/rasa/moderator/conversations/{conversation_id}/assign")
+def rasa_assign(conversation_id:uuid.UUID,request:Request):
+    actor=_require_roles(request,"wellbeing_moderator")
+    with connection() as conn:
+        row=conn.execute("""UPDATE rasa_conversations SET assigned_moderator_id=%s,status='assigned',updated_at=now()
+          WHERE id=%s AND status<>'closed' AND (assigned_moderator_id IS NULL OR assigned_moderator_id=%s) RETURNING id""",
+          (actor["id"],conversation_id,actor["id"])).fetchone()
+        if not row: raise HTTPException(409,"Percakapan sudah ditangani moderator lain atau telah ditutup.")
+        _audit_event(conn,actor,"rasa.assign","rasa_conversation",conversation_id)
+    return {"ok":True}
+
+@app.get("/api/rasa/moderator/conversations/{conversation_id}")
+def rasa_moderator_messages(conversation_id:uuid.UUID,request:Request):
+    actor=_require_roles(request,"wellbeing_moderator")
+    with connection() as conn:
+        c=conn.execute("SELECT id,status,category,assigned_moderator_id FROM rasa_conversations WHERE id=%s",(conversation_id,)).fetchone()
+        if not c: raise HTTPException(404,"Percakapan tidak ditemukan.")
+        if c["assigned_moderator_id"] and str(c["assigned_moderator_id"])!=str(actor["id"]): raise HTTPException(403,"Percakapan ditugaskan ke moderator lain.")
+        rows=conn.execute("SELECT id,sender_type,encrypted_payload,nonce,auth_tag,created_at FROM rasa_messages WHERE conversation_id=%s ORDER BY created_at LIMIT 300",(conversation_id,)).fetchall()
+    return {"conversation":{"id":str(c["id"]),"status":c["status"],"category":c["category"]},
+      "messages":[{"id":str(m["id"]),"sender":m["sender_type"],"text":_rasa_decrypt(m),"created_at":m["created_at"].isoformat()} for m in rows]}
+
+@app.post("/api/rasa/moderator/conversations/{conversation_id}/messages",status_code=201)
+def rasa_moderator_message(conversation_id:uuid.UUID,payload:RasaMessageInput,request:Request):
+    actor=_require_roles(request,"wellbeing_moderator")
+    with connection() as conn:
+        c=conn.execute("SELECT assigned_moderator_id FROM rasa_conversations WHERE id=%s AND status<>'closed'",(conversation_id,)).fetchone()
+        if not c: raise HTTPException(404,"Percakapan tidak ditemukan atau ditutup.")
+        if c["assigned_moderator_id"] and str(c["assigned_moderator_id"])!=str(actor["id"]): raise HTTPException(403,"Percakapan ditugaskan ke moderator lain.")
+        encrypted=_rasa_encrypt(payload.text.strip())
+        row=conn.execute("INSERT INTO rasa_messages(conversation_id,sender_type,sender_id,encrypted_payload,nonce,auth_tag) VALUES (%s,'moderator',%s,%s,%s,%s) RETURNING id,created_at",(conversation_id,actor["id"],*encrypted)).fetchone()
+        conn.execute("UPDATE rasa_conversations SET status='waiting_student',updated_at=now(),last_message_at=now() WHERE id=%s",(conversation_id,))
+    return {"item":{"id":str(row["id"]),"created_at":row["created_at"].isoformat()}}
+
+@app.patch("/api/rasa/moderator/conversations/{conversation_id}/status")
+def rasa_status(conversation_id:uuid.UUID,payload:dict,request:Request):
+    actor=_require_roles(request,"wellbeing_moderator"); status=payload.get("status")
+    if status not in ("waiting_student","waiting_moderator","closed"): raise HTTPException(422,"Status tidak valid.")
+    with connection() as conn:
+        row=conn.execute("UPDATE rasa_conversations SET status=%s,updated_at=now() WHERE id=%s AND assigned_moderator_id=%s RETURNING id,status",(status,conversation_id,actor["id"])).fetchone()
+        if not row: raise HTTPException(404,"Percakapan tidak ditemukan atau bukan penugasanmu.")
+        _audit_event(conn,actor,"rasa.status","rasa_conversation",conversation_id)
+    return {"item":dict(row)}
+
+@app.post("/api/rasa/moderator/conversations/{conversation_id}/referral")
+def rasa_referral(conversation_id:uuid.UUID,payload:RasaReferralInput,request:Request):
+    actor=_require_roles(request,"wellbeing_moderator")
+    if not payload.consent and not payload.urgent: raise HTTPException(422,"Persetujuan siswa diperlukan kecuali ada risiko keselamatan mendesak sesuai kebijakan sekolah.")
+    with connection() as conn:
+        c=conn.execute("SELECT id FROM rasa_conversations WHERE id=%s AND assigned_moderator_id=%s",(conversation_id,actor["id"])).fetchone()
+        if not c: raise HTTPException(404,"Percakapan bukan penugasanmu.")
+        conn.execute("INSERT INTO rasa_referrals(conversation_id,moderator_id,summary,consent,urgent) VALUES (%s,%s,%s,%s,%s)",(conversation_id,actor["id"],payload.summary.strip(),payload.consent,payload.urgent))
+        conn.execute("UPDATE rasa_conversations SET status='referred',updated_at=now() WHERE id=%s",(conversation_id,))
+        _audit_event(conn,actor,"rasa.referral","rasa_conversation",conversation_id)
+    return {"ok":True}
+
+@app.get("/api/rasa/bk/referrals")
+def rasa_bk_referrals(request:Request):
+    actor=_require_roles(request,"counselor")
+    if not actor.get("school_id"): raise HTTPException(403,"Akun Guru BK belum terhubung ke sekolah.")
+    with connection() as conn:
+        rows=conn.execute("SELECT id,summary,consent,urgent,status,created_at FROM rasa_referrals WHERE status='pending' ORDER BY urgent DESC,created_at LIMIT 100").fetchall()
+    return {"items":[dict(r) for r in rows]}
 
 @app.post("/api/anonymous-ventings", status_code=201)
 def create_anonymous_venting(payload: AnonymousVentingInput, request: Request):
