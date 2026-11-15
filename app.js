@@ -12,12 +12,12 @@ let activeRole = "guest";
 const JALUR_PAGES = ["Dashboard","Academic Profile","Study Program Explorer","Study Tracer Alumni","SNBT Predictor","SNBP Data","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Settings","Help / About","User Guide","Official Sources","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Journal","BK Consultation","Anonymous Venting","School Portal","BK Portal"];
 
 const JALUR_ROLE_MENUS = {
- guest:["Dashboard","Study Program Explorer","SNBP Data","SNBT Predictor","Academic Profile","Study Tracer Alumni","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Decision Journal","Settings","Help / About","User Guide","Official Sources"],
+ guest:["Dashboard","Anonymous Venting","Study Program Explorer","SNBP Data","SNBT Predictor","Academic Profile","Study Tracer Alumni","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Decision Journal","Settings","Help / About","User Guide","Official Sources"],
  student:["Dashboard","Study Program Explorer","SNBP Data","SNBT Predictor","Academic Profile","Study Tracer Alumni","Program Study Reality Check","Similarity Explorer","Alternative Pathway Planner","Campus Life Preview","Education Cost Planner","Decision Comparison","Plan B Builder","Decision Blind Spot Detector","Decision Summary","Decision Journal","BK Consultation","Anonymous Venting","Settings","Help / About","User Guide","Official Sources"],
  school_admin:["Dashboard","School Portal","Study Program Explorer","SNBP Data","SNBT Predictor","Study Tracer Alumni","Settings","Help / About","User Guide","Official Sources"],
  teacher:["Dashboard","Study Program Explorer","SNBP Data","SNBT Predictor","Academic Profile","Study Tracer Alumni","Settings","Help / About","User Guide"],
  counselor:["Dashboard","BK Portal","Study Program Explorer","SNBP Data","SNBT Predictor","Study Tracer Alumni","Settings","Help / About","User Guide","Official Sources"],
- wellbeing_moderator:["Dashboard","SNBP Data","SNBT Predictor","Study Tracer Alumni","Anonymous Venting","Settings","Help / About","User Guide"],
+ wellbeing_moderator:["Dashboard","Anonymous Venting","SNBP Data","SNBT Predictor","Study Tracer Alumni","Anonymous Venting","Settings","Help / About","User Guide"],
  platform_admin:["Dashboard","SNBP Data","SNBT Predictor","Study Tracer Alumni","Settings","Help / About","User Guide"]
 };
 for (const role of ["guest","student","school_admin","teacher","counselor"]) {
@@ -28,7 +28,7 @@ for (const role of ["guest","student","school_admin","teacher","counselor"]) {
   }
 }
 const JALUR_ROLE_BOTTOM = {
- guest:["Dashboard","Study Program Explorer","SNBP Data","SNBT Predictor"],
+ guest:["Dashboard","Anonymous Venting","Study Program Explorer","SNBP Data"],
  student:["Dashboard","Study Program Explorer","Decision Comparison","Plan B Builder"],
  school_admin:["Dashboard","School Portal","Study Program Explorer","SNBP Data"],
  teacher:["Dashboard","Study Program Explorer","SNBP Data","SNBT Predictor"],
@@ -42,7 +42,7 @@ const JALUR_ROLE_LABELS = {
  wellbeing_moderator:"Moderator Curhat",platform_admin:"Admin Platform"
 };
 const JALUR_ROLE_NOTES = {
- guest:"MODE PENGUNJUNG|Jelajahi informasi dan susun pertimbangan. Layanan BK tersedia setelah masuk sebagai siswa.",
+ guest:"MODE PENGUNJUNG|Curhat anonim tersedia melalui kode akses; konsultasi BK menggunakan akun siswa.",
  student:"RUANG SISWA|Menu eksplorasi dan layanan pribadi yang terhubung dengan akun siswa.",
  school_admin:"PENGELOLAAN SEKOLAH|Akun, kelas, penugasan guru, data rapor, dan informasi sekolah.",
  teacher:"RUANG GURU|Data rapor dan tugas pengajaran sesuai penugasan sekolah.",
@@ -274,7 +274,7 @@ function render(){
  if(!root)return;
  const role=window.JALUR_API?.getUser?.()?.role||"guest";
  jalurApplyRoleNavigation(role,window.JALUR_API?.getUser?.()||null);
- if(window.JALUR_API&&["BK Consultation","Anonymous Venting"].includes(currentPage)&&role!=="student"){
+ if(window.JALUR_API&&["BK Consultation","Anonymous Venting"].includes(currentPage)&&role!=="student"&&!(role==="guest"&&currentPage==="Anonymous Venting")&&!(role==="wellbeing_moderator"&&currentPage==="Anonymous Venting")){
   currentPage="Dashboard";state.currentPage="Dashboard";
   if(!jalurSuppressHistory)jalurWriteRoute("Dashboard",true);
   toast("Konsultasi BK dan Curhat Anonim hanya tersedia untuk siswa yang sudah masuk dengan akun siswa.","error");
