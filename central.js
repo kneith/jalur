@@ -21,8 +21,9 @@
   }
   function notice(text){ const root=$('#toastRegion'); if(root){root.innerHTML=`<div class="toast">${esc(text)}</div>`;setTimeout(()=>{root.innerHTML=''},4000)}else alert(text); }
 
-  function rasaLiveStream(path, headers, onUpdate) {
+  function rasaLiveStream(path, headers, onUpdate, onStatus) {
     let active = true, controller = null;
+    onStatus?.('connecting');
     const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
     (async () => {
       while (active) {
@@ -33,6 +34,7 @@
             const error = await response.json().catch(() => ({}));
             throw new Error(error.detail || error.message || 'Koneksi percakapan terputus.');
           }
+          onStatus?.('connected');
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
@@ -49,12 +51,12 @@
             }
           }
         } catch (error) {
-          if (active && error.name !== 'AbortError') await pause(700);
+          if (active && error.name !== 'AbortError') { onStatus?.('reconnecting', error); await pause(700); }
         } finally { controller = null; }
-        if (active) await pause(250);
+        if (active) { onStatus?.('reconnecting'); await pause(250); }
       }
     })();
-    return () => { active = false; controller?.abort(); };
+    return () => { active = false; controller?.abort(); onStatus?.('disconnected'); };
   }
 
   function dismissLoginModal(onDone){
@@ -264,10 +266,11 @@
     if(page==='server-vent'){
       let modStopStream=null;
       const d=await api('/rasa/moderator/queue');
-      root.innerHTML=`${pageHead('RASA · Antrean Curhat','Antrean bersama. Moderator mengambil penugasan agar penanganan terkoordinasi dan tidak tumpang tindih.')}<section class="panel glass"><h2>Antrean bersama</h2><div id="rasaQueueItems"></div></section><section id="moderatorConversation" class="panel glass section-gap" hidden></section>`;
+      root.innerHTML=`${pageHead('RASA · Antrean Curhat','Antrean bersama. Moderator mengambil penugasan agar penanganan terkoordinasi dan tidak tumpang tindih.')}<section class="panel glass"><div class="rasa-queue-toolbar"><div><h2>Antrean bersama</h2><p id="rasaQueueStatus" class="rasa-queue-status" role="status" aria-live="polite">Menghubungkan antrean…</p></div><button type="button" class="btn secondary small" id="rasaQueueRefresh">Perbarui antrean</button></div><div id="rasaQueueItems"></div></section><section id="moderatorConversation" class="panel glass section-gap" hidden></section>`;
       const renderQueue=items=>{$('#rasaQueueItems').innerHTML=items.length?items.map(v=>`<article class="program-card glass"><span class="program-kicker">${esc(v.status)} · ${esc(v.category)}</span><p>${v.message_count} pesan · ${v.assigned_moderator_id?'Sudah ditugaskan':'Belum ditugaskan'}</p><button class="btn primary" data-rasa-open="${esc(v.id)}">${v.assigned_to_me?'Buka percakapan':'Ambil penugasan'}</button></article>`).join(''):'<p>Antrean kosong.</p>';};
       renderQueue(d.items||[]);
-      rasaLiveStop=rasaLiveStream('/rasa/moderator/queue/stream',{},snapshot=>renderQueue(snapshot.items||[]));
+      rasaLiveStop=rasaLiveStream('/rasa/moderator/queue/stream',{},snapshot=>renderQueue(snapshot.items||[]),state=>{const status=$('#rasaQueueStatus');if(!status)return;status.textContent=state==='connected'?'Terhubung · pembaruan otomatis aktif':state==='reconnecting'?'Koneksi terputus · mencoba menyambungkan kembali…':state==='disconnected'?'Koneksi antrean berhenti':'Menghubungkan antrean…';status.dataset.state=state;});
+      $('#rasaQueueRefresh').onclick=async()=>{const button=$('#rasaQueueRefresh');button.disabled=true;try{const latest=await api('/rasa/moderator/queue');renderQueue(latest.items||[]);notice('Antrean berhasil diperbarui.');}catch(err){notice('Gagal memperbarui antrean: '+err.message);}finally{button.disabled=false;}};
       $('#rasaQueueItems').onclick=async event=>{
         const b=event.target.closest('[data-rasa-open]');if(!b)return;
         try{
