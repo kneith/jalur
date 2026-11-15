@@ -794,7 +794,7 @@ function closeDrawer(){$("#drawerBackdrop").classList.add("hidden");$("#drawerBa
 function navigate(page){
  const role=window.JALUR_API?.getUser?.()?.role||"guest";
  if(!jalurAllowedPages(role).includes(page)){toast("Menu ini tidak tersedia untuk peran akun yang sedang digunakan.","error");return;}
- if(["BK Consultation","Anonymous Venting"].includes(page)&&role!=="student"){toast("Fitur ini hanya tersedia untuk akun siswa yang sudah masuk.","error");return;}
+ if(page==="BK Consultation"&&role!=="student"){toast("Konsultasi BK hanya tersedia untuk akun siswa yang sudah masuk.","error");return;}
  currentPage=page;state.currentPage=page;if(!jalurSuppressHistory)jalurWriteRoute(page);saveState();window.JALUR_ANIMATE_PAGE_TRANSITION?.();render();window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
 }
 window.navigate = navigate;
