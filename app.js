@@ -268,7 +268,13 @@ function saveState(){try{const persisted=structuredClone(state);if(window.JALUR_
 function logActivity(text){state.activities.unshift({text,time:new Date().toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})});state.activities=state.activities.slice(0,5);saveState()}
 function toast(message,type="success"){const el=document.createElement("div");el.className=`toast ${type}`;el.textContent=message;$("#toastRegion").append(el);setTimeout(()=>el.remove(),5500)}
 function escapeHtml(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-const PAGE_LABELS={"Dashboard":"Beranda","Academic Profile":"Profil Akademik","Study Program Explorer":"Penjelajah Program Studi","Study Tracer Alumni":"Data Alumni","SNBT Predictor":"Prediksi SNBT","SNBP Data":"Data SNBP","Decision Comparison":"Perbandingan Program Studi","Plan B Builder":"Rencana Alternatif","Decision Blind Spot Detector":"Daftar Periksa Keputusan","Decision Summary":"Ringkasan Keputusan","Settings":"Pengaturan","Help / About":"Bantuan dan Tentang JALUR","User Guide":"Panduan Penggunaan","Official Sources":"Pusat Informasi Resmi","Program Study Reality Check":"Realitas Perkuliahan","Similarity Explorer":"Program Studi Serupa","Alternative Pathway Planner":"Peta Jalur Alternatif","Campus Life Preview":"Gambaran Kehidupan Kampus","Education Cost Planner":"Perencana Biaya Pendidikan","Decision Journal":"Jurnal Keputusan","BK Consultation":"Konsultasi BK","Anonymous Venting":"Curhat Anonim","School Portal":"Portal Pengelola Sekolah","BK Portal":"Portal Guru BK"};
+const PAGE_LABELS={"Dashboard":"Beranda","Academic Profile":"Profil Akademik","Study Program Explorer":"Penjelajah Program Studi","Study Tracer Alumni":"Data Alumni","SNBT Predictor":"Prediksi SNBT","SNBP Data":"Data SNBP","Decision Comparison":"Perbandingan Program Studi","Plan B Builder":"Rencana Alternatif","Decision Blind Spot Detector":"Daftar Periksa Keputusan","Decision Summary":"Ringkasan Keputusan","Settings":"Pengaturan","Help / About":"Bantuan dan Tentang JALUR","User Guide":"Panduan Penggunaan","Official Sources":"Pusat Informasi Resmi","Program Study Reality Check":"Realitas Perkuliahan","Similarity Explorer":"Program Studi Serupa","Alternative Pathway Planner":"Peta Jalur Alternatif","Campus Life Preview":"Gambaran Kehidupan Kampus","Education Cost Planner":"Perencana Biaya Pendidikan","Decision Journal":"Jurnal Keputusan","BK Consultation":"Konsultasi BK","Anonymous Venting":"RASA","School Portal":"Portal Pengelola Sekolah","BK Portal":"Portal Guru BK"};
+/* Remove literal bullet glyphs from all rendered JALUR pages. */
+(function(){
+ const clean=root=>{if(!root)return;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);for(const node of nodes)if(node.nodeValue.includes('•'))node.nodeValue=node.nodeValue.replace(/\\s*•\\s*/g,' | ');};
+ const start=()=>{clean(document.body);if(!window.__jalurBulletCleaner){window.__jalurBulletCleaner=new MutationObserver(records=>{for(const record of records){if(record.type==='characterData')clean(record.target.parentNode);for(const node of record.addedNodes||[])if(node.nodeType===1)clean(node);}});window.__jalurBulletCleaner.observe(document.body,{subtree:true,childList:true,characterData:true});}};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
 function render(){
  const root=$("#pageRoot");
  if(!root)return;
@@ -277,7 +283,7 @@ function render(){
  if(window.JALUR_API&&["BK Consultation","Anonymous Venting"].includes(currentPage)&&role!=="student"&&!(role==="guest"&&currentPage==="Anonymous Venting")&&!(role==="wellbeing_moderator"&&currentPage==="Anonymous Venting")){
   currentPage="Dashboard";state.currentPage="Dashboard";
   if(!jalurSuppressHistory)jalurWriteRoute("Dashboard",true);
-  toast("Konsultasi BK dan Curhat Anonim hanya tersedia untuk siswa yang sudah masuk dengan akun siswa.","error");
+  toast("Konsultasi BK hanya tersedia untuk akun siswa yang sudah masuk.","error");
  }
  try{
   const crumb=$("#pageCrumb");
