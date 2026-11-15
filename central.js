@@ -256,8 +256,12 @@
     if(page==='server-vent'){
       let modStopStream=null;
       const d=await api('/rasa/moderator/queue');
-      root.innerHTML=`${pageHead('RASA · Antrean Curhat','Antrean bersama. Moderator mengambil penugasan agar penanganan terkoordinasi dan tidak tumpang tindih.')}<section class="panel glass"><h2>Antrean bersama</h2>${d.items.length?d.items.map(v=>`<article class="program-card glass"><span class="program-kicker">${esc(v.status)} · ${esc(v.category)}</span><p>${v.message_count} pesan · ${v.assigned_moderator_id?'Sudah ditugaskan':'Belum ditugaskan'}</p><button class="btn primary" data-rasa-open="${esc(v.id)}">${v.assigned_to_me?'Buka percakapan':'Ambil penugasan'}</button></article>`).join(''):'<p>Antrean kosong.</p>'}</section><section id="moderatorConversation" class="panel glass section-gap" hidden></section>`;
-      root.querySelectorAll('[data-rasa-open]').forEach(b=>b.onclick=async()=>{
+      root.innerHTML=`${pageHead('RASA · Antrean Curhat','Antrean bersama. Moderator mengambil penugasan agar penanganan terkoordinasi dan tidak tumpang tindih.')}<section class="panel glass"><h2>Antrean bersama</h2><div id="rasaQueueItems"></div></section><section id="moderatorConversation" class="panel glass section-gap" hidden></section>`;
+      const renderQueue=items=>{$('#rasaQueueItems').innerHTML=items.length?items.map(v=>`<article class="program-card glass"><span class="program-kicker">${esc(v.status)} · ${esc(v.category)}</span><p>${v.message_count} pesan · ${v.assigned_moderator_id?'Sudah ditugaskan':'Belum ditugaskan'}</p><button class="btn primary" data-rasa-open="${esc(v.id)}">${v.assigned_to_me?'Buka percakapan':'Ambil penugasan'}</button></article>`).join(''):'<p>Antrean kosong.</p>';};
+      renderQueue(d.items||[]);
+      rasaLiveStop=rasaLiveStream('/rasa/moderator/queue/stream',{},snapshot=>renderQueue(snapshot.items||[]));
+      $('#rasaQueueItems').onclick=async event=>{
+        const b=event.target.closest('[data-rasa-open]');if(!b)return;
         try{
           await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/assign',{method:'POST',body:{}});
           const data=await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen);
@@ -265,7 +269,7 @@
           const messageMarkup=(items,own='moderator')=>items.map(m=>'<article class="rasa-bubble '+(m.sender==='moderator'?'from-moderator':'from-visitor')+'"><p>'+esc(m.text)+'</p><time>'+esc(new Date(m.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}))+'</time>'+(m.sender===own?'<small class="rasa-delivery-state">✓ Terkirim</small>':'')+'</article>').join('');
           box.innerHTML='<header class="rasa-chat-header"><span class="rasa-chat-avatar">♡</span><div class="rasa-chat-title"><strong>Percakapan RASA</strong><small>Penanganan anonim · Moderator</small></div></header><div id="modMessages" class="rasa-messages">'+messageMarkup(data.messages)+'</div><div class="rasa-typing" id="modTyping" hidden><i></i><i></i><i></i><span>Pengunjung sedang mengetik</span></div><form id="modReply" class="rasa-chat-composer"><textarea id="modReplyText" required maxlength="3000" rows="1" placeholder="Tulis balasan..." aria-label="Tulis balasan"></textarea><button class="rasa-send" type="submit" aria-label="Kirim balasan">➤</button></form><div class="rasa-chat-actions"><button class="btn secondary" id="modClose">Tutup percakapan</button><button class="btn secondary" id="modRefer">Rujuk ke BK</button></div>';
           const modList=$('#modMessages');modList.scrollTop=modList.scrollHeight;let modCount=data.messages.length,modPendingId=null,modTypingTimer=null;
-          modStopStream?.();modStopStream=rasaLiveStream('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/stream',{},latest=>{
+          rasaLiveStop?.();rasaLiveStop=null;modStopStream?.();modStopStream=rasaLiveStream('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/stream',{},latest=>{
             const nearBottom=modList.scrollHeight-modList.scrollTop-modList.clientHeight<100;
             if(latest.messages.length!==modCount){modList.innerHTML=messageMarkup(latest.messages);modCount=latest.messages.length;if(nearBottom)modList.scrollTop=modList.scrollHeight;}
             $('#modTyping').hidden=!latest.counterpart_typing;
