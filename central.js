@@ -89,7 +89,7 @@
       window.requestAnimationFrame?.(()=>window.JALUR_RESET_SCROLL_TOP?.());
     });
   }
-  function pageHead(title,sub){return `<div class="page-head"><div><span class="eyebrow">JALUR dan PORTAL TERPUSAT</span><h1>${esc(title)}</h1><p>${esc(sub)}</p></div><button class="btn secondary small" id="centralLogout">Keluar</button></div>`}
+  function pageHead(title,sub,showLogout=true){return `<div class="page-head"><div><span class="eyebrow">JALUR dan PORTAL TERPUSAT</span><h1>${esc(title)}</h1><p>${esc(sub)}</p></div>${showLogout?'<button class="btn secondary small" id="centralLogout">Keluar</button>':''}</div>`}
   function formField(label,id,placeholder,type='text',required=true){return `<div class="field"><label for="${id}">${esc(label)}</label><input id="${id}" type="${type}" placeholder="${esc(placeholder)}" ${required?'required':''}></div>`}
   async function serverPage(page){
     rasaLiveStop?.();rasaLiveStop=null;
@@ -121,7 +121,7 @@
 
 
     if(page==='vent-chat'){
-      root.innerHTML=`${pageHead('Curhat Anonim','Ruang percakapan pribadi dengan moderator RASA. Gunakan kode akses untuk kembali kapan saja.')}`+
+      root.innerHTML=`${pageHead('Curhat Anonim','Ruang percakapan pribadi dengan moderator RASA. Gunakan kode akses untuk kembali kapan saja.',false)}`+
         '<section class="panel glass rasa-work-panel"><div class="rasa-panel-heading"><div><span class="rasa-kicker">CURHAT ANONIM</span><h2>Mulai percakapan</h2><p>Ceritakan hal yang ingin disampaikan. Pesan awal akan langsung masuk ke antrean moderator.</p></div><button type="button" class="btn secondary small" id="rasaChatHome">Kembali ke RASA</button></div><div class="rasa-code-explainer"><strong>Privasi dan kode akses</strong><p>Percakapan tidak ditautkan ke akun siswa. Kode akses rahasia ditampilkan satu kali setelah cerita dikirim. Simpan kode itu untuk membuka kembali chat.</p></div><form id="rasaStartPage" class="form-grid"><div class="field full"><label for="rasaSchoolPage">Sekolah</label><select id="rasaSchoolPage" required><option value="">Memuat daftar sekolah...</option></select></div><div class="field"><label for="rasaCategoryPage">Topik cerita</label><select id="rasaCategoryPage"><option value="academic">Akademik</option><option value="family">Keluarga</option><option value="friends">Teman</option><option value="future">Masa depan</option><option value="wellbeing">Keadaan diri</option><option value="other">Lainnya</option></select></div><div class="field full"><label for="rasaInitialPage">Ceritakan hal yang ingin disampaikan</label><textarea id="rasaInitialPage" minlength="3" maxlength="3000" required placeholder="Tuliskan ceritamu di sini..."></textarea></div><div class="field full"><button class="btn primary" type="submit">Kirim cerita dan buat kode akses</button></div></form></section>'+
         '<section class="panel glass rasa-work-panel"><h2>Percakapan Saya</h2><p>Sudah punya kode akses? Masukkan untuk melanjutkan chat.</p><form id="rasaAccessPage" class="form-grid"><div class="field full"><label for="rasaAccessPageCode">Kode akses rahasia</label><input id="rasaAccessPageCode" minlength="20" required autocomplete="off" placeholder="Tempelkan kode akses"></div><div class="field full"><button class="btn secondary" type="submit">Buka percakapan</button></div></form></section>'+
         '<section id="rasaConversationPage" class="panel glass rasa-work-panel" hidden></section>';
@@ -189,7 +189,7 @@
     }
 
     if(page==='vent'){
-      root.innerHTML=`${pageHead('RASA','Ruang Aman, Suara, dan Aspirasi. Ruang untuk bercerita, memperoleh pendampingan, dan menemukan langkah berikutnya.')}<section class="rasa-hero panel glass">
+      root.innerHTML=`${pageHead('RASA','Ruang Aman, Suara, dan Aspirasi. Ruang untuk bercerita, memperoleh pendampingan, dan menemukan langkah berikutnya.',false)}<section class="rasa-hero panel glass">
         <div class="rasa-brand-row"><span class="rasa-brand-mark" aria-hidden="true">${rasaHandshakeHeart}</span><div class="rasa-brand-copy"><strong>RASA</strong><small>Layanan dukungan siswa</small></div><span class="rasa-active-label">Layanan aktif</span></div>
         <span class="rasa-kicker">RUANG AMAN UNTUK BERCERITA</span><h2>Setiap cerita punya ruang untuk didengar.</h2>
         <p>RASA merupakan layanan di JALUR untuk menyampaikan cerita, memperoleh pendampingan, dan mengakses layanan Bimbingan dan Konseling (BK).</p>
