@@ -739,7 +739,7 @@ function openProgramPicker(mode){
  };
 }
 function selectedProgram(){return programById(state.mainChoice)||programs.find(p=>state.compared.includes(p.id))||null}
-function programOptions(selected=""){return `<option value="">Pilih program studi</option>`+programs.slice().sort((a,b)=>alpha(a.name,b.name)||alpha(a.campus,b.campus)).slice(0,500).map(p=>`<option value="${escapeHtml(p.id)}" ${String(p.id)===String(selected)?"selected":""}>${escapeHtml(p.name)}, ${escapeHtml(p.campus||"Perguruan tinggi tidak tercantum")}</option>`).join("")}
+function programOptions(selected=""){const options=programSearchIndex.length?programSearchIndex:programs;return `<option value="">Pilih program studi</option>`+options.slice(0,500).map(p=>`<option value="${escapeHtml(p.id)}" ${String(p.id)===String(selected)?"selected":""}>${escapeHtml(p.name)}, ${escapeHtml(p.campus||"Perguruan tinggi tidak tercantum")}</option>`).join("")}
 function realityPage(){
  const p=selectedProgram();
  const program=p
