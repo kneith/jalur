@@ -753,11 +753,18 @@ function openDrawer(){
  const role=window.JALUR_API?.getUser?.()?.role||"guest";
  const allowed=jalurAllowedPages(role),primary=JALUR_ROLE_BOTTOM[role]||JALUR_ROLE_BOTTOM.guest;
  const pages=allowed.filter(page=>page!=="Dashboard"&&!primary.includes(page));
- $("#drawerBackdrop").classList.remove("hidden");
- $("#drawerBackdrop").innerHTML=`<div class="mobile-drawer" role="dialog" aria-label="Menu lainnya"><h3>Menu lainnya <button class="text-btn" id="closeDrawer" style="float:right">Tutup ×</button></h3>${pages.length?pages.map(page=>`<button class="${page===currentPage?"active":""}" data-drawer-page="${page}">${jalurPageLabel(page,role)}</button>`).join(""):'<p class="source-line">Tidak ada menu tambahan untuk peran ini.</p>'}</div>`;
+ const backdrop=$("#drawerBackdrop");
+ backdrop.classList.remove("hidden");
+ backdrop.innerHTML=`<section class="mobile-drawer" role="dialog" aria-modal="true" aria-labelledby="mobileDrawerTitle">
+  <header class="mobile-drawer-header"><h3 id="mobileDrawerTitle">Menu lainnya</h3><button type="button" class="text-btn" id="closeDrawer" aria-label="Tutup menu">Tutup ×</button></header>
+  <div class="mobile-drawer-list">${pages.length?pages.map(page=>`<button type="button" class="mobile-drawer-item ${page===currentPage?"active":""}" data-drawer-page="${page}">${jalurPageLabel(page,role)}</button>`).join(""):'<p class="source-line">Tidak ada menu tambahan untuk peran ini.</p>'}</div>
+ </section>`;
  $("#closeDrawer").onclick=closeDrawer;
- $("[data-drawer-page]").forEach(button=>button.onclick=()=>{closeDrawer();navigate(button.dataset.drawerPage)});
- $("#drawerBackdrop").onclick=event=>{if(event.target.id==="drawerBackdrop")closeDrawer()};
+ // $() selects one node; $() is required to wire every menu entry.
+ $("[data-drawer-page]",backdrop).forEach(button=>{
+  button.onclick=()=>{const page=button.dataset.drawerPage;closeDrawer();navigate(page)};
+ });
+ backdrop.onclick=event=>{if(event.target===backdrop)closeDrawer()};
 }
 function closeDrawer(){$("#drawerBackdrop").classList.add("hidden");$("#drawerBackdrop").innerHTML=""}
 function navigate(page){
