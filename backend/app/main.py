@@ -615,6 +615,7 @@ class AnonymousVentingStatusInput(BaseModel):
 class RasaConversationInput(BaseModel):
     text: str = Field(min_length=3, max_length=3000)
     category: Literal["academic","family","friends","future","wellbeing","other"] = "other"
+    school_id: uuid.UUID | None = None
 class RasaMessageInput(BaseModel):
     text: str = Field(min_length=1, max_length=3000)
 class RasaAccessInput(BaseModel):
@@ -1308,7 +1309,13 @@ def _rasa_access(conn,code):
 def rasa_create_conversation(payload:RasaConversationInput):
     code=secrets.token_urlsafe(32); encrypted=_rasa_encrypt(payload.text.strip())
     with connection() as conn:
-        c=conn.execute("INSERT INTO rasa_conversations(category,status) VALUES (%s,'unassigned') RETURNING id,status",(payload.category,)).fetchone()
+        if payload.school_id:
+            school=conn.execute("SELECT id FROM schools WHERE id=%s AND status='active'",(payload.school_id,)).fetchone()
+        else:
+            active=conn.execute("SELECT id FROM schools WHERE status='active' ORDER BY name LIMIT 2").fetchall()
+            school=active[0] if len(active)==1 else None
+        if not school: raise HTTPException(422,"Pilih sekolah yang sesuai sebelum memulai percakapan RASA.")
+        c=conn.execute("INSERT INTO rasa_conversations(school_id,category,status) VALUES (%s,%s,'unassigned') RETURNING id,status",(school["id"],payload.category)).fetchone()
         conn.execute("INSERT INTO rasa_access_codes(conversation_id,code_hash) VALUES (%s,%s)",(c["id"],digest(code)))
         conn.execute("INSERT INTO rasa_messages(conversation_id,sender_type,encrypted_payload,nonce,auth_tag) VALUES (%s,'visitor',%s,%s,%s)",(c["id"],*encrypted))
     return {"conversation_id":str(c["id"]),"access_code":code,"status":c["status"]}
@@ -1427,7 +1434,9 @@ def rasa_referral(conversation_id:uuid.UUID,payload:RasaReferralInput,request:Re
     with connection() as conn:
         c=conn.execute("SELECT id FROM rasa_conversations WHERE id=%s AND assigned_moderator_id=%s",(conversation_id,actor["id"])).fetchone()
         if not c: raise HTTPException(404,"Percakapan bukan penugasanmu.")
-        conn.execute("INSERT INTO rasa_referrals(conversation_id,moderator_id,summary,consent,urgent) VALUES (%s,%s,%s,%s,%s)",(conversation_id,actor["id"],payload.summary.strip(),payload.consent,payload.urgent))
+        conn.execute("""INSERT INTO rasa_referrals(conversation_id,moderator_id,school_id,summary,consent,urgent)
+          SELECT c.id,%s,c.school_id,%s,%s,%s FROM rasa_conversations c WHERE c.id=%s""",
+          (actor["id"],payload.summary.strip(),payload.consent,payload.urgent,conversation_id))
         conn.execute("UPDATE rasa_conversations SET status='referred',updated_at=now() WHERE id=%s",(conversation_id,))
         _audit_event(conn,actor,"rasa.referral","rasa_conversation",conversation_id)
     return {"ok":True}
@@ -1438,8 +1447,8 @@ def rasa_bk_referrals(request:Request):
     if not actor.get("school_id"): raise HTTPException(403,"Akun Guru BK belum terhubung ke sekolah.")
     with connection() as conn:
         rows=conn.execute("""SELECT r.id,r.summary,r.consent,r.urgent,r.status,r.created_at
-          FROM rasa_referrals r JOIN users m ON m.id=r.moderator_id
-          WHERE r.status='pending' AND m.school_id=%s
+          FROM rasa_referrals r
+          WHERE r.status='pending' AND r.school_id=%s
           ORDER BY r.urgent DESC,r.created_at LIMIT 100""",(actor["school_id"],)).fetchall()
     return {"items":[dict(r) for r in rows]}
 
