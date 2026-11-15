@@ -161,19 +161,31 @@
         });
         field.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();$('#rasaReplyPage').requestSubmit();}});
         $('#rasaReplyPage').onsubmit=async ev=>{
-          ev.preventDefault();const value=field.value.trim();if(!value)return;
+          ev.preventDefault();const value=field.value.trim();if(!value||field.disabled)return;
           clearTimeout(typingTimer);
-          const send=ev.target.querySelector('button');send.disabled=true;
+          const send=ev.target.querySelector('button');
+          send.disabled=true;send.classList.add('is-sending');send.setAttribute('aria-label','Mengirim pesan');
           pendingMessageId ||= (crypto.randomUUID?.()||([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,x=>(x^crypto.getRandomValues(new Uint8Array(1))[0]&15>>x/4).toString(16)));
+          const messageId=pendingMessageId;
+          const optimistic={sender:'visitor',text:value,created_at:new Date().toISOString()};
+          list.insertAdjacentHTML('beforeend',messageMarkup([optimistic]).replace('✓ Terkirim','◌ Mengirim'));
+          const optimisticBubble=list.lastElementChild;
+          list.scrollTo({top:list.scrollHeight,behavior:'smooth'});
+          field.value='';field.style.height='auto';
+          api('/rasa/conversations/'+data.conversation.id+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{is_typing:false}}).catch(()=>{});
           try{
-            await api('/rasa/conversations/'+data.conversation.id+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{is_typing:false}});
-            const result=await api('/rasa/conversations/'+data.conversation.id+'/messages',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{text:value,client_message_id:pendingMessageId}});
+            const result=await api('/rasa/conversations/'+data.conversation.id+'/messages',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{text:value,client_message_id:messageId}});
             if(result.item?.delivery!=='sent')throw new Error('Pesan belum dikonfirmasi tersimpan. Coba kirim ulang.');
-            pendingMessageId=null;field.value='';field.style.height='auto';
-            const fresh=await api('/rasa/conversations/access',{method:'POST',body:{access_code:accessCode}});
-            const nearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<100;
-            list.innerHTML=messageMarkup(fresh.messages);count=fresh.messages.length;if(nearBottom)list.scrollTop=list.scrollHeight;
-          }catch(err){notice(err.message);}finally{send.disabled=false;field.focus();}
+            if(optimisticBubble?.isConnected){const state=optimisticBubble.querySelector('.rasa-delivery-state');if(state)state.textContent='✓ Terkirim';}
+            pendingMessageId=null;
+          }catch(err){
+            if(optimisticBubble?.isConnected)optimisticBubble.remove();
+            if(!field.value)field.value=value;
+            field.dispatchEvent(new Event('input',{bubbles:true}));
+            notice(err.message);
+          }finally{
+            send.disabled=false;send.classList.remove('is-sending');send.setAttribute('aria-label','Kirim pesan');field.focus();
+          }
         };
       };
       $('#rasaStartPage').onsubmit=async ev=>{
