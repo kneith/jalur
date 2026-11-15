@@ -17,7 +17,7 @@ const JALUR_ROLE_MENUS = {
  school_admin:["Dashboard","School Portal","Study Program Explorer","SNBP Data","SNBT Predictor","Study Tracer Alumni","Settings","Help / About","User Guide","Official Sources"],
  teacher:["Dashboard","Study Program Explorer","SNBP Data","SNBT Predictor","Academic Profile","Study Tracer Alumni","Settings","Help / About","User Guide"],
  counselor:["Dashboard","BK Portal","Study Program Explorer","SNBP Data","SNBT Predictor","Study Tracer Alumni","Settings","Help / About","User Guide","Official Sources"],
- wellbeing_moderator:["Dashboard","Anonymous Venting","SNBP Data","SNBT Predictor","Study Tracer Alumni","Anonymous Venting","Settings","Help / About","User Guide"],
+ wellbeing_moderator:["Dashboard","Anonymous Venting","SNBP Data","SNBT Predictor","Study Tracer Alumni","Settings","Help / About","User Guide"],
  platform_admin:["Dashboard","SNBP Data","SNBT Predictor","Study Tracer Alumni","Settings","Help / About","User Guide"]
 };
 for (const role of ["guest","student","school_admin","teacher","counselor"]) {
