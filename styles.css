@@ -2841,3 +2841,79 @@ body.rasa-chat-active #pageRoot{display:contents!important}
  .rasa-chat-composer textarea{min-height:44px!important;padding:11px 12px!important}
  .rasa-send{flex-basis:44px!important;width:44px!important;height:44px!important}
 }
+
+
+/* Dreamy JALUR palette, fluid motion and viewport-safe messenger refinements. */
+.rasa-chat-screen{
+ top:var(--rasa-vtop,0px)!important;
+ height:var(--rasa-vh,100dvh)!important;
+ min-height:0!important;
+ background:var(--rasa-chat-bg,var(--bg,#f4f7ff))!important;
+ color:var(--rasa-chat-text,var(--text,#26364b))!important;
+ transition:opacity .24s ease,transform .28s cubic-bezier(.2,.75,.25,1);
+ animation:rasaChatEnter .34s cubic-bezier(.2,.75,.25,1) both;
+}
+@keyframes rasaChatEnter{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+.rasa-chat-header{
+ background:var(--rasa-chat-panel,var(--panel,rgba(255,255,255,.94)))!important;
+ color:var(--rasa-chat-text,var(--text,#26364b))!important;
+}
+.rasa-chat-avatar{background:linear-gradient(145deg,color-mix(in srgb,var(--accent,#7194d6) 24%,white),color-mix(in srgb,#b8a8d8 38%,white))!important}
+.rasa-chat-notice{background:color-mix(in srgb,var(--accent,#7194d6) 9%,transparent)!important;color:var(--muted,#63758d)!important}
+.rasa-chat-screen .rasa-messages{
+ background:
+  radial-gradient(ellipse at 12% 8%,color-mix(in srgb,var(--accent,#7194d6) 9%,transparent),transparent 42%),
+  radial-gradient(ellipse at 88% 88%,rgba(184,168,216,.12),transparent 40%),
+  var(--rasa-chat-bg,var(--bg,#f4f7ff))!important;
+ scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--accent,#7194d6) 40%,transparent) transparent;
+}
+.rasa-bubble{animation:rasaBubbleIn .32s cubic-bezier(.2,.75,.25,1) both;transform-origin:var(--bubble-origin,left bottom)}
+.rasa-bubble.from-visitor{--bubble-origin:right bottom}
+.rasa-bubble.from-moderator{--bubble-origin:left bottom}
+@keyframes rasaBubbleIn{from{opacity:0;transform:translateY(9px) scale(.975)}to{opacity:1;transform:translateY(0) scale(1)}}
+.rasa-bubble.from-moderator{
+ background:color-mix(in srgb,var(--accent,#7194d6) 10%,var(--rasa-chat-panel,#fff))!important;
+ border-color:color-mix(in srgb,var(--accent,#7194d6) 18%,transparent)!important;
+}
+.rasa-bubble.from-visitor{
+ background:linear-gradient(135deg,color-mix(in srgb,var(--accent,#7194d6) 24%,#fff),color-mix(in srgb,#b8a8d8 28%,#fff))!important;
+ border-color:color-mix(in srgb,var(--accent,#7194d6) 30%,transparent)!important;
+}
+.rasa-chat-composer{
+ background:var(--rasa-chat-panel,var(--panel,rgba(255,255,255,.97)))!important;
+ padding-bottom:max(12px,env(safe-area-inset-bottom))!important;
+}
+.rasa-chat-composer textarea{
+ background:color-mix(in srgb,var(--accent,#7194d6) 5%,var(--rasa-chat-panel,#fff))!important;
+ border-color:color-mix(in srgb,var(--accent,#7194d6) 35%,transparent)!important;
+ transition:border-color .2s ease,box-shadow .2s ease,background .2s ease;
+}
+.rasa-chat-composer textarea:focus{
+ border-color:var(--accent,#7194d6)!important;
+ box-shadow:0 0 0 4px color-mix(in srgb,var(--accent,#7194d6) 13%,transparent)!important;
+}
+.rasa-send{background:linear-gradient(135deg,var(--accent-hover,#8fb0ed),#b8a8d8)!important;transition:transform .18s ease,filter .18s ease,box-shadow .18s ease}
+.rasa-send:not(:disabled):active{transform:scale(.94)}
+.rasa-send:disabled{filter:saturate(.55);opacity:.62}
+.rasa-typing span{animation:rasaTypingText .9s ease-in-out infinite alternate}
+@keyframes rasaTypingText{to{opacity:.58}}
+.rasa-chat-screen button,.rasa-chat-screen textarea{-webkit-tap-highlight-color:transparent}
+.rasa-chat-screen .rasa-messages>*{max-width:100%;min-width:0}
+.rasa-chat-screen .rasa-bubble p{overflow-wrap:anywhere;word-break:normal}
+@media(max-width:760px){
+ .rasa-chat-screen{width:100vw!important;max-width:100vw!important;left:0!important;right:0!important}
+ .rasa-chat-header{padding-top:max(10px,env(safe-area-inset-top))!important}
+ .rasa-chat-composer{padding-left:max(12px,env(safe-area-inset-left))!important;padding-right:max(12px,env(safe-area-inset-right))!important}
+ .rasa-chat-screen .rasa-messages{overscroll-behavior-y:contain;touch-action:pan-y}
+}
+@media(max-height:520px) and (orientation:landscape){
+ .rasa-chat-header{min-height:52px;padding-top:5px!important;padding-bottom:5px!important}
+ .rasa-chat-avatar{width:34px;height:34px}
+ .rasa-chat-notice{padding:5px 12px;font-size:10px}
+ .rasa-chat-composer{padding-top:6px!important;padding-bottom:max(6px,env(safe-area-inset-bottom))!important}
+ .rasa-chat-composer textarea{min-height:38px!important;max-height:76px!important}
+ .rasa-send{width:40px!important;height:40px!important;flex-basis:40px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ .rasa-chat-screen,.rasa-bubble,.rasa-typing span,.rasa-send,.rasa-chat-composer textarea{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
