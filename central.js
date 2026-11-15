@@ -77,7 +77,7 @@
     }
 
     if(page==='vent'){
-      root.innerHTML=\`${pageHead('RASA','Ruang Aman, Suara, dan Aspirasi. Ruang untuk bercerita, memperoleh pendampingan, dan menemukan langkah berikutnya.')}<section class="rasa-hero panel glass">
+      root.innerHTML=`${pageHead('RASA','Ruang Aman, Suara, dan Aspirasi. Ruang untuk bercerita, memperoleh pendampingan, dan menemukan langkah berikutnya.')}<section class="rasa-hero panel glass">
         <div class="rasa-brand-row"><span class="rasa-brand-mark" aria-hidden="true">♡</span><div class="rasa-brand-copy"><strong>RASA</strong><small>Layanan dukungan siswa</small></div><span class="rasa-active-label">Layanan aktif</span></div>
         <span class="rasa-kicker">RUANG AMAN UNTUK BERCERITA</span><h2>Setiap cerita punya ruang untuk didengar.</h2>
         <p>RASA merupakan layanan di JALUR untuk menyampaikan cerita, memperoleh pendampingan, dan mengakses layanan Bimbingan dan Konseling (BK).</p>
@@ -96,7 +96,7 @@
       </section>
       <section id="rasaAccessPanel" class="panel glass rasa-work-panel" hidden><div class="rasa-panel-heading"><div><span class="rasa-kicker">LANJUTKAN CERITA</span><h2>Percakapan Saya</h2><p>Masukkan kode akses yang kamu simpan setelah mengirim cerita pertama.</p></div><button type="button" class="btn secondary small" id="rasaBackAccess">Kembali ke RASA</button></div><form id="rasaAccess" class="form-grid"><div class="field full"><label for="rasaAccessCode">Kode akses rahasia</label><input id="rasaAccessCode" minlength="20" required autocomplete="off" placeholder="Tempelkan kode akses di sini"></div><div class="field full"><button class="btn primary">Buka percakapan</button></div></form><p class="source-line">Kode berlaku 30 hari sejak percakapan dibuat. Jika kode hilang, percakapan tidak dapat dipulihkan karena tidak ditautkan ke akun.</p></section>
       <section id="rasaConversation" class="panel glass section-gap rasa-work-panel" hidden></section>
-      <p class="source-line rasa-help-note">Jika kamu membutuhkan bantuan segera atau berada dalam situasi tidak aman, hubungi orang dewasa tepercaya atau layanan darurat setempat.</p>\`;
+      <p class="source-line rasa-help-note">Jika kamu membutuhkan bantuan segera atau berada dalam situasi tidak aman, hubungi orang dewasa tepercaya atau layanan darurat setempat.</p>`;
       let code='',conversationId='';
       const home=()=>{clearInterval(rasaPollTimer);$('#rasaChatPanel').hidden=true;$('#rasaAccessPanel').hidden=true;$('#rasaConversation').hidden=true;window.scrollTo({top:0,behavior:'smooth'});};
       const hideRasaPanels=()=>{['rasaChatPanel','rasaAccessPanel','rasaConversation','rasaBkPanel','rasaBkStatusPanel'].forEach(id=>{const el=$('#'+id);if(el)el.hidden=true;});};
