@@ -2754,3 +2754,28 @@ html.jalur-welcome-mode .login-ambient .bubble-three{width:29px;height:29px;righ
 .rasa-chat-screen .rasa-bubble.from-moderator{align-self:flex-start;border-top-left-radius:5px;background:rgba(142,164,202,.13)}
 .rasa-chat-screen .rasa-bubble.from-visitor{align-self:flex-end;border-top-right-radius:5px;background:linear-gradient(135deg,rgba(113,148,214,.28),rgba(184,168,216,.26));border-color:rgba(154,174,224,.38)}
 .rasa-chat-screen .rasa-chat-composer{position:sticky;bottom:0;z-index:2}
+
+
+/* RASA landing layout refinement: centered content, balanced cards and clear spacing. */
+#pageRoot:has(.rasa-hero)>.page-head{max-width:980px;margin:8px auto 20px;align-items:flex-start}
+#pageRoot:has(.rasa-hero)>.page-head>div{max-width:760px}
+#pageRoot:has(.rasa-hero)>.rasa-hero,
+#pageRoot:has(.rasa-hero)>.rasa-services,
+#pageRoot:has(.rasa-hero)>.rasa-access-section,
+#pageRoot:has(.rasa-hero)>.rasa-work-panel{width:100%;max-width:980px;margin-left:auto;margin-right:auto}
+#pageRoot:has(.rasa-hero)>.rasa-hero{margin-top:0;padding:clamp(22px,3.5vw,34px)}
+#pageRoot:has(.rasa-hero)>.rasa-services{margin-top:25px}
+#pageRoot:has(.rasa-hero) .rasa-service-grid{align-items:stretch;gap:18px}
+#pageRoot:has(.rasa-hero) .rasa-service-card{min-height:248px;padding:22px}
+#pageRoot:has(.rasa-hero)>.rasa-access-section{margin-top:26px;padding:22px 22px 8px;border:1px solid var(--border);border-radius:20px;background:var(--panel,rgba(255,255,255,.48))}
+#pageRoot:has(.rasa-hero) .rasa-access-link{padding:14px 2px}
+#pageRoot:has(.rasa-hero) .rasa-access-link:last-child{border-bottom:0}
+#pageRoot:has(.rasa-hero)>.rasa-work-panel{margin-top:18px}
+@media(max-width:700px){
+ #pageRoot:has(.rasa-hero)>.page-head{margin:4px 0 16px}
+ #pageRoot:has(.rasa-hero)>.rasa-hero{padding:20px}
+ #pageRoot:has(.rasa-hero)>.rasa-services{margin-top:22px}
+ #pageRoot:has(.rasa-hero) .rasa-service-grid{gap:12px}
+ #pageRoot:has(.rasa-hero) .rasa-service-card{min-height:0;padding:18px}
+ #pageRoot:has(.rasa-hero)>.rasa-access-section{padding:18px 15px 6px}
+}
