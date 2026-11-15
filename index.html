@@ -9,7 +9,7 @@
   <title>JALUR | Pendamping Eksplorasi Pendidikan Tinggi</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="/styles.css?v=20261115-dashboard-ribbon-v1">
+  <link rel="stylesheet" href="/styles.css?v=20261115-wave-ribbon-v2">
 </head>
 <body>
   <a class="skip-link" href="#main">Lewati ke konten utama</a>
@@ -40,7 +40,17 @@
     <span class="ambient-mover mover-pulse" aria-hidden="true"></span>
   </div>
 
-  <div class="welcome-ribbon-layer" aria-hidden="true"><span class="welcome-ribbon ribbon-one"></span><span class="welcome-ribbon ribbon-two"></span><span class="welcome-ribbon ribbon-three"></span></div>
+  <div class="welcome-ribbon-layer" aria-hidden="true">
+    <svg class="welcome-ribbon-art ribbon-back" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="jalurRibbonA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D2ECF9" stop-opacity="0"/><stop offset=".32" stop-color="#7194D6" stop-opacity=".42"/><stop offset=".62" stop-color="#D2ECF9" stop-opacity=".34"/><stop offset="1" stop-color="#D98B9B" stop-opacity="0"/></linearGradient>
+        <linearGradient id="jalurRibbonB" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#B8A8D8" stop-opacity="0"/><stop offset=".48" stop-color="#85C6DC" stop-opacity=".38"/><stop offset=".72" stop-color="#D2ECF9" stop-opacity=".3"/><stop offset="1" stop-color="#7194D6" stop-opacity="0"/></linearGradient>
+      </defs>
+      <path fill="url(#jalurRibbonA)" d="M-120 390 C170 90 250 820 520 510 S920 80 1190 340 S1480 510 1740 120 L1740 300 C1450 680 1340 510 1150 440 S820 300 600 660 S220 260 -120 590Z"/>
+      <path fill="url(#jalurRibbonB)" d="M-100 510 C180 170 290 760 560 540 S900 170 1180 390 S1490 650 1710 300 L1710 430 C1450 760 1330 610 1140 510 S850 390 610 720 S240 400 -100 690Z"/>
+      <path fill="none" stroke="#D2ECF9" stroke-opacity=".42" stroke-width="3" d="M-80 520 C180 180 300 760 560 530 S900 170 1180 390 S1490 650 1710 300"/>
+    </svg>
+  </div>
 
   <div id="welcome" class="welcome-screen">
     <header class="welcome-brand">
@@ -226,7 +236,7 @@
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
 
   <!-- The large education directory is fetched on demand by app.js. -->
-  <script defer src="/app.js?v=20261115-dashboard-ribbon-v1"></script>
+  <script defer src="/app.js?v=20261115-wave-ribbon-v2"></script>
 
   <!-- Deployed JALUR builds use the stable API domain. Preview API aliases may
        be protected by Vercel SSO and redirect OPTIONS preflights, which browsers block. -->
