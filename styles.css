@@ -2563,3 +2563,13 @@ body{font-size:var(--type-body);line-height:1.6}
 .panel-head h3,.panel h3{font-size:var(--type-h3);line-height:1.35}
 .panel-sub,.source-line,.field small{font-size:var(--type-xs);line-height:1.6}
 .btn,.text-btn{font-size:var(--type-sm);font-weight:600}
+
+/* Alumni analytics: compact, responsive distribution bars. */
+.alumni-chart{display:grid;gap:14px;margin-top:18px}
+.alumni-bar-row{display:grid;gap:7px;min-width:0}
+.alumni-bar-label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:var(--type-sm)}
+.alumni-bar-label span{min-width:0;overflow-wrap:anywhere}
+.alumni-bar-label strong{flex:none;font-variant-numeric:tabular-nums}
+.alumni-bar-track{height:9px;overflow:hidden;border-radius:999px;background:var(--surface-3,rgba(127,127,127,.16))}
+.alumni-bar-track>span{display:block;height:100%;min-width:2px;border-radius:inherit;background:var(--accent,var(--primary,#6688a8))}
+@media(max-width:600px){.alumni-bar-label{align-items:flex-start;flex-direction:column;gap:2px}.alumni-chart{gap:12px}}
