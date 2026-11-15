@@ -630,6 +630,18 @@ class RasaReferralInput(BaseModel):
     consent: bool = False
     urgent: bool = False
 
+class RasaBKRequestInput(BaseModel):
+    school_id: uuid.UUID
+    requested_at: datetime
+    mode: Literal["in_person","online"]
+    topic: str = Field(min_length=1,max_length=120)
+    student_note: str | None = Field(default=None,max_length=1000)
+
+class RasaBKReviewInput(BaseModel):
+    proposed_at: datetime
+    counselor_note: str | None = Field(default=None,max_length=1000)
+
+
 
 def _require_roles(request: Request, *roles: str):
     user = current_user(request)
@@ -1430,6 +1442,101 @@ def rasa_bk_referrals(request:Request):
           WHERE r.status='pending' AND m.school_id=%s
           ORDER BY r.urgent DESC,r.created_at LIMIT 100""",(actor["school_id"],)).fetchall()
     return {"items":[dict(r) for r in rows]}
+
+@app.get("/api/public/schools")
+def public_active_schools():
+    with connection() as conn:
+        rows=conn.execute("SELECT id,name FROM schools WHERE status='active' ORDER BY name").fetchall()
+    return {"items":[{"id":str(r["id"]),"name":r["name"]} for r in rows]}
+
+@app.post("/api/rasa/bk/requests",status_code=201)
+def rasa_create_anonymous_bk_request(payload:RasaBKRequestInput):
+    if payload.requested_at.tzinfo is None or payload.requested_at <= datetime.now(payload.requested_at.tzinfo):
+        raise HTTPException(422,"Waktu usulan harus berada di masa mendatang dan menyertakan zona waktu.")
+    code=secrets.token_urlsafe(32)
+    encrypted=_rasa_encrypt(json.dumps({"topic":payload.topic.strip(),"student_note":(payload.student_note or "").strip()},ensure_ascii=False))
+    with connection() as conn:
+        school=conn.execute("SELECT id FROM schools WHERE id=%s AND status='active'",(payload.school_id,)).fetchone()
+        if not school: raise HTTPException(404,"Sekolah tidak ditemukan atau tidak aktif.")
+        row=conn.execute("""INSERT INTO rasa_bk_requests(school_id,code_hash,requested_at,mode,encrypted_payload,nonce,auth_tag)
+          VALUES(%s,%s,%s,%s,%s,%s,%s) RETURNING id,status,requested_at,mode,expires_at""",
+          (payload.school_id,digest(code),payload.requested_at,payload.mode,*encrypted)).fetchone()
+    return {"item":{**dict(row),"id":str(row["id"])},"access_code":code}
+
+@app.post("/api/rasa/bk/requests/access")
+def rasa_access_anonymous_bk_request(payload:RasaAccessInput):
+    with connection() as conn:
+        row=conn.execute("""SELECT id,status,requested_at,mode,scheduled_at,counselor_note,expires_at
+          FROM rasa_bk_requests WHERE code_hash=%s AND expires_at>now()""",(digest(payload.access_code.strip()),)).fetchone()
+    if not row: raise HTTPException(404,"Kode konsultasi tidak valid atau sudah kedaluwarsa.")
+    return {"item":{**dict(row),"id":str(row["id"])}}
+
+@app.patch("/api/rasa/bk/requests/{request_id}/counter-proposal")
+def rasa_anonymous_bk_counter(request_id:uuid.UUID,payload:RasaCounterInput,request:Request):
+    code=request.headers.get("X-RASA-ACCESS-CODE","").strip()
+    if payload.requested_at.tzinfo is None or payload.requested_at<=datetime.now(payload.requested_at.tzinfo):
+        raise HTTPException(422,"Waktu usulan harus berada di masa mendatang.")
+    with connection() as conn:
+        row=conn.execute("""UPDATE rasa_bk_requests SET requested_at=%s,status='reschedule_requested',scheduled_at=NULL,
+          student_accepted=false,updated_at=now() WHERE id=%s AND code_hash=%s AND expires_at>now()
+          AND status='awaiting_confirmation' RETURNING id,status,requested_at""",
+          (payload.requested_at,request_id,digest(code))).fetchone()
+    if not row: raise HTTPException(409,"Kode tidak cocok atau permohonan belum menunggu persetujuan jadwal.")
+    return {"item":{**dict(row),"id":str(row["id"])}}
+
+@app.patch("/api/rasa/bk/requests/{request_id}/confirm-student")
+def rasa_anonymous_bk_student_accept(request_id:uuid.UUID,request:Request):
+    code=request.headers.get("X-RASA-ACCESS-CODE","").strip()
+    with connection() as conn:
+        row=conn.execute("""UPDATE rasa_bk_requests SET student_accepted=true,updated_at=now()
+          WHERE id=%s AND code_hash=%s AND expires_at>now() AND status='awaiting_confirmation' AND scheduled_at IS NOT NULL
+          RETURNING id,status,scheduled_at""",(request_id,digest(code))).fetchone()
+    if not row: raise HTTPException(409,"Kode tidak cocok atau belum ada jadwal yang dapat disetujui.")
+    return {"item":{**dict(row),"id":str(row["id"])}}
+
+@app.get("/api/rasa/bk/requests")
+def rasa_bk_anonymous_queue(request:Request):
+    actor=_require_roles(request,"counselor")
+    if not actor["school_id"]: raise HTTPException(403,"Akun Guru BK belum terhubung ke sekolah.")
+    with connection() as conn:
+        rows=conn.execute("""SELECT id,requested_at,mode,status,scheduled_at,counselor_note,student_accepted,created_at,
+          encrypted_payload,nonce,auth_tag FROM rasa_bk_requests WHERE school_id=%s
+          AND status NOT IN ('completed','cancelled') ORDER BY created_at LIMIT 300""",(actor["school_id"],)).fetchall()
+    items=[]
+    for row in rows:
+        try: details=json.loads(_rasa_decrypt(row))
+        except Exception: details={"topic":"Permohonan anonim","student_note":""}
+        items.append({"id":str(row["id"]),"requested_at":row["requested_at"].isoformat(),"mode":row["mode"],
+          "status":row["status"],"scheduled_at":row["scheduled_at"].isoformat() if row["scheduled_at"] else None,
+          "counselor_note":row["counselor_note"],"student_accepted":bool(row["student_accepted"]),
+          "created_at":row["created_at"].isoformat(),"topic":details.get("topic","Permohonan anonim"),
+          "student_note":details.get("student_note","")})
+    return {"items":items}
+
+@app.patch("/api/rasa/bk/requests/{request_id}/review")
+def rasa_bk_anonymous_review(request_id:uuid.UUID,payload:RasaBKReviewInput,request:Request):
+    actor=_require_roles(request,"counselor")
+    if payload.proposed_at.tzinfo is None or payload.proposed_at<=datetime.now(payload.proposed_at.tzinfo):
+        raise HTTPException(422,"Waktu penawaran harus berada di masa mendatang.")
+    with connection() as conn:
+        row=conn.execute("""UPDATE rasa_bk_requests SET status='awaiting_confirmation',counselor_id=%s,
+          scheduled_at=%s,counselor_note=%s,reviewed_at=COALESCE(reviewed_at,now()),student_accepted=false,updated_at=now()
+          WHERE id=%s AND school_id=%s AND status IN ('pending_review','reschedule_requested')
+          RETURNING id,status,scheduled_at""",(actor["id"],payload.proposed_at,(payload.counselor_note or "").strip(),request_id,actor["school_id"])).fetchone()
+        if not row: raise HTTPException(404,"Permohonan anonim tidak ditemukan atau sudah diproses.")
+        _audit_event(conn,actor,"rasa_bk_request.review","rasa_bk_request",request_id)
+    return {"item":{**dict(row),"id":str(row["id"])}}
+
+@app.patch("/api/rasa/bk/requests/{request_id}/confirm")
+def rasa_bk_anonymous_confirm(request_id:uuid.UUID,request:Request):
+    actor=_require_roles(request,"counselor")
+    with connection() as conn:
+        row=conn.execute("""UPDATE rasa_bk_requests SET status='confirmed',confirmed_at=now(),updated_at=now()
+          WHERE id=%s AND school_id=%s AND status='awaiting_confirmation' AND student_accepted=true
+          AND scheduled_at IS NOT NULL RETURNING id,status,scheduled_at""",(request_id,actor["school_id"])).fetchone()
+        if not row: raise HTTPException(409,"Jadwal belum disetujui pemohon atau permohonan tidak ditemukan.")
+        _audit_event(conn,actor,"rasa_bk_request.confirm","rasa_bk_request",request_id)
+    return {"item":{**dict(row),"id":str(row["id"])}}
 
 @app.post("/api/anonymous-ventings", status_code=201)
 def create_anonymous_venting(payload: AnonymousVentingInput, request: Request):
