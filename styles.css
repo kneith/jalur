@@ -2716,6 +2716,7 @@ html.jalur-welcome-mode .login-ambient .bubble-three{width:29px;height:29px;righ
 .rasa-bubble{position:relative;display:flex;flex-direction:column;gap:5px;width:fit-content;max-width:min(82%,520px);padding:10px 13px 7px;border:1px solid var(--border,rgba(255,255,255,.1));border-radius:17px;box-shadow:0 3px 12px rgba(0,0,0,.08);overflow-wrap:anywhere}
 .rasa-bubble p{margin:0;white-space:pre-wrap;font-size:14px;line-height:1.5;color:inherit}
 .rasa-bubble time{align-self:flex-end;font-size:10px;color:var(--muted,#aeb9c8)}
+.rasa-delivery-state{align-self:flex-end;font-size:9px;line-height:1;color:var(--muted,#aeb9c8);margin-top:-2px;}
 .rasa-bubble.from-moderator{align-self:flex-start;border-top-left-radius:5px;background:var(--glass,rgba(255,255,255,.075))}
 .rasa-bubble.from-visitor{align-self:flex-end;border-top-right-radius:5px;background:linear-gradient(135deg,rgba(113,148,214,.25),rgba(184,168,216,.22));border-color:rgba(154,174,224,.28)}
 .rasa-typing{flex:0 0 auto;display:flex;align-items:center;gap:4px;padding:0 18px 10px;color:var(--muted,#aeb9c8);font-size:11px}
