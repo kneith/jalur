@@ -280,7 +280,7 @@
           $('#modClose').onclick=async()=>{try{await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/status',{method:'PATCH',body:{status:'closed'}});serverPage('server-vent');}catch(err){notice(err.message);}};
           $('#modRefer').onclick=async()=>{const summary=prompt('Ringkasan seperlunya untuk Guru BK (jangan salin seluruh percakapan):');if(!summary)return;const consent=confirm('Siswa menyetujui rujukan?');const urgent=consent?false:confirm('Apakah ada risiko keselamatan mendesak sesuai kebijakan sekolah?');try{await api('/rasa/moderator/conversations/'+b.dataset.rasaOpen+'/referral',{method:'POST',body:{summary,consent,urgent}});notice('Rujukan dikirim.');serverPage('server-vent');}catch(err){notice(err.message);}};
         }catch(err){notice(err.message);}
-      });
+      };
       return;
     }
     if(page==='server-school'){
