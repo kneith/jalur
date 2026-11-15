@@ -2779,3 +2779,12 @@ html.jalur-welcome-mode .login-ambient .bubble-three{width:29px;height:29px;righ
  #pageRoot:has(.rasa-hero) .rasa-service-card{min-height:0;padding:18px}
  #pageRoot:has(.rasa-hero)>.rasa-access-section{padding:18px 15px 6px}
 }
+
+/* RASA moderator live queue status and fallback controls. */
+.rasa-queue-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.rasa-queue-toolbar h2{margin:0}
+.rasa-queue-status{margin:5px 0 0;color:var(--muted);font-size:13px}
+.rasa-queue-status[data-state="connected"]{color:#36865c}
+.rasa-queue-status[data-state="reconnecting"]{color:#a66b24}
+.rasa-queue-toolbar button{flex:0 0 auto}
+@media(max-width:560px){.rasa-queue-toolbar{align-items:flex-start;flex-direction:column}.rasa-queue-toolbar button{width:100%}}
