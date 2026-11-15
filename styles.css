@@ -2623,8 +2623,8 @@ html:not(.jalur-welcome-mode) .welcome-ribbon-layer{display:none}
 
 
 /* Restrained welcome-only ambient: subtle glows, fine orbits and slow bubbles. */
-html.jalur-welcome-mode .login-ambient{display:block!important;position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:radial-gradient(ellipse at 16% 18%,rgba(113,148,214,.10),transparent 42%),radial-gradient(ellipse at 84% 78%,rgba(210,236,249,.075),transparent 44%),linear-gradient(135deg,#14243A 0%,#1D304A 50%,#172538 100%)!important}
-html.jalur-welcome-mode .login-ambient::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,rgba(184,168,216,.045),transparent 58%)}
+html.jalur-welcome-mode .login-ambient{display:block!important;position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:transparent!important}
+html.jalur-welcome-mode .login-ambient::before{content:"";position:absolute;inset:0;background:transparent}
 html.jalur-welcome-mode .login-ambient .ambient-glow{display:block!important;width:clamp(220px,34vw,480px);height:clamp(220px,34vw,480px);filter:blur(86px);opacity:.19;mix-blend-mode:screen;animation:loginGlowDrift 34s ease-in-out infinite alternate}
 html.jalur-welcome-mode .login-ambient .glow-a{left:4%;top:8%;background:#7194D6}
 html.jalur-welcome-mode .login-ambient .glow-b{right:3%;bottom:4%;background:#D2ECF9;animation-delay:-17s;opacity:.14}
