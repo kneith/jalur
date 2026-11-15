@@ -826,26 +826,24 @@ function jalurTransitionToApp(){
  const intro=$("#jalur-intro");
  if(intro)intro.remove();
  root.classList.remove("jalur-intro-pending","jalur-intro-revealing","jalur-welcome-mode");
- if(!welcome||!appShell){welcome?.classList.add("hidden");appShell?.classList.remove("hidden");return;}
- welcome.classList.remove("hidden","jalur-welcome-exit");
+ if(!appShell){welcome?.classList.add("hidden");return;}
  appShell.classList.remove("hidden","jalur-app-enter");
+ if(!welcome){return;}
  const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
  if(reduced){welcome.classList.add("hidden");return;}
+ welcome.classList.remove("hidden","jalur-welcome-exit");
  void appShell.offsetWidth;
  welcome.classList.add("jalur-welcome-exit");
  appShell.classList.add("jalur-app-enter");
  let finished=false,timer;
- const onEnd=event=>{if(event.target===appShell&&event.animationName==="jalurAppEnter")finish();};
  const finish=()=>{
-  if(finished)return;finished=true;
-  window.clearTimeout(timer);
+  if(finished)return;finished=true;window.clearTimeout(timer);
   appShell.removeEventListener("animationend",onEnd);
-  welcome.classList.add("hidden");
-  welcome.classList.remove("jalur-welcome-exit");
+  welcome.classList.add("hidden");welcome.classList.remove("jalur-welcome-exit");
   appShell.classList.remove("jalur-app-enter");
  };
- appShell.addEventListener("animationend",onEnd);
- timer=window.setTimeout(finish,900);
+ const onEnd=event=>{if(event.target===appShell&&event.animationName==="jalurAppEnter")finish();};
+ appShell.addEventListener("animationend",onEnd);timer=window.setTimeout(finish,900);
 }
 window.JALUR_TRANSITION_TO_APP=jalurTransitionToApp;
 window.JALUR_ANIMATE_PAGE_TRANSITION=()=>{
@@ -874,22 +872,19 @@ function jalurResetScrollTop(){
 }
 window.JALUR_RESET_SCROLL_TOP=jalurResetScrollTop;
 window.JALUR_ENTER_GUEST = () => {
- activeRole="guest";
- window.JALUR_GUEST_SELECTED=true;
- window.JALUR_LOGIN_REQUESTED=false;
- window.JALUR_WELCOME_REQUESTED=false;
- sessionStorage.setItem("jalur-guest-mode","1");
- sessionStorage.setItem("jalur-app-open","1");
+ activeRole="guest";window.JALUR_GUEST_SELECTED=true;window.JALUR_LOGIN_REQUESTED=false;window.JALUR_WELCOME_REQUESTED=false;
+ sessionStorage.setItem("jalur-guest-mode","1");sessionStorage.setItem("jalur-app-open","1");
  try{localStorage.removeItem("jalur-last-page");}catch{}
  history.replaceState({},"",location.pathname+location.search);
  currentPage="Dashboard";state.currentPage="Dashboard";
- jalurResetScrollTop();
- const pageRoot=$("#pageRoot");
- if(pageRoot)pageRoot.innerHTML='<section class="directory-loading dashboard-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><strong>Memuat dashboard…</strong><span class="dashboard-loading-hint">Menyiapkan ruang eksplorasi JALUR</span><div class="dashboard-skeleton" aria-hidden="true"><i></i><i></i><i></i><i></i></div></section>';
- window.JALUR_TRANSITION_TO_APP?.();
- jalurWriteRoute("Dashboard",true);
- const paintDashboard=()=>{if(currentPage==="Dashboard"){try{render();}catch(error){console.error("Dashboard gagal dimuat:",error);if(pageRoot)pageRoot.innerHTML='<section class="panel glass app-error-state" role="alert"><h2>Dashboard belum dapat dimuat</h2><p>Silakan coba muat ulang halaman.</p><button class="btn primary" type="button" onclick="location.reload()">Muat ulang</button></section>';}}jalurResetScrollTop();};
- if(window.requestAnimationFrame)window.requestAnimationFrame(()=>window.requestAnimationFrame(paintDashboard));else paintDashboard();
+ const appShell=$("#app"),pageRoot=$("#pageRoot");
+ appShell?.classList.remove("hidden");
+ if(pageRoot){
+  pageRoot.innerHTML='<section class="dashboard-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><strong>Memuat dashboard…</strong><span class="dashboard-loading-hint">Menyiapkan ruang eksplorasi JALUR</span><div class="dashboard-skeleton" aria-hidden="true"><i></i><i></i><i></i><i></i></div></section>';
+ }
+ jalurResetScrollTop();window.JALUR_TRANSITION_TO_APP?.();jalurWriteRoute("Dashboard",true);
+ const paintDashboard=()=>{if(currentPage!=="Dashboard")return;try{render();}catch(error){console.error("Dashboard gagal dimuat:",error);if(pageRoot)pageRoot.innerHTML='<section class="panel glass app-error-state" role="alert"><h2>Dashboard belum dapat dimuat</h2><p>Silakan coba muat ulang halaman.</p><button class="btn primary" type="button" onclick="location.reload()">Muat ulang</button></section>';}jalurResetScrollTop();};
+ window.setTimeout(paintDashboard,650);
  toast("Anda masuk sebagai pengunjung. Data tersimpan secara lokal pada peramban ini.","info");
 };
 function enterApplication(mode="guest",displayName="Pengunjung"){
