@@ -39,3 +39,12 @@ create table if not exists public.rasa_bk_requests(
 create index if not exists rasa_bk_requests_school_queue_idx on public.rasa_bk_requests(school_id,status,created_at);
 alter table public.rasa_bk_requests enable row level security;
 revoke all on public.rasa_bk_requests from anon,authenticated;
+
+alter table public.rasa_conversations add column if not exists school_id uuid references public.schools(id) on delete set null;
+alter table public.rasa_referrals add column if not exists school_id uuid references public.schools(id) on delete set null;
+update public.rasa_conversations c set school_id=(select id from public.schools where status='active' order by name limit 1)
+where c.school_id is null and (select count(*) from public.schools where status='active')=1;
+update public.rasa_referrals r set school_id=c.school_id from public.rasa_conversations c
+where r.conversation_id=c.id and r.school_id is null;
+create index if not exists rasa_conversations_school_idx on public.rasa_conversations(school_id,status,last_message_at desc);
+create index if not exists rasa_referrals_school_idx on public.rasa_referrals(school_id,status,created_at);
