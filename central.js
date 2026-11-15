@@ -140,17 +140,21 @@
           if(latest.messages.length!==count){list.innerHTML=messageMarkup(latest.messages);count=latest.messages.length;if(nearBottom)list.scrollTop=list.scrollHeight;}
           $('#rasaTypingPage').hidden=!latest.counterpart_typing;
           $('#rasaChatPresence').textContent='Percakapan anonim · '+(latest.conversation.status||'Aktif');
+          if(latest.conversation.status==='closed'){const input=$('#rasaReplyPageText'),send=$('#rasaReplyPage button');if(input)input.disabled=true;if(send)send.disabled=true;$('#rasaTypingPage').hidden=true;stopStream?.();stopStream=null;rasaLiveStop=null;}
         });
         rasaLiveStop=stopStream;
         const field=$('#rasaReplyPageText');
         field.addEventListener('input',()=>{
           clearTimeout(typingTimer);
-          api('/rasa/conversations/'+data.conversation.id+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{is_typing:true}}).catch(()=>{});
-          typingTimer=setTimeout(()=>api('/rasa/conversations/'+data.conversation.id+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{is_typing:false}}).catch(()=>{}),1800);
+          typingTimer=setTimeout(()=>{
+            api('/rasa/conversations/'+data.conversation.id+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{is_typing:true}}).catch(()=>{});
+            typingTimer=setTimeout(()=>api('/rasa/conversations/'+data.conversation.id+'/typing',{method:'POST',headers:{'X-RASA-ACCESS-CODE':accessCode},body:{is_typing:false}}).catch(()=>{}),1800);
+          },250);
         });
         field.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();$('#rasaReplyPage').requestSubmit();}});
         $('#rasaReplyPage').onsubmit=async ev=>{
           ev.preventDefault();const value=field.value.trim();if(!value)return;
+          clearTimeout(typingTimer);
           const send=ev.target.querySelector('button');send.disabled=true;
           pendingMessageId ||= (crypto.randomUUID?.()||([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,x=>(x^crypto.getRandomValues(new Uint8Array(1))[0]&15>>x/4).toString(16)));
           try{
