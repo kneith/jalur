@@ -92,6 +92,8 @@
   function pageHead(title,sub,showLogout=true){return `<div class="page-head"><div><span class="eyebrow">JALUR dan PORTAL TERPUSAT</span><h1>${esc(title)}</h1><p>${esc(sub)}</p></div>${showLogout?'<button class="btn secondary small" id="centralLogout">Keluar</button>':''}</div>`}
   function formField(label,id,placeholder,type='text',required=true){return `<div class="field"><label for="${id}">${esc(label)}</label><input id="${id}" type="${type}" placeholder="${esc(placeholder)}" ${required?'required':''}></div>`}
   async function serverPage(page){
+    if(page==='vent-chat')sessionStorage.setItem('jalur-rasa-active','vent-chat');
+    else if(page==='vent'){sessionStorage.removeItem('jalur-rasa-active');sessionStorage.removeItem('jalur-rasa-access-code');}
     rasaLiveStop?.();rasaLiveStop=null;
     const root=$('#pageRoot');if(!root)return;
     const permissions={"server-home":["student"],"appointment":["student"],"vent":["student","guest"],"vent-chat":["student","guest"],"server-school":["school_admin"],"school-users":["school_admin"],"school-classes":["school_admin"],"school-alumni":["school_admin"],"server-grades":["teacher"],"grades":["student","teacher","school_admin"],"server-bk":["counselor"],"server-vent":["wellbeing_moderator"],"server-platform":["platform_admin"]};
@@ -127,7 +129,7 @@
         '<section id="rasaConversationPage" class="panel glass rasa-work-panel" hidden></section>';
       let accessCode='', stopStream=null, typingTimer=null, pendingMessageId=null;
       const messageMarkup=(items,own='visitor')=>items.map(m=>'<article class="rasa-bubble '+(m.sender==='moderator'?'from-moderator':'from-visitor')+'"><p>'+esc(m.text)+'</p><time>'+esc(new Date(m.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}))+'</time>'+(m.sender===own?'<small class="rasa-delivery-state">✓ Terkirim</small>':'')+'</article>').join('');
-      const home=()=>{stopStream?.();stopStream=null;rasaLiveStop=null;clearTimeout(typingTimer);serverPage('vent');};
+      const home=()=>{stopStream?.();stopStream=null;rasaLiveStop=null;clearTimeout(typingTimer);sessionStorage.removeItem('jalur-rasa-active');sessionStorage.removeItem('jalur-rasa-access-code');serverPage('vent');};
       $('#rasaChatHome').onclick=home;
       api('/public/schools').then(data=>{const select=$('#rasaSchoolPage');if(!select)return;const items=Array.isArray(data?.items)?data.items.filter(x=>x?.id&&x?.name):[];select.innerHTML=items.length?'<option value="">Pilih sekolah</option>'+items.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join(''):'<option value="">Belum ada sekolah aktif</option>';select.disabled=!items.length;const submit=$('#rasaStartPage button[type="submit"]');if(submit)submit.disabled=!items.length;if(!items.length)notice('Belum ada sekolah aktif yang dapat dipilih.');}).catch(err=>{const select=$('#rasaSchoolPage');if(select){select.innerHTML='<option value="">Gagal memuat sekolah. Coba muat ulang.</option>';select.disabled=true;}const submit=$('#rasaStartPage button[type="submit"]');if(submit)submit.disabled=true;notice('Daftar sekolah gagal dimuat: '+err.message);});
       const showChat=data=>{
@@ -177,14 +179,16 @@
         try{
           const schoolId=$('#rasaSchoolPage').value;if(!schoolId)throw new Error('Pilih sekolah terlebih dahulu.');
           const created=await api('/rasa/conversations',{method:'POST',body:{school_id:schoolId,category:$('#rasaCategoryPage').value,text:$('#rasaInitialPage').value}});
-          accessCode=created.access_code;$('#rasaAccessPageCode').value=accessCode;
+          accessCode=created.access_code;sessionStorage.setItem('jalur-rasa-access-code',accessCode);$('#rasaAccessPageCode').value=accessCode;
           modal('Simpan kode akses rahasia','<p>Kode hanya ditampilkan satu kali. Simpan untuk membuka kembali percakapan ini. Kode tidak dapat dipulihkan jika hilang.</p><label for="rasaCodePageOnce">Kode akses</label><input id="rasaCodePageOnce" readonly value="'+esc(accessCode)+'"><button type="button" class="btn secondary" id="rasaCopyPageCode">Salin kode</button><button type="button" class="btn primary" id="rasaContinuePageChat">Buka percakapan</button>');
           $('#rasaCopyPageCode').onclick=()=>navigator.clipboard?.writeText(accessCode).then(()=>notice('Kode akses disalin.')).catch(()=>notice('Silakan salin kode secara manual.'));
           $('#rasaContinuePageChat').onclick=()=>dismissLoginModal(async()=>{const loaded=await api('/rasa/conversations/access',{method:'POST',body:{access_code:accessCode}});showChat(loaded);});
           ev.target.reset();
         }catch(err){notice(err.message);}finally{btn.disabled=false;}
       };
-      $('#rasaAccessPage').onsubmit=async ev=>{ev.preventDefault();const btn=ev.target.querySelector('button');btn.disabled=true;try{accessCode=$('#rasaAccessPageCode').value.trim();showChat(await api('/rasa/conversations/access',{method:'POST',body:{access_code:accessCode}}));}catch(err){notice(err.message);}finally{btn.disabled=false;}};
+      $('#rasaAccessPage').onsubmit=async ev=>{ev.preventDefault();const btn=ev.target.querySelector('button');btn.disabled=true;try{accessCode=$('#rasaAccessPageCode').value.trim();sessionStorage.setItem('jalur-rasa-access-code',accessCode);showChat(await api('/rasa/conversations/access',{method:'POST',body:{access_code:accessCode}}));}catch(err){notice(err.message);}finally{btn.disabled=false;}};
+      const savedRasaCode=sessionStorage.getItem('jalur-rasa-access-code')||'';
+      if(savedRasaCode){accessCode=savedRasaCode;$('#rasaAccessPageCode').value=savedRasaCode;api('/rasa/conversations/access',{method:'POST',body:{access_code:savedRasaCode}}).then(showChat).catch(err=>{sessionStorage.removeItem('jalur-rasa-access-code');notice('Sesi chat tidak dapat dipulihkan. Masukkan kembali kode aksesmu. '+err.message);});}
       return;
     }
 
@@ -559,7 +563,7 @@ function wireDirectory(){let timer,offset=0,requestSeq=0,activeController=null;c
    },true);
   $('#signIn')?.addEventListener('click',e=>{e.stopImmediatePropagation();login('student')},true);
   async function hydrateStudentWorkspace(){if(user?.role!=='student')return;const remote=await api('/workspace');if(remote.workspace)window.JALUR_SET_WORKSPACE?.(remote.workspace);else{const local=window.JALUR_GET_WORKSPACE?.();if(local)await api('/workspace',{method:'POST',body:{workspace:local}});}}
-  window.addEventListener('DOMContentLoaded',async()=>{const guestMode=sessionStorage.getItem('jalur-guest-mode')==='1'||window.JALUR_GUEST_SELECTED;if(guestMode){const saved=window.JALUR_GET_ACTIVE_PAGE?.()||'Dashboard';if(saved==='Anonymous Venting'){sessionStorage.setItem('jalur-app-open','1');window.JALUR_TRANSITION_TO_APP?.();window.navigate?.('Anonymous Venting');}return;}if(window.JALUR_LOGIN_REQUESTED)return;try{const d=await api('/auth/me');if(sessionStorage.getItem('jalur-guest-mode')==='1'||window.JALUR_GUEST_SELECTED||window.JALUR_LOGIN_REQUESTED||window.JALUR_WELCOME_REQUESTED)return;user=d.user;csrfToken=d.csrfToken||cookie('jalur_csrf');await hydrateStudentWorkspace();if(window.JALUR_WELCOME_REQUESTED||sessionStorage.getItem('jalur-guest-mode')==='1')return;sessionStorage.setItem('jalur-app-open','1');window.JALUR_TRANSITION_TO_APP?.();const saved=window.JALUR_GET_ACTIVE_PAGE?.()||'Dashboard';window.navigate?.(saved);}catch{/* Pengunjung tetap berada di halaman pembuka jika belum memiliki sesi aktif. Login hanya dibuka melalui pilihan pengguna. */}});
+  window.addEventListener('DOMContentLoaded',async()=>{const guestMode=sessionStorage.getItem('jalur-guest-mode')==='1'||window.JALUR_GUEST_SELECTED;const rasaActive=sessionStorage.getItem('jalur-rasa-active')==='vent-chat';if(guestMode){const saved=window.JALUR_GET_ACTIVE_PAGE?.()||'Dashboard';if(rasaActive){sessionStorage.setItem('jalur-app-open','1');window.JALUR_TRANSITION_TO_APP?.();serverPage('vent-chat');}else if(saved==='Anonymous Venting'){sessionStorage.setItem('jalur-app-open','1');window.JALUR_TRANSITION_TO_APP?.();window.navigate?.('Anonymous Venting');}return;}if(window.JALUR_LOGIN_REQUESTED)return;try{const d=await api('/auth/me');if(sessionStorage.getItem('jalur-guest-mode')==='1'||window.JALUR_GUEST_SELECTED||window.JALUR_LOGIN_REQUESTED||window.JALUR_WELCOME_REQUESTED)return;user=d.user;csrfToken=d.csrfToken||cookie('jalur_csrf');await hydrateStudentWorkspace();if(window.JALUR_WELCOME_REQUESTED||sessionStorage.getItem('jalur-guest-mode')==='1')return;sessionStorage.setItem('jalur-app-open','1');window.JALUR_TRANSITION_TO_APP?.();const saved=window.JALUR_GET_ACTIVE_PAGE?.()||'Dashboard';if(rasaActive)serverPage('vent-chat');else window.navigate?.(saved);}catch{/* Pengunjung tetap berada di halaman pembuka jika belum memiliki sesi aktif. Login hanya dibuka melalui pilihan pengguna. */}});
   // Role-aware navigation shortcut is deliberately server-rendered for protected modules.
   const oldNav=window.navigate;
   window.JALUR_API = { request: api, getUser: () => user };
