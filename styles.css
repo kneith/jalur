@@ -3042,3 +3042,30 @@ body.rasa-chat-active{height:100%;overflow:hidden!important;overscroll-behavior:
 
 #moderatorConversation.keyboard-open .rasa-chat-actions{display:none!important}
 #moderatorConversation.keyboard-open .rasa-chat-composer{padding-bottom:max(8px,env(safe-area-inset-bottom))!important}
+
+
+/* Moderator chat: match the student viewport and motion without horizontal clipping. */
+#moderatorConversation.rasa-chat-screen{
+  left:0!important;right:0!important;top:var(--rasa-vtop,0px)!important;bottom:auto!important;
+  width:auto!important;max-width:none!important;min-width:0!important;
+  height:var(--rasa-vh,100dvh)!important;max-height:var(--rasa-vh,100dvh)!important;
+  overflow:hidden!important;contain:layout paint!important;
+  transform:translate3d(0,0,0);will-change:transform,opacity;
+  animation:moderatorChatEnter .28s cubic-bezier(.22,.75,.25,1) both;
+}
+#moderatorConversation .rasa-chat-header,
+#moderatorConversation .rasa-chat-notice,
+#moderatorConversation .rasa-typing,
+#moderatorConversation .rasa-chat-composer,
+#moderatorConversation .rasa-chat-actions{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+#moderatorConversation .rasa-chat-header{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+#moderatorConversation .rasa-chat-title{flex:1 1 auto;min-width:0;overflow:hidden}
+#moderatorConversation .rasa-chat-title strong,
+#moderatorConversation .rasa-chat-title small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#moderatorConversation .rasa-messages{min-width:0;max-width:100%;overflow-x:hidden!important;scroll-behavior:smooth}
+#moderatorConversation .rasa-bubble{min-width:0;max-width:min(82%,620px)!important;overflow-wrap:anywhere;word-break:break-word}
+#moderatorConversation .rasa-bubble p{min-width:0;overflow-wrap:anywhere;word-break:break-word}
+#moderatorConversation .rasa-chat-composer{padding-left:max(10px,env(safe-area-inset-left))!important;padding-right:max(10px,env(safe-area-inset-right))!important}
+#moderatorConversation .rasa-chat-actions{padding-left:max(10px,env(safe-area-inset-left))!important;padding-right:max(10px,env(safe-area-inset-right))!important}
+@keyframes moderatorChatEnter{from{opacity:0;transform:translate3d(0,12px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+@media(prefers-reduced-motion:reduce){#moderatorConversation.rasa-chat-screen{animation:none!important}}
