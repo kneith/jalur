@@ -1468,7 +1468,7 @@ def rasa_moderator_queue_stream(request:Request):
             with connection() as conn:
                 rows=conn.execute("""SELECT c.id,c.category,c.status,c.created_at,c.last_message_at,c.assigned_moderator_id,
                   (SELECT count(*) FROM rasa_messages m WHERE m.conversation_id=c.id) message_count
-                  FROM rasa_conversations c WHERE c.status<>'closed'
+                  FROM rasa_conversations c WHERE c.status NOT IN ('closed','referred')
                   ORDER BY (c.assigned_moderator_id IS NULL) DESC,c.last_message_at DESC LIMIT 200""").fetchall()
             items=[{**dict(r),"id":str(r["id"]),"assigned_to_me":bool(r["assigned_moderator_id"] and str(r["assigned_moderator_id"])==str(actor["id"]))} for r in rows]
             serialized=json.dumps(items,default=str,separators=(",",":"))
