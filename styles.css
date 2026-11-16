@@ -2972,3 +2972,70 @@ body.rasa-chat-active #pageRoot{display:contents!important}
   #moderatorConversation .rasa-chat-actions{justify-content:stretch}
   #moderatorConversation .rasa-chat-actions .btn{flex:1 1 100%;min-width:0}
 }
+
+
+/* Moderator RASA: stable viewport, true message scrolling and a quiet bottom bar. */
+#moderatorConversation.rasa-chat-screen{
+  position:fixed!important;
+  inset:var(--rasa-vtop,0px) 0 auto 0!important;
+  width:100%!important;max-width:100%!important;
+  height:var(--rasa-vh,100dvh)!important;max-height:var(--rasa-vh,100dvh)!important;
+  min-height:0!important;box-sizing:border-box!important;
+  display:flex!important;flex-direction:column!important;
+  overflow:hidden!important;overscroll-behavior:none!important;
+  padding:0!important;margin:0!important;border:0!important;border-radius:0!important;
+}
+#moderatorConversation.rasa-chat-screen[hidden]{display:none!important}
+#moderatorConversation .rasa-chat-header,
+#moderatorConversation .rasa-chat-notice,
+#moderatorConversation .rasa-typing,
+#moderatorConversation .rasa-chat-composer,
+#moderatorConversation .rasa-chat-actions{flex-shrink:0!important}
+#moderatorConversation .rasa-messages{
+  flex:1 1 0!important;min-height:0!important;height:0!important;
+  max-height:none!important;width:100%!important;box-sizing:border-box!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;overscroll-behavior-y:contain!important;
+  touch-action:pan-y!important;scrollbar-width:thin;
+  padding:16px clamp(12px,4vw,26px) 20px!important;margin:0!important;
+  align-items:stretch!important;
+}
+#moderatorConversation .rasa-bubble{flex:0 0 auto!important;max-width:min(84%,620px)!important}
+#moderatorConversation .rasa-bubble.from-visitor{align-self:flex-end!important}
+#moderatorConversation .rasa-bubble.from-moderator{align-self:flex-start!important}
+#moderatorConversation .rasa-chat-composer{
+  position:relative!important;bottom:auto!important;z-index:3!important;
+  display:flex!important;align-items:flex-end!important;gap:9px!important;
+  width:100%!important;box-sizing:border-box!important;
+  margin:0!important;padding:8px 12px!important;
+  padding-bottom:8px!important;
+}
+#moderatorConversation .rasa-chat-composer textarea{
+  flex:1 1 auto!important;width:0!important;min-width:0!important;
+  min-height:44px!important;max-height:88px!important;height:auto;
+  resize:none!important;overflow-y:auto!important;box-sizing:border-box!important;
+  font-size:16px!important;line-height:1.4!important;
+}
+#moderatorConversation .rasa-chat-actions{
+  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  align-items:center!important;gap:8px!important;
+  width:100%!important;box-sizing:border-box!important;
+  padding:7px 12px max(7px,env(safe-area-inset-bottom))!important;
+  background:rgba(255,255,255,.98)!important;
+  border-top:1px solid rgba(91,119,159,.12)!important;
+  box-shadow:0 -3px 14px rgba(35,55,90,.035)!important;
+}
+#moderatorConversation .rasa-chat-actions .btn{
+  width:100%!important;min-width:0!important;min-height:38px!important;
+  padding:7px 9px!important;font-size:12px!important;white-space:normal!important;
+}
+#moderatorConversation .rasa-chat-actions:has(#modExitHistory){grid-template-columns:minmax(0,1fr)!important}
+#moderatorConversation .rasa-typing{padding:5px 14px 7px!important}
+body.rasa-chat-active{height:100%;overflow:hidden!important;overscroll-behavior:none!important}
+@media(max-width:380px){
+  #moderatorConversation .rasa-chat-actions{gap:6px!important;padding-left:8px!important;padding-right:8px!important}
+  #moderatorConversation .rasa-chat-actions .btn{font-size:11px!important;padding:6px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #moderatorConversation.rasa-chat-screen{animation:none!important;transition:none!important}
+}
