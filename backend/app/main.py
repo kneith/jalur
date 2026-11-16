@@ -1360,7 +1360,7 @@ def rasa_visitor_message(conversation_id:uuid.UUID,payload:RasaMessageInput,requ
     with connection() as conn:
         c=_rasa_access(conn,code)
         if str(c["id"])!=str(conversation_id): raise HTTPException(403,"Kode akses tidak cocok.")
-        if c["status"]=="closed": raise HTTPException(409,"Percakapan telah ditutup dan tidak menerima pesan baru.")
+        if c["status"] in ("closed","referred"): raise HTTPException(409,"Percakapan telah diselesaikan atau dirujuk dan tidak menerima pesan baru.")
         row,inserted=_rasa_save_message(conn,conversation_id,"visitor",payload.text,client_message_id=payload.client_message_id)
         if inserted:
             conn.execute("UPDATE rasa_conversations SET status='waiting_moderator',updated_at=now(),last_message_at=now() WHERE id=%s",(conversation_id,))
