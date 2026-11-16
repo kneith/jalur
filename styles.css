@@ -3069,3 +3069,27 @@ body.rasa-chat-active{height:100%;overflow:hidden!important;overscroll-behavior:
 #moderatorConversation .rasa-chat-actions{padding-left:max(10px,env(safe-area-inset-left))!important;padding-right:max(10px,env(safe-area-inset-right))!important}
 @keyframes moderatorChatEnter{from{opacity:0;transform:translate3d(0,12px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
 @media(prefers-reduced-motion:reduce){#moderatorConversation.rasa-chat-screen{animation:none!important}}
+
+
+/* Moderator RASA: keep both message edges inset like the student chat. */
+#moderatorConversation .rasa-messages{
+  padding-left:18px!important;
+  padding-right:18px!important;
+  box-sizing:border-box!important;
+}
+#moderatorConversation .rasa-bubble{
+  box-sizing:border-box!important;
+  max-width:min(82%,560px)!important;
+}
+#moderatorConversation .rasa-bubble.from-visitor{
+  margin-right:2px!important;
+}
+#moderatorConversation .rasa-bubble.from-moderator{
+  margin-left:2px!important;
+}
+@media(max-width:420px){
+  #moderatorConversation .rasa-messages{
+    padding-left:16px!important;
+    padding-right:16px!important;
+  }
+}
