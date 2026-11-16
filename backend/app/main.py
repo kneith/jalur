@@ -1564,6 +1564,21 @@ def rasa_referral(conversation_id:uuid.UUID,payload:RasaReferralInput,request:Re
         _audit_event(conn,actor,"rasa.referral","rasa_conversation",conversation_id)
     return {"ok":True}
 
+@app.patch("/api/rasa/bk/referrals/{referral_id}/status")
+def rasa_bk_referral_status(referral_id:uuid.UUID,payload:dict,request:Request):
+    actor=_require_roles(request,"counselor")
+    status=payload.get("status")
+    if status not in ("accepted","closed"): raise HTTPException(422,"Status rujukan tidak valid.")
+    if not actor.get("school_id"): raise HTTPException(403,"Akun Guru BK belum terhubung ke sekolah.")
+    with connection() as conn:
+        row=conn.execute("""UPDATE rasa_referrals SET status=%s
+          WHERE id=%s AND school_id=%s AND status IN ('pending','accepted')
+          RETURNING id,status""",(status,referral_id,actor["school_id"])).fetchone()
+        if not row: raise HTTPException(404,"Rujukan tidak ditemukan atau bukan untuk sekolahmu.")
+        _audit_event(conn,actor,"rasa.referral.status","rasa_referral",referral_id)
+    return {"item":dict(row)}
+
+
 @app.get("/api/rasa/bk/referrals")
 def rasa_bk_referrals(request:Request):
     actor=_require_roles(request,"counselor")
@@ -1571,7 +1586,7 @@ def rasa_bk_referrals(request:Request):
     with connection() as conn:
         rows=conn.execute("""SELECT r.id,r.summary,r.consent,r.urgent,r.status,r.created_at
           FROM rasa_referrals r
-          WHERE r.status='pending' AND r.school_id=%s
+          WHERE r.status IN ('pending','accepted') AND r.school_id=%s
           ORDER BY r.urgent DESC,r.created_at LIMIT 100""",(actor["school_id"],)).fetchall()
     return {"items":[dict(r) for r in rows]}
 
