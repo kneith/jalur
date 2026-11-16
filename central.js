@@ -163,7 +163,7 @@
           }
           $('#rasaTypingPage').hidden=!latest.counterpart_typing;
           $('#rasaChatPresence').textContent='Percakapan anonim · '+(latest.conversation.status||'Aktif');
-          if(latest.conversation.status==='closed'){const input=$('#rasaReplyPageText'),send=$('#rasaReplyPage button');if(input)input.disabled=true;if(send)send.disabled=true;$('#rasaTypingPage').hidden=true;stopStream?.();stopStream=null;rasaLiveStop=null;}
+          if(['closed','referred'].includes(latest.conversation.status)){const input=$('#rasaReplyPageText'),send=$('#rasaReplyPage button'),noticeBox=box.querySelector('.rasa-chat-notice');if(input){input.disabled=true;input.placeholder='Percakapan ini telah berakhir.';}if(send)send.disabled=true;$('#rasaTypingPage').hidden=true;if(noticeBox)noticeBox.textContent=latest.conversation.status==='referred'?'Percakapan moderator telah diakhiri dan ringkasan diteruskan ke Guru BK sekolah.':'Percakapan telah diselesaikan. Kamu masih dapat membaca riwayat, tetapi tidak dapat mengirim pesan baru.';stopStream?.();stopStream=null;rasaLiveStop=null;}
         });
         rasaLiveStop=stopStream;
         const field=$('#rasaReplyPageText');const resizeComposer=()=>{field.style.height='auto';field.style.height=Math.min(field.scrollHeight,112)+'px';};field.addEventListener('input',resizeComposer);resizeComposer();
