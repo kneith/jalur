@@ -3039,3 +3039,6 @@ body.rasa-chat-active{height:100%;overflow:hidden!important;overscroll-behavior:
 @media(prefers-reduced-motion:reduce){
   #moderatorConversation.rasa-chat-screen{animation:none!important;transition:none!important}
 }
+
+#moderatorConversation.keyboard-open .rasa-chat-actions{display:none!important}
+#moderatorConversation.keyboard-open .rasa-chat-composer{padding-bottom:max(8px,env(safe-area-inset-bottom))!important}
