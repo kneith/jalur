@@ -215,10 +215,11 @@
     (() => {
       const host = window.location.hostname;
       const isLocal = host === "localhost" || host === "127.0.0.1";
-      const apiOrigin = isLocal
-        ? "http://127.0.0.1:8000"
-        : "https://jalur-api.vercel.app";
-      window.JALUR_API_BASE = apiOrigin + "/api";
+      // Production API is reverse-proxied through this origin so session cookies
+      // remain first-party and are not blocked as third-party cookies by browsers.
+      window.JALUR_API_BASE = isLocal
+        ? "http://127.0.0.1:8000/api"
+        : window.location.origin + "/api";
     })();
   </script>
 
