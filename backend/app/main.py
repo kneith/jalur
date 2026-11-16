@@ -1487,8 +1487,20 @@ def rasa_moderator_queue(request:Request):
     with connection() as conn:
         rows=conn.execute("""SELECT c.id,c.category,c.status,c.created_at,c.last_message_at,c.assigned_moderator_id,
           (SELECT count(*) FROM rasa_messages m WHERE m.conversation_id=c.id) message_count
-          FROM rasa_conversations c WHERE c.status<>'closed' ORDER BY (c.assigned_moderator_id IS NULL) DESC,c.last_message_at DESC LIMIT 200""").fetchall()
+          FROM rasa_conversations c WHERE c.status NOT IN ('closed','referred') ORDER BY (c.assigned_moderator_id IS NULL) DESC,c.last_message_at DESC LIMIT 200""").fetchall()
     return {"items":[{**dict(r),"id":str(r["id"]),"assigned_to_me":bool(r["assigned_moderator_id"] and str(r["assigned_moderator_id"])==str(actor["id"]))} for r in rows]}
+
+@app.get("/api/rasa/moderator/history")
+def rasa_moderator_history(request:Request):
+    actor=_require_roles(request,"wellbeing_moderator")
+    with connection() as conn:
+        rows=conn.execute("""SELECT c.id,c.category,c.status,c.updated_at,c.last_message_at,
+          (SELECT count(*) FROM rasa_messages m WHERE m.conversation_id=c.id) message_count
+          FROM rasa_conversations c
+          WHERE c.assigned_moderator_id=%s AND c.status IN ('closed','referred')
+          ORDER BY c.updated_at DESC LIMIT 300""",(actor["id"],)).fetchall()
+    return {"items":[{**dict(r),"id":str(r["id"])} for r in rows]}
+
 
 @app.post("/api/rasa/moderator/conversations/{conversation_id}/assign")
 def rasa_assign(conversation_id:uuid.UUID,request:Request):
@@ -1540,11 +1552,14 @@ def rasa_referral(conversation_id:uuid.UUID,payload:RasaReferralInput,request:Re
     actor=_require_roles(request,"wellbeing_moderator")
     if not payload.consent and not payload.urgent: raise HTTPException(422,"Persetujuan siswa diperlukan kecuali ada risiko keselamatan mendesak sesuai kebijakan sekolah.")
     with connection() as conn:
-        c=conn.execute("SELECT id FROM rasa_conversations WHERE id=%s AND assigned_moderator_id=%s",(conversation_id,actor["id"])).fetchone()
+        c=conn.execute("SELECT id,school_id FROM rasa_conversations WHERE id=%s AND assigned_moderator_id=%s",(conversation_id,actor["id"])).fetchone()
         if not c: raise HTTPException(404,"Percakapan bukan penugasanmu.")
+        if not c["school_id"]: raise HTTPException(422,"Percakapan belum terhubung ke sekolah, sehingga tidak dapat dirujuk ke Guru BK.")
+        counselor=conn.execute("SELECT id FROM users WHERE role='counselor' AND status='active' AND school_id=%s LIMIT 1",(c["school_id"],)).fetchone()
+        if not counselor: raise HTTPException(409,"Belum ada akun Guru BK aktif yang terhubung ke sekolah percakapan ini.")
         conn.execute("""INSERT INTO rasa_referrals(conversation_id,moderator_id,school_id,summary,consent,urgent)
-          SELECT c.id,%s,c.school_id,%s,%s,%s FROM rasa_conversations c WHERE c.id=%s""",
-          (actor["id"],payload.summary.strip(),payload.consent,payload.urgent,conversation_id))
+          VALUES(%s,%s,%s,%s,%s,%s)""",
+          (conversation_id,actor["id"],c["school_id"],payload.summary.strip(),payload.consent,payload.urgent))
         conn.execute("UPDATE rasa_conversations SET status='referred',updated_at=now() WHERE id=%s",(conversation_id,))
         _audit_event(conn,actor,"rasa.referral","rasa_conversation",conversation_id)
     return {"ok":True}
