@@ -2948,3 +2948,27 @@ body.rasa-chat-active #pageRoot{display:contents!important}
 @media(prefers-reduced-motion:reduce){
   .rasa-chat-screen .rasa-bubble{animation:none!important}
 }
+
+
+/* Moderator RASA: full-screen student-style messenger with a persistent action footer. */
+#moderatorConversation.rasa-chat-screen{
+  position:fixed!important;z-index:2147483000!important;inset:var(--rasa-vtop,0px) 0 env(safe-area-inset-bottom)!important;
+  width:100vw!important;height:var(--rasa-vh,100dvh)!important;max-height:var(--rasa-vh,100dvh)!important;
+  display:flex!important;flex-direction:column!important;overflow:hidden!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
+}
+#moderatorConversation.rasa-chat-screen[hidden]{display:none!important}
+#moderatorConversation .rasa-chat-actions{
+  flex:0 0 auto;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;
+  padding:10px clamp(12px,3vw,24px) calc(10px + env(safe-area-inset-bottom));
+  background:rgba(255,255,255,.98);border-top:1px solid rgba(91,119,159,.16);
+}
+#moderatorConversation .rasa-chat-actions .btn{min-height:42px}
+#moderatorConversation .rasa-chat-back{display:grid;place-items:center}
+#moderatorConversation .rasa-messages{align-items:stretch!important}
+#moderatorConversation .rasa-bubble.from-visitor{align-self:flex-end!important}
+#moderatorConversation .rasa-bubble.from-moderator{align-self:flex-start!important}
+@media(max-width:480px){
+  #moderatorConversation .rasa-chat-actions{justify-content:stretch}
+  #moderatorConversation .rasa-chat-actions .btn{flex:1 1 100%;min-width:0}
+}
