@@ -40,8 +40,8 @@
   ],
   "routes": [
     {
-      "src": "^/api(/.*)?$",
-      "dest": "api/index.py"
+      "src": "^/api/(.*)$",
+      "dest": "https://jalur-api.vercel.app/api/$1"
     },
     {
       "handle": "filesystem"
